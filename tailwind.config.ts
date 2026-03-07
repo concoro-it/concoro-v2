@@ -1,0 +1,159 @@
+import type { Config } from "tailwindcss";
+import { fontFamily } from "tailwindcss/defaultTheme";
+
+const config: Config = {
+    darkMode: ["class"],
+    content: [
+        "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+        "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+        "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    ],
+    theme: {
+    	container: {
+    		center: true,
+    		padding: '2rem',
+    		screens: {
+    			'2xl': '1400px'
+    		}
+    	},
+    	extend: {
+    		screens: {
+    			xs: '375px'
+    		},
+    		maxWidth: {
+    			container: '80rem'
+    		},
+    		colors: {
+    			brand: '#051D32',
+    			border: 'hsl(var(--border))',
+    			input: 'hsl(var(--input))',
+    			ring: 'hsl(var(--ring))',
+    			background: 'hsl(var(--background))',
+    			foreground: 'hsl(var(--foreground))',
+    			primary: {
+    				DEFAULT: 'hsl(var(--primary))',
+    				foreground: 'hsl(var(--primary-foreground))'
+    			},
+    			secondary: {
+    				DEFAULT: 'hsl(var(--secondary))',
+    				foreground: 'hsl(var(--secondary-foreground))'
+    			},
+    			destructive: {
+    				DEFAULT: 'hsl(var(--destructive))',
+    				foreground: 'hsl(var(--destructive-foreground))'
+    			},
+    			muted: {
+    				DEFAULT: 'hsl(var(--muted))',
+    				foreground: 'hsl(var(--muted-foreground))'
+    			},
+    			accent: {
+    				DEFAULT: 'hsl(var(--accent))',
+    				foreground: 'hsl(var(--accent-foreground))'
+    			},
+    			popover: {
+    				DEFAULT: 'hsl(var(--popover))',
+    				foreground: 'hsl(var(--popover-foreground))'
+    			},
+    			card: {
+    				DEFAULT: 'hsl(var(--card))',
+    				foreground: 'hsl(var(--card-foreground))'
+    			},
+    			success: 'hsl(var(--success))',
+    			warning: 'hsl(var(--warning))',
+    			info: 'hsl(var(--info))',
+    			urgent: 'hsl(var(--urgent))',
+    			highlight: 'hsl(var(--highlight))',
+    			surface: 'hsl(var(--surface))',
+    			chart: {
+    				'1': 'hsl(var(--chart-1))',
+    				'2': 'hsl(var(--chart-2))',
+    				'3': 'hsl(var(--chart-3))',
+    				'4': 'hsl(var(--chart-4))',
+    				'5': 'hsl(var(--chart-5))'
+    			}
+    		},
+    		borderRadius: {
+    			lg: 'var(--radius)',
+    			md: 'calc(var(--radius) - 2px)',
+    			sm: 'calc(var(--radius) - 4px)'
+    		},
+    		fontFamily: {
+    			sans: [
+    				'var(--font-sans)',
+                    ...fontFamily.sans
+                ]
+    		},
+    		fontSize: {
+    			'2xs': '0.625rem'
+    		},
+    		letterSpacing: {
+    			title: '-0.96px'
+    		},
+    		keyframes: {
+    			'accordion-down': {
+    				from: {
+    					height: '0'
+    				},
+    				to: {
+    					height: 'var(--radix-accordion-content-height)'
+    				}
+    			},
+    			'accordion-up': {
+    				from: {
+    					height: 'var(--radix-accordion-content-height)'
+    				},
+    				to: {
+    					height: '0'
+    				}
+    			},
+    			appear: {
+    				from: {
+    					opacity: '0',
+    					transform: 'translateY(20px)'
+    				},
+    				to: {
+    					opacity: '1',
+    					transform: 'translateY(0)'
+    				}
+    			},
+    			'appear-zoom': {
+    				from: {
+    					opacity: '0',
+    					transform: 'scale(0.9)'
+    				},
+    				to: {
+    					opacity: '1',
+    					transform: 'scale(1)'
+    				}
+    			},
+    			gradient: {
+    				'0%, 100%': {
+    					backgroundPosition: '0% 50%'
+    				},
+    				'50%': {
+    					backgroundPosition: '100% 50%'
+    				}
+    			},
+    			marquee: {
+    				from: {
+    					transform: 'translateX(0)'
+    				},
+    				to: {
+    					transform: 'translateX(calc(-50% - 0.5rem))'
+    				}
+    			}
+    		},
+    		animation: {
+    			'accordion-down': 'accordion-down 0.2s ease-out',
+    			'accordion-up': 'accordion-up 0.2s ease-out',
+    			appear: 'appear 0.5s ease-out forwards',
+    			'appear-zoom': 'appear-zoom 0.5s ease-out forwards',
+    			gradient: 'gradient 8s ease infinite',
+    			marquee: 'marquee var(--duration) linear infinite'
+    		}
+    	}
+    },
+    plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
+};
+
+export default config;
