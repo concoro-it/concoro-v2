@@ -217,18 +217,43 @@ export async function getFeaturedConcorsi(supabase: SupabaseClient): Promise<Con
 }
 
 export async function getRegioniWithCount(supabase: SupabaseClient): Promise<Array<{ regione: string; count: number }>> {
-    const { data, error } = await supabase.rpc('get_regioni_with_count');
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+        .from('concorsi')
+        .select('regioni_array')
+        .eq('is_active', true)
+        .gte('data_scadenza', now);
+
     if (error || !data) {
         console.error('Error in getRegioniWithCount:', error);
         return [];
     }
 
-    return (data as Array<{ regione: string; count: number | string }>)
-        .map((row) => ({
-            regione: row.regione,
-            count: typeof row.count === 'string' ? Number(row.count) : row.count,
-        }))
-        .filter((row) => row.regione && Number.isFinite(row.count));
+    const counts: Record<string, number> = {};
+    for (const row of data as Array<{ regioni_array: unknown }>) {
+        const arr = row.regioni_array as unknown[];
+        if (!Array.isArray(arr)) continue;
+
+        for (const raw of arr) {
+            try {
+                const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                const name =
+                    (parsed as any)?.regione?.denominazione ||
+                    (parsed as any)?.denominazione ||
+                    (parsed as any)?.nome;
+
+                if (typeof name === 'string' && name.trim()) {
+                    counts[name] = (counts[name] ?? 0) + 1;
+                }
+            } catch {
+                // skip malformed region payload
+            }
+        }
+    }
+
+    return Object.entries(counts)
+        .map(([regione, count]) => ({ regione, count }))
+        .sort((a, b) => b.count - a.count);
 }
 
 export async function getProvinceWithCount(supabase: SupabaseClient): Promise<Array<{ provincia: string; sigla: string; count: number }>> {

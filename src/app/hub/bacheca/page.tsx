@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getUserTier } from '@/lib/auth/getUserTier';
-import { getSavedConcorsi } from '@/lib/supabase/queries';
+import { getRegioniWithCount, getSavedConcorsi } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import { BookmarkIcon, Search, Settings, CreditCard, Crown } from 'lucide-react';
 import ItalyMapDashboard from '@/components/dashboard/ItalyMapDashboard';
@@ -15,10 +15,11 @@ export default async function DashboardPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect('/login');
 
-    const [tier, savedConcorsi, profile] = await Promise.all([
+    const [tier, savedConcorsi, profile, regionCounts] = await Promise.all([
         getUserTier(supabase),
         getSavedConcorsi(supabase, user.id),
         supabase.from('profiles').select('*').eq('id', user.id).single(),
+        getRegioniWithCount(supabase),
     ]);
 
     const profileData = profile.data;
@@ -47,7 +48,7 @@ export default async function DashboardPage() {
 
             {/* Italy Map Dashboard Section */}
             <div className="mb-12">
-                <ItalyMapDashboard />
+                <ItalyMapDashboard regionCounts={regionCounts} />
             </div>
 
             {/* Stats cards - Keeping these for quick access but they could be integrated later */}

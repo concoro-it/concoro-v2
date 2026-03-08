@@ -1,26 +1,46 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useMemo, useLayoutEffect } from "react";
 import styles from "./ItalyMapDashboard.module.css";
 import { MAP_PATHS } from "./mapPaths";
-import { REGION_DATA, getRegionColor, COLOR_SCALE } from "./mapData";
+import { REGION_META, type RegionInfo, getRegionColor, COLOR_SCALE } from "./mapData";
+import { toUrlSlug } from "@/lib/utils/regioni";
 import {
     ChevronRight,
     Plus,
     Minus,
-    Maximize2,
-    Search,
-    Settings,
-    BookmarkIcon,
-    Map as MapIcon,
-    List,
-    Target
+    Maximize2
 } from "lucide-react";
 
-const ItalyMapDashboard = () => {
+interface RegionCountRow {
+    regione: string;
+    count: number;
+}
+
+interface ItalyMapDashboardProps {
+    regionCounts: RegionCountRow[];
+}
+
+const MAP_VIEWBOX_WIDTH = 1480;
+const MAP_VIEWBOX_HEIGHT = 1720;
+
+const normalizeRegionName = (value: string): string =>
+    value
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/['']/g, "")
+        .replace(/[\s-]+/g, " ")
+        .trim();
+
+const ItalyMapDashboard = ({ regionCounts }: ItalyMapDashboardProps) => {
     // Map State
-    const [scale, setScale] = useState(1);
+    const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const [fitScales, setFitScales] = useState({ contain: 1 });
+    const [isMapReady, setIsMapReady] = useState(false);
+    const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+    const [mapBounds, setMapBounds] = useState({ x: 0, y: 0, width: MAP_VIEWBOX_WIDTH, height: MAP_VIEWBOX_HEIGHT });
     const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
     const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -29,26 +49,123 @@ const ItalyMapDashboard = () => {
     // Tooltip state
     const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, regionId: "" });
 
-    const svgRef = useRef<SVGSVGElement>(null);
+    const mapGroupRef = useRef<SVGGElement>(null);
+    const mapCanvasRef = useRef<HTMLDivElement>(null);
+    const regionData = useMemo<Record<string, RegionInfo>>(() => {
+        const dbCountsByName = new Map<string, number>();
+        for (const row of regionCounts) {
+            dbCountsByName.set(normalizeRegionName(row.regione), row.count);
+        }
+
+        return Object.fromEntries(
+            Object.entries(REGION_META).map(([code, meta]) => {
+                const count = dbCountsByName.get(normalizeRegionName(meta.name)) ?? 0;
+                return [code, { name: meta.name, count, change: "—" }];
+            })
+        ) as Record<string, RegionInfo>;
+    }, [regionCounts]);
 
     // Sorted regions for the sidebar
     const sortedRegions = useMemo(() => {
-        return Object.entries(REGION_DATA)
+        return Object.entries(regionData)
             .sort((a, b) => b[1].count - a[1].count)
             .map(([id, data]) => ({ id, ...data }));
-    }, []);
+    }, [regionData]);
 
     const totalCount = useMemo(() => {
-        return Object.values(REGION_DATA).reduce((acc, curr) => acc + curr.count, 0);
+        return Object.values(regionData).reduce((acc, curr) => acc + curr.count, 0);
+    }, [regionData]);
+
+    const rankingStats = useMemo(() => {
+        const values = sortedRegions.map((r) => r.count).sort((a, b) => a - b);
+        const max = sortedRegions[0]?.count ?? 0;
+        const avg = values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
+        const mid = Math.floor(values.length / 2);
+        const median =
+            values.length === 0
+                ? 0
+                : values.length % 2 === 0
+                    ? (values[mid - 1] + values[mid]) / 2
+                    : values[mid];
+        return { max, avg, median };
+    }, [sortedRegions]);
+
+    const detailBars = useMemo(() => {
+        if (!selectedRegion) return [];
+        const selectedCount = regionData[selectedRegion]?.count ?? 0;
+        const max = Math.max(rankingStats.max, 1);
+        const toHeight = (value: number) => `${Math.max((value / max) * 100, 8)}%`;
+
+        return [
+            { key: "selected", label: "Regione", value: selectedCount, height: toHeight(selectedCount), current: true },
+            { key: "avg", label: "Media", value: Math.round(rankingStats.avg), height: toHeight(rankingStats.avg), current: false },
+            { key: "median", label: "Mediana", value: Math.round(rankingStats.median), height: toHeight(rankingStats.median), current: false },
+            { key: "top", label: "Top", value: rankingStats.max, height: "100%", current: false },
+        ];
+    }, [selectedRegion, regionData, rankingStats]);
+
+    const scale = useMemo(() => {
+        return fitScales.contain * zoom;
+    }, [fitScales, zoom]);
+
+    const svgViewportScale = useMemo(() => {
+        if (!canvasSize.width || !canvasSize.height) {
+            return 1;
+        }
+        return Math.min(canvasSize.width / MAP_VIEWBOX_WIDTH, canvasSize.height / MAP_VIEWBOX_HEIGHT);
+    }, [canvasSize]);
+
+    const effectiveScale = useMemo(() => {
+        return scale / (svgViewportScale || 1);
+    }, [scale, svgViewportScale]);
+
+    const baseTranslate = useMemo(() => {
+        if (!canvasSize.width || !canvasSize.height) {
+            return { x: 0, y: 0 };
+        }
+
+        const scaledWidth = mapBounds.width * scale;
+        const scaledHeight = mapBounds.height * scale;
+
+        return {
+            x: (canvasSize.width - scaledWidth) / 2 - mapBounds.x * scale,
+            y: (canvasSize.height - scaledHeight) / 2 - mapBounds.y * scale
+        };
+    }, [canvasSize, mapBounds, scale]);
+
+    useLayoutEffect(() => {
+        const canvas = mapCanvasRef.current;
+        const mapGroup = mapGroupRef.current;
+        if (!canvas || !mapGroup) return;
+
+        const calculateLayout = () => {
+            const rect = canvas.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+
+            const bbox = mapGroup.getBBox();
+            if (!bbox.width || !bbox.height) return;
+
+            const contain = Math.min(rect.width / bbox.width, rect.height / bbox.height);
+            setFitScales({ contain });
+            setCanvasSize({ width: rect.width, height: rect.height });
+            setMapBounds({ x: bbox.x, y: bbox.y, width: bbox.width, height: bbox.height });
+            setIsMapReady(true);
+        };
+
+        calculateLayout();
+
+        const resizeObserver = new ResizeObserver(() => calculateLayout());
+        resizeObserver.observe(canvas);
+        return () => resizeObserver.disconnect();
     }, []);
 
     // Handlers
     const handleZoom = (delta: number) => {
-        setScale(prev => Math.min(Math.max(prev + delta, 0.5), 5));
+        setZoom(prev => Math.min(Math.max(prev + delta, 0.6), 4));
     };
 
     const resetZoom = () => {
-        setScale(1);
+        setZoom(1);
         setOffset({ x: 0, y: 0 });
     };
 
@@ -72,7 +189,6 @@ const ItalyMapDashboard = () => {
 
     const onRegionHover = (e: React.MouseEvent, id: string) => {
         setHoveredRegion(id);
-        const rect = e.currentTarget.getBoundingClientRect();
         setTooltip({
             visible: true,
             x: e.clientX,
@@ -90,22 +206,12 @@ const ItalyMapDashboard = () => {
         setSelectedRegion(selectedRegion === id ? null : id);
     };
 
+    const selectedRegionRank = selectedRegion
+        ? sortedRegions.findIndex((region) => region.id === selectedRegion) + 1
+        : 0;
+
     return (
         <div className={styles.italyMapDashboard}>
-            {/* Title Bar */}
-            <header className={styles.titleBar}>
-                <div className={styles.statPill}>
-                    <span>Concorsi Attivi:</span>
-                    <strong>{totalCount.toLocaleString()}</strong>
-                    <span className={`${styles.badge} ${styles.badgeUp}`}>+42 oggi</span>
-                </div>
-                <div className={styles.statPill}>
-                    <span>Regioni monitoring:</span>
-                    <strong>20</strong>
-                </div>
-                <h1>inPA – Concorsi per Regione</h1>
-            </header>
-
             <div className={styles.layoutContainer}>
                 {/* Sidebar */}
                 <aside className={styles.sidebar}>
@@ -133,16 +239,22 @@ const ItalyMapDashboard = () => {
                                 <div className={styles.regionBarWrap}>
                                     <div
                                         className={styles.regionBarFill}
-                                        style={{ width: `${(region.count / sortedRegions[0].count) * 100}%` }}
+                                        style={{ width: `${sortedRegions[0]?.count ? (region.count / sortedRegions[0].count) * 100 : 0}%` }}
                                     />
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    <div className={styles.seeAll}>
-                        Mostra tutte le 20 regioni <Plus size={14} />
-                    </div>
+                    <button
+                        type="button"
+                        className={styles.seeAll}
+                        onClick={() => {
+                            window.location.href = "/hub/concorsi";
+                        }}
+                    >
+                        Vedi tutti i concorsi <Plus size={14} />
+                    </button>
                 </aside>
 
                 {/* Map Area */}
@@ -161,22 +273,16 @@ const ItalyMapDashboard = () => {
                             </div>
                             <span>Molti</span>
                         </div>
-
-                        <div className={styles.mapControls}>
-                            <button className={`${styles.mapBtn} ${styles.active}`} title="Vista Mappa">
-                                <MapIcon size={18} />
-                            </button>
-                            <button className={styles.mapBtn} title="Vista Lista">
-                                <List size={18} />
-                            </button>
-                            <button className={styles.mapBtn} title="Filtri">
-                                <Search size={18} />
-                            </button>
+                        <div className={styles.statPill}>
+                            <span>Concorsi Attivi:</span>
+                            <strong>{totalCount.toLocaleString()}</strong>
+                            <span className={`${styles.badge} ${styles.badgeUp}`}>Dati live</span>
                         </div>
                     </div>
 
                     <div
-                        className={styles.mapCanvas}
+                        ref={mapCanvasRef}
+                        className={`${styles.mapCanvas} ${!isMapReady ? styles.mapCanvasPending : ""}`}
                         onMouseDown={handleMouseDown}
                         onMouseMove={handleMouseMove}
                         onMouseUp={handleMouseUp}
@@ -193,17 +299,20 @@ const ItalyMapDashboard = () => {
                         </div>
 
                         <svg
-                            ref={svgRef}
                             viewBox="0 0 1480 1720"
                             className={styles.italySvg}
-                            style={{
-                                transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-                                transition: isDragging ? "none" : "transform 0.1s ease-out"
-                            }}
+                            preserveAspectRatio="xMidYMid meet"
                         >
-                            <g className={styles.mapGroup}>
+                            <g
+                                ref={mapGroupRef}
+                                className={styles.mapGroup}
+                                style={{
+                                    transform: `translate(${baseTranslate.x + offset.x}px, ${baseTranslate.y + offset.y}px) scale(${effectiveScale})`,
+                                    transition: isDragging ? "none" : "transform 0.1s ease-out"
+                                }}
+                            >
                                 {Object.entries(MAP_PATHS).map(([id, path]) => {
-                                    const data = REGION_DATA[id];
+                                    const data = regionData[id];
                                     const isHovered = hoveredRegion === id;
                                     const isSelected = selectedRegion === id;
                                     const isDimmed = (hoveredRegion || selectedRegion) && !(isHovered || isSelected);
@@ -234,8 +343,8 @@ const ItalyMapDashboard = () => {
                         >
                             {tooltip.regionId && (
                                 <>
-                                    <div className={styles.tooltipRegion}>{REGION_DATA[tooltip.regionId].name}</div>
-                                    <div className={styles.tooltipValue}>{REGION_DATA[tooltip.regionId].count}</div>
+                                    <div className={styles.tooltipRegion}>{regionData[tooltip.regionId]?.name}</div>
+                                    <div className={styles.tooltipValue}>{regionData[tooltip.regionId]?.count ?? 0}</div>
                                     <div className={styles.tooltipSub}>Concorsi attivi</div>
                                     <div className={styles.tooltipRank}>#{sortedRegions.findIndex(r => r.id === tooltip.regionId) + 1} Nazionale</div>
                                 </>
@@ -246,21 +355,28 @@ const ItalyMapDashboard = () => {
                         <div className={`${styles.detailCard} ${selectedRegion ? styles.detailCardVisible : ""}`}>
                             {selectedRegion && (
                                 <div className={styles.animateFadeUp}>
-                                    <div className={styles.detailCardRegion}>{REGION_DATA[selectedRegion].name}</div>
+                                    <div className={styles.detailCardRegion}>{regionData[selectedRegion]?.name}</div>
                                     <div className={styles.detailCardValue}>
-                                        {REGION_DATA[selectedRegion].count}
-                                        <span className={styles.detailCardChange}>{REGION_DATA[selectedRegion].change}</span>
+                                        {regionData[selectedRegion]?.count ?? 0}
+                                        <span className={styles.detailCardChange}>
+                                            {selectedRegionRank > 0 ? `#${selectedRegionRank}` : "—"}
+                                        </span>
                                     </div>
-                                    <div className={styles.detailCardSub}>Concorsi pubblicati negli ultimi 30 giorni</div>
+                                    <div className={styles.detailCardSub}>Confronto live: regione vs media nazionale</div>
 
                                     <div className={styles.detailChart}>
-                                        <div className={`${styles.detailBar} ${styles.detailBarCurrent}`} style={{ height: "100%" }} />
-                                        <div className={`${styles.detailBar} ${styles.detailBarPrev}`} style={{ height: "65%" }} />
-                                        <div className={`${styles.detailBar} ${styles.detailBarPrev}`} style={{ height: "45%" }} />
-                                        <div className={`${styles.detailBar} ${styles.detailBarPrev}`} style={{ height: "80%" }} />
+                                        {detailBars.map((bar) => (
+                                            <div key={bar.key} className={styles.detailBarGroup}>
+                                                <div
+                                                    className={`${styles.detailBar} ${bar.current ? styles.detailBarCurrent : styles.detailBarPrev}`}
+                                                    style={{ height: bar.height }}
+                                                />
+                                                <span className={styles.detailBarLabel}>{bar.label}</span>
+                                            </div>
+                                        ))}
                                     </div>
 
-                                    <div className={styles.detailCta} onClick={() => window.location.href = `/regione/${REGION_DATA[selectedRegion].name.toLowerCase().replace(/ /g, '-')}`}>
+                                    <div className={styles.detailCta} onClick={() => window.location.href = `/hub/regione/${toUrlSlug(regionData[selectedRegion]?.name ?? "")}`}>
                                         Vedi tutti i concorsi <ChevronRight size={16} />
                                     </div>
                                 </div>

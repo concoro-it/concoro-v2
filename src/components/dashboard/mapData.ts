@@ -5,27 +5,27 @@ export interface RegionInfo {
     change: string;
 }
 
-export const REGION_DATA: Record<string, RegionInfo> = {
-    TAA: { name: "Trentino-Alto Adige", count: 124, change: "+5" },
-    VEN: { name: "Veneto", count: 456, change: "+12" },
-    FVG: { name: "Friuli Venezia Giulia", count: 89, change: "+2" },
-    LOM: { name: "Lombardia", count: 832, change: "+24" },
-    VDA: { name: "Valle d'Aosta", count: 12, change: "0" },
-    PIE: { name: "Piemonte", count: 312, change: "+8" },
-    EMR: { name: "Emilia-Romagna", count: 421, change: "+15" },
-    LIG: { name: "Liguria", count: 156, change: "+4" },
-    TOS: { name: "Toscana", count: 342, change: "+9" },
-    MAR: { name: "Marche", count: 128, change: "+3" },
-    UMB: { name: "Umbria", count: 76, change: "-1" },
-    ABR: { name: "Abruzzo", count: 145, change: "+6" },
-    LAZ: { name: "Lazio", count: 754, change: "+31" },
-    MOL: { name: "Molise", count: 34, change: "0" },
-    PUG: { name: "Puglia", count: 287, change: "+14" },
-    CAM: { name: "Campania", count: 395, change: "+18" },
-    BAS: { name: "Basilicata", count: 54, change: "+1" },
-    CAL: { name: "Calabria", count: 167, change: "+5" },
-    SIC: { name: "Sicilia", count: 234, change: "+11" },
-    SAR: { name: "Sardegna", count: 112, change: "+4" }
+export const REGION_META: Record<string, { name: string }> = {
+    TAA: { name: "Trentino-Alto Adige" },
+    VEN: { name: "Veneto" },
+    FVG: { name: "Friuli-Venezia Giulia" },
+    LOM: { name: "Lombardia" },
+    VDA: { name: "Valle d'Aosta" },
+    PIE: { name: "Piemonte" },
+    EMR: { name: "Emilia-Romagna" },
+    LIG: { name: "Liguria" },
+    TOS: { name: "Toscana" },
+    MAR: { name: "Marche" },
+    UMB: { name: "Umbria" },
+    ABR: { name: "Abruzzo" },
+    LAZ: { name: "Lazio" },
+    MOL: { name: "Molise" },
+    PUG: { name: "Puglia" },
+    CAM: { name: "Campania" },
+    BAS: { name: "Basilicata" },
+    CAL: { name: "Calabria" },
+    SIC: { name: "Sicilia" },
+    SAR: { name: "Sardegna" }
 };
 
 export const COLOR_SCALE = [
