@@ -43,6 +43,9 @@
     --component-active-bg: hsl(var(--secondary));
     --component-line-inactive-color: hsl(var(--border));
     --component-active-color-default: hsl(var(--accent-foreground));
+    --offset: 10px;
+    --slide-up-fade: slide-up-fade 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    --fade-in: fade-in 0.2s ease-in-out forwards;
   }
 
   h1,
@@ -96,6 +99,9 @@
     --component-active-bg: hsl(var(--secondary));
     --component-line-inactive-color: hsl(var(--muted-foreground));
     --component-active-color-default: hsl(var(--accent-foreground));
+    --offset: 10px;
+    --slide-up-fade: slide-up-fade 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    --fade-in: fade-in 0.2s ease-in-out forwards;
   }
 }
 
@@ -214,6 +220,14 @@
   .delay-1000 {
     animation-delay: 1000ms;
   }
+
+  .animate-slide-up-fade {
+    animation: var(--slide-up-fade);
+  }
+
+  .animate-fade-in {
+    animation: var(--fade-in);
+  }
 }
 
 @keyframes iconBounce {
@@ -232,6 +246,26 @@
   }
   80% {
     transform: translateY(0);
+  }
+}
+
+@keyframes slide-up-fade {
+  from {
+    opacity: 0;
+    transform: translateY(var(--offset, 10px));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 

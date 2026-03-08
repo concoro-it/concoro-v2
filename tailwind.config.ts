@@ -89,6 +89,10 @@ const config: Config = {
     		letterSpacing: {
     			title: '-0.96px'
     		},
+            transitionProperty: {
+                height: 'height',
+                spacing: 'margin, padding'
+            },
     		keyframes: {
     			'accordion-down': {
     				from: {
