@@ -8,6 +8,11 @@ import { News, type NewsArticle } from '@/components/ui/sidebar-news';
 import {
     LayoutDashboard,
     Search,
+    MapPin,
+    MapPinned,
+    Building2,
+    Briefcase,
+    CalendarDays,
     CreditCard,
     Bookmark,
     Bot,
@@ -40,6 +45,31 @@ export function Sidebar({ userProfile }: { userProfile: any }) {
             href: '/hub/concorsi',
             name: 'Concorsi',
             icon: <Search className="w-5 h-5" />,
+        },
+        {
+            href: '/hub/regione',
+            name: 'Regioni',
+            icon: <MapPin className="w-5 h-5" />,
+        },
+        {
+            href: '/hub/provincia',
+            name: 'Province',
+            icon: <MapPinned className="w-5 h-5" />,
+        },
+        {
+            href: '/hub/ente',
+            name: 'Ente',
+            icon: <Building2 className="w-5 h-5" />,
+        },
+        {
+            href: '/hub/settore',
+            name: 'Settori',
+            icon: <Briefcase className="w-5 h-5" />,
+        },
+        {
+            href: '/hub/scadenza',
+            name: 'Scadenze',
+            icon: <CalendarDays className="w-5 h-5" />,
         },
         {
             href: '/hub/matching',
@@ -95,7 +125,7 @@ export function Sidebar({ userProfile }: { userProfile: any }) {
                     <img src="/concoro-logo-light.png" alt="Concoro" className="h-7 w-auto opacity-90" />
                 </div>
 
-                <div className="flex-1 flex pt-8">
+                <div className="flex-1 flex items-center">
                     <ul className="w-full text-sm font-medium space-y-1">
                         {navigation.map((item, idx) => (
                             <li key={idx}>
