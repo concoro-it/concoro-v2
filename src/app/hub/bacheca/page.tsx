@@ -39,7 +39,7 @@ export default async function DashboardPage() {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <Link href="/hub/impostazioni" className="p-2 border border-border rounded-lg hover:bg-secondary transition-colors">
+                    <Link href="/hub/profile" className="p-2 border border-border rounded-lg hover:bg-secondary transition-colors">
                         <Settings className="w-4 h-4" />
                     </Link>
                 </div>

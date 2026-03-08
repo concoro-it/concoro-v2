@@ -1,36 +1,19 @@
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
-import { getConcorsi } from '@/lib/supabase/queries';
+import { getConcorsi, getRegioniWithCount, getSettoriWithCount, getUserProfile } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import type { ConcorsoFilters } from '@/types/concorso';
 import { getUserTier } from '@/lib/auth/getUserTier';
 import { BlurredResultsSection } from '@/components/paywall/PaywallBanner';
+import { PreferencesControl } from '@/components/concorsi/PreferencesControl';
+import { ActiveFiltersBar } from '@/components/concorsi/ActiveFiltersBar';
 
 export const metadata: Metadata = {
     title: 'Tutti i Concorsi Pubblici',
     description: 'Esplora tutti i concorsi pubblici italiani. Filtrate per regione, settore, ente, tipo procedura e scadenza.',
 };
-
-const SORT_OPTIONS = [
-    { value: 'scadenza', label: 'Scadenza vicina' },
-    { value: 'recenti', label: 'Più recenti' },
-    { value: 'posti', label: 'Più posti' },
-];
-
-const STATO_OPTIONS = [
-    { value: 'aperti', label: 'Aperti' },
-    { value: 'scaduti', label: 'Scaduti' },
-];
-
-const TIPO_OPTIONS = [
-    { value: '', label: 'Tutti' },
-    { value: 'ESAMI', label: 'Esami' },
-    { value: 'TITOLI', label: 'Titoli' },
-    { value: 'TITOLI_COLLOQUIO', label: 'Titoli + Colloquio' },
-    { value: 'COLLOQUIO', label: 'Colloquio' },
-];
 
 const FREE_VISIBLE = 5;
 
@@ -38,9 +21,12 @@ interface SearchParams {
     page?: string;
     q?: string;
     regione?: string;
+    provincia?: string;
     settore?: string;
     ente_slug?: string;
     tipo_procedura?: string;
+    published_from?: string;
+    published_to?: string;
     sort?: string;
     stato?: string;
 }
@@ -56,18 +42,29 @@ export default async function ConcorsiPage({
 
     const filters: ConcorsoFilters = {
         regione: params.regione,
+        provincia: params.provincia,
         settore: params.settore,
         ente_slug: params.ente_slug,
         tipo_procedura: params.tipo_procedura,
+        published_from: params.published_from,
+        published_to: params.published_to,
         sort: (params.sort as ConcorsoFilters['sort']) ?? 'scadenza',
         stato: (params.stato as ConcorsoFilters['stato']) ?? 'aperti',
         solo_attivi: true,
     };
 
     const supabase = await createClient();
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
     const [{ data: concorsi, count }, tier] = await Promise.all([
         getConcorsi(supabase, filters, page, LIMIT),
         getUserTier(supabase),
+    ]);
+    const [profile, regioniWithCount, settoriWithCount] = await Promise.all([
+        user ? getUserProfile(supabase, user.id) : Promise.resolve(null),
+        getRegioniWithCount(supabase),
+        getSettoriWithCount(supabase),
     ]);
     const totalPages = Math.ceil((count ?? 0) / LIMIT);
 
@@ -77,8 +74,12 @@ export default async function ConcorsiPage({
     function buildPageUrl(p: number): string {
         const sp = new URLSearchParams({
             ...(params.regione && { regione: params.regione }),
+            ...(params.provincia && { provincia: params.provincia }),
             ...(params.settore && { settore: params.settore }),
+            ...(params.ente_slug && { ente_slug: params.ente_slug }),
             ...(params.tipo_procedura && { tipo_procedura: params.tipo_procedura }),
+            ...(params.published_from && { published_from: params.published_from }),
+            ...(params.published_to && { published_to: params.published_to }),
             ...(params.sort && { sort: params.sort }),
             ...(params.stato && { stato: params.stato }),
             page: String(p),
@@ -96,74 +97,25 @@ export default async function ConcorsiPage({
 
     return (
         <div className="container max-w-container mx-auto px-4 py-8">
-            <div className="mb-6">
-                <h1 className="text-3xl font-semibold tracking-tight">Concorsi Pubblici</h1>
-                <p className="text-muted-foreground mt-1">
-                    {count ?? 0} concorsi disponibili
-                </p>
-            </div>
-
-            {/* Filters row */}
-            <div className="flex flex-wrap gap-3 mb-6 pb-6 border-b border-border">
-                {/* Sort */}
-                <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium">Ordina:</label>
-                    <div className="flex gap-1">
-                        {SORT_OPTIONS.map(opt => (
-                            <Link key={opt.value} href={buildPageUrl(1)}
-                                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${(params.sort ?? 'scadenza') === opt.value
-                                    ? 'bg-primary text-primary-foreground border-primary'
-                                    : 'bg-white border-border hover:bg-secondary'
-                                    }`}>
-                                {opt.label}
-                            </Link>
-                        ))}
-                    </div>
+            <div className="mb-6 flex items-start justify-between gap-3">
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight">Concorsi Pubblici</h1>
+                    <p className="text-muted-foreground mt-1">
+                        {count ?? 0} concorsi disponibili
+                    </p>
                 </div>
-
-                {/* Stato */}
-                <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium">Stato:</label>
-                    <div className="flex gap-1">
-                        {STATO_OPTIONS.map(opt => {
-                            const sp = new URLSearchParams({
-                                ...(params.regione && { regione: params.regione }),
-                                ...(params.settore && { settore: params.settore }),
-                                ...(params.tipo_procedura && { tipo_procedura: params.tipo_procedura }),
-                                ...(params.sort && { sort: params.sort }),
-                                stato: opt.value,
-                                page: '1'
-                            });
-                            const isActive = (params.stato ?? 'aperti') === opt.value;
-                            return (
-                                <Link key={opt.value} href={`/concorsi?${sp.toString()}`}
-                                    className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${isActive
-                                        ? 'bg-primary text-primary-foreground border-primary'
-                                        : 'bg-white border-border hover:bg-secondary'
-                                        }`}>
-                                    {opt.label}
-                                </Link>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Tipo procedura */}
-                <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium">Tipo:</label>
-                    <div className="flex gap-1 flex-wrap">
-                        {TIPO_OPTIONS.map(opt => (
-                            <Link key={opt.value} href={`/concorsi?${new URLSearchParams({ ...(opt.value && { tipo_procedura: opt.value }), ...(params.sort && { sort: params.sort }) })}`}
-                                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${(params.tipo_procedura ?? '') === opt.value
-                                    ? 'bg-primary text-primary-foreground border-primary'
-                                    : 'bg-white border-border hover:bg-secondary'
-                                    }`}>
-                                {opt.label}
-                            </Link>
-                        ))}
-                    </div>
+                <div className="ml-3 flex-shrink-0 self-start">
+                    <PreferencesControl
+                        tier={tier}
+                        userId={user?.id}
+                        isPublicPage
+                        profileDefaults={profile}
+                        regioni={regioniWithCount.map((item) => ({ value: item.regione, label: `${item.regione} (${item.count})` }))}
+                        settori={settoriWithCount.map((item) => ({ value: item.settore, label: `${item.settore} (${item.count})` }))}
+                    />
                 </div>
             </div>
+            <ActiveFiltersBar />
 
             {/* Results */}
             <ConcorsoList concorsi={visibleResults} />

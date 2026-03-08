@@ -217,28 +217,18 @@ export async function getFeaturedConcorsi(supabase: SupabaseClient): Promise<Con
 }
 
 export async function getRegioniWithCount(supabase: SupabaseClient): Promise<Array<{ regione: string; count: number }>> {
-    // Get all active concorsi with their regioni_array
-    const { data } = await supabase
-        .from('concorsi')
-        .select('regioni_array')
-        .eq('is_active', true);
-    if (!data) return [];
-
-    const counts: Record<string, number> = {};
-    for (const row of data) {
-        const arr = row.regioni_array as any[];
-        if (!Array.isArray(arr)) continue;
-        for (const s of arr) {
-            try {
-                const parsed = typeof s === 'string' ? JSON.parse(s) : s;
-                const name = parsed?.regione?.denominazione || parsed?.denominazione;
-                if (name) counts[name] = (counts[name] ?? 0) + 1;
-            } catch { /* skip */ }
-        }
+    const { data, error } = await supabase.rpc('get_regioni_with_count');
+    if (error || !data) {
+        console.error('Error in getRegioniWithCount:', error);
+        return [];
     }
-    return Object.entries(counts)
-        .map(([regione, count]) => ({ regione, count }))
-        .sort((a, b) => b.count - a.count);
+
+    return (data as Array<{ regione: string; count: number | string }>)
+        .map((row) => ({
+            regione: row.regione,
+            count: typeof row.count === 'string' ? Number(row.count) : row.count,
+        }))
+        .filter((row) => row.regione && Number.isFinite(row.count));
 }
 
 export async function getProvinceWithCount(supabase: SupabaseClient): Promise<Array<{ provincia: string; sigla: string; count: number }>> {
@@ -268,23 +258,18 @@ export async function getProvinceWithCount(supabase: SupabaseClient): Promise<Ar
 }
 
 export async function getSettoriWithCount(supabase: SupabaseClient): Promise<Array<{ settore: string; count: number }>> {
-    const { data } = await supabase
-        .from('concorsi')
-        .select('settori')
-        .eq('is_active', true);
-    if (!data) return [];
-
-    const counts: Record<string, number> = {};
-    for (const row of data) {
-        const arr = row.settori as string[];
-        if (!Array.isArray(arr)) continue;
-        for (const s of arr) {
-            if (s) counts[s] = (counts[s] ?? 0) + 1;
-        }
+    const { data, error } = await supabase.rpc('get_settori_with_count');
+    if (error || !data) {
+        console.error('Error in getSettoriWithCount:', error);
+        return [];
     }
-    return Object.entries(counts)
-        .map(([settore, count]) => ({ settore, count }))
-        .sort((a, b) => b.count - a.count);
+
+    return (data as Array<{ settore: string; count: number | string }>)
+        .map((row) => ({
+            settore: row.settore,
+            count: typeof row.count === 'string' ? Number(row.count) : row.count,
+        }))
+        .filter((row) => row.settore && Number.isFinite(row.count));
 }
 
 export async function getEntiWithCount(supabase: SupabaseClient): Promise<Array<{ ente_nome: string; ente_slug: string; count: number }>> {

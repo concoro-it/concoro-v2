@@ -36,6 +36,13 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+
+    --component-inactive-color: hsl(var(--muted-foreground));
+    --component-bg: hsl(var(--card));
+    --component-shadow: hsl(var(--border));
+    --component-active-bg: hsl(var(--secondary));
+    --component-line-inactive-color: hsl(var(--border));
+    --component-active-color-default: hsl(var(--accent-foreground));
   }
 
   h1,
@@ -82,6 +89,13 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    --component-inactive-color: hsl(var(--muted-foreground));
+    --component-bg: hsl(var(--card));
+    --component-shadow: hsl(var(--border));
+    --component-active-bg: hsl(var(--secondary));
+    --component-line-inactive-color: hsl(var(--muted-foreground));
+    --component-active-color-default: hsl(var(--accent-foreground));
   }
 }
 
@@ -101,6 +115,78 @@
 
   .mobile-button-compact {
     @apply py-1 px-3;
+  }
+
+  .modern-mobile-menu {
+    @apply w-full rounded-2xl border px-1 py-1 shadow-xl backdrop-blur-md;
+    background-color: color-mix(in oklab, var(--component-bg) 93%, transparent);
+    border-color: var(--component-shadow);
+    box-shadow: 0 10px 24px -16px hsl(var(--foreground) / 0.38);
+  }
+
+  .modern-mobile-menu.menu {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.125rem;
+  }
+
+  .modern-mobile-menu .menu__item {
+    position: relative;
+    display: flex;
+    min-height: 4rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    border-radius: 0.9rem;
+    color: var(--component-inactive-color);
+    transition: color 180ms ease, background-color 180ms ease, transform 180ms ease;
+  }
+
+  .modern-mobile-menu .menu__item::after {
+    content: "";
+    position: absolute;
+    bottom: 0.42rem;
+    left: 50%;
+    width: var(--lineWidth, 0px);
+    height: 2px;
+    transform: translateX(-50%);
+    border-radius: 9999px;
+    background-color: var(--component-line-inactive-color);
+    transition: width 250ms ease, background-color 250ms ease;
+  }
+
+  .modern-mobile-menu .menu__item.active {
+    color: var(--component-active-color, var(--component-active-color-default));
+    background: color-mix(in oklab, var(--component-active-bg) 88%, transparent);
+  }
+
+  .modern-mobile-menu .menu__item.active::after {
+    background-color: var(--component-active-color, var(--component-active-color-default));
+  }
+
+  .modern-mobile-menu .menu__item:active {
+    transform: translateY(1px) scale(0.99);
+  }
+
+  .modern-mobile-menu .menu__icon .icon {
+    @apply h-[1.15rem] w-[1.15rem];
+  }
+
+  .modern-mobile-menu .menu__item.active .menu__icon .icon {
+    animation: iconBounce 420ms ease;
+  }
+
+  .modern-mobile-menu .menu__text {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    opacity: 0.92;
+  }
+
+  .modern-mobile-menu .menu__text.active {
+    opacity: 1;
   }
 }
 
@@ -127,6 +213,25 @@
 
   .delay-1000 {
     animation-delay: 1000ms;
+  }
+}
+
+@keyframes iconBounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  20% {
+    transform: translateY(-0.28em);
+  }
+  40% {
+    transform: translateY(0);
+  }
+  60% {
+    transform: translateY(-0.1em);
+  }
+  80% {
+    transform: translateY(0);
   }
 }
 

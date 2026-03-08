@@ -70,8 +70,8 @@ export function Sidebar({ userProfile }: { userProfile: any }) {
             icon: <HelpCircle className="w-5 h-5" />,
         },
         {
-            href: '/hub/impostazioni',
-            name: 'Impostazioni',
+            href: '/hub/profile',
+            name: 'Profilo',
             icon: <Settings className="w-5 h-5" />,
         },
     ];
@@ -141,11 +141,11 @@ export function Sidebar({ userProfile }: { userProfile: any }) {
                                         <DropdownMenu.Separator className="h-px bg-gray-100 my-1" />
                                         <DropdownMenu.Item className="outline-none">
                                             <Link
-                                                href="/hub/impostazioni"
+                                                href="/hub/profile"
                                                 className="flex items-center gap-2 p-2 text-sm text-muted-foreground rounded-md hover:bg-muted/50 transition-colors"
                                             >
                                                 <Settings className="w-4 h-4" />
-                                                Impostazioni
+                                                Profilo
                                             </Link>
                                         </DropdownMenu.Item>
                                         <DropdownMenu.Item className="outline-none" onSelect={handleLogout}>
