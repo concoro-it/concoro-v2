@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { createClient, createStaticClient } from '@/lib/supabase/server';
-import { getConcorsoBySlug, getRelatedConcorsi, getAllConcorsiSlugs } from '@/lib/supabase/queries';
+import { getConcorsoBySlug, getRelatedConcorsi, getAllConcorsiSlugs, getEnteBySlug, getEnteByName } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import {
     parseRegioni, parseProvince, parseSettori, parseLinkAllegati,
@@ -13,16 +13,61 @@ import {
 import { formatDateIT, isExpired } from '@/lib/utils/date';
 import {
     MapPin, CalendarDays, Users, Building2, FileText, ExternalLink,
-    AlertTriangle, CheckCircle, ChevronRight, Download, Globe, Phone
+    AlertTriangle, CheckCircle, ChevronRight, Download, Globe, Phone, Landmark, Train, BriefcaseBusiness
 } from 'lucide-react';
 import Link from 'next/link';
 import { toUrlSlug } from '@/lib/utils/regioni';
 import { cn } from '@/lib/utils/cn';
-import { CardStack } from '@/components/ui/card-stack';
 import { ProAccountCTA } from '@/components/ui/pro-account-cta';
+import { SaveButton } from '@/components/concorsi/SaveButton';
+import { SintesiSection, type SintesiItem } from '@/components/concorsi/SintesiSection';
+import type {
+    EnteAnalisiLogistica,
+    EnteFaqItem,
+    EnteIdentitaIstituzionale,
+    EnteValoreProfessionale,
+    EnteVivereTerritorio,
+    JsonValue
+} from '@/types/ente';
 
 interface Props {
     params: Promise<{ slug: string }>;
+}
+
+function parseJson<T>(value: JsonValue | null | undefined, fallback: T): T {
+    if (value === null || value === undefined) return fallback;
+    try {
+        if (typeof value === 'string') {
+            return JSON.parse(value) as T;
+        }
+        return value as T;
+    } catch {
+        return fallback;
+    }
+}
+
+function normaliseWebsite(url: string | null): string | null {
+    if (!url) return null;
+    if (/^https?:\/\//i.test(url)) return url;
+    return `https://${url}`;
+}
+
+function toScoreLabel(score: string | number | null | undefined): string {
+    if (score === null || score === undefined || score === '') return 'N/D';
+    return `${score}/10`;
+}
+
+function splitWelfare(value: string | null | undefined): string[] {
+    if (!value) return [];
+    return value
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+}
+
+function normalisePhone(phone: string | null): string | null {
+    if (!phone) return null;
+    return phone.replace(/\s+/g, '');
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -38,6 +83,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title,
         description: concorso.riassunto ?? `Concorso pubblico indetto da ${concorso.ente_nome ?? 'ente pubblico'}. Scadenza: ${formatDateIT(concorso.data_scadenza)}.`,
         openGraph: { title, description: concorso.riassunto ?? undefined },
+        alternates: {
+            canonical: `/concorsi/${slug}`,
+        },
     };
 }
 
@@ -68,27 +116,50 @@ export default async function ConcorsoDetailPage({ params }: Props) {
     const urgencyLabel = getUrgencyLabel(concorso.data_scadenza, concorso.status);
     const urgencyColor = getUrgencyColor(concorso.data_scadenza, concorso.status);
 
-    // Safety check for CardStack data
-    const highlightCards = [
-        ...(concorso.ux_highlights?.the_hook?.map((item: string, i: number) => ({
-            id: `hook-${i}`,
-            title: "Punto di forza",
-            description: item,
-            badge: "Punto di forza",
-            badgeColor: "bg-blue-100 text-blue-700",
-            color: "#eff6ff"
-        })) || []),
-        ...(concorso.ux_highlights?.critical_alert?.map((item: string, i: number) => ({
-            id: `alert-${i}`,
-            title: "Da non dimenticare",
-            description: item,
-            badge: "Importante",
-            badgeColor: "bg-amber-100 text-amber-700",
-            color: "#fffbeb"
-        })) || [])
+    const uxHighlights = parseJson<{ the_hook?: unknown; critical_alert?: unknown }>(concorso.ux_highlights, {});
+    const hookItems = Array.isArray(uxHighlights.the_hook) ? uxHighlights.the_hook : [];
+    const alertItems = Array.isArray(uxHighlights.critical_alert) ? uxHighlights.critical_alert : [];
+    const summaryItems: SintesiItem[] = [
+        ...hookItems
+            .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+            .map((item, i) => ({
+                id: `hook-${i}`,
+                type: 'Punto di forza' as const,
+                description: item.trim(),
+                colorClass: 'text-emerald-600 dark:text-emerald-400'
+            })),
+        ...alertItems
+            .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+            .map((item, i) => ({
+                id: `alert-${i}`,
+                type: 'Importante' as const,
+                description: item.trim(),
+                colorClass: 'text-amber-600 dark:text-amber-400'
+            }))
     ];
 
     const related = await getRelatedConcorsi(supabase, concorso.concorso_id, settori, regioni);
+    let ente = concorso.ente_slug ? await getEnteBySlug(supabase, concorso.ente_slug) : null;
+    if (!ente && concorso.ente_nome) {
+        ente = await getEnteByName(supabase, concorso.ente_nome);
+    }
+
+    const identita = parseJson<EnteIdentitaIstituzionale>(ente?.identita_istituzionale, {});
+    const logistica = parseJson<EnteAnalisiLogistica>(ente?.analisi_logistica, {});
+    const territorio = parseJson<EnteVivereTerritorio>(ente?.vivere_il_territorio, {});
+    const valore = parseJson<EnteValoreProfessionale>(ente?.valore_professionale, {});
+    const faq = parseJson<EnteFaqItem[]>(ente?.faq_schema, []).slice(0, 4);
+    const ccnlLabel = valore.ccnl_standard || 'Non disponibile';
+    const scoreLabel = toScoreLabel(territorio.qualita_vita_score);
+    const welfareItems = splitWelfare(valore.welfare_tahmini);
+    const website = normaliseWebsite(ente?.sito_istituzionale ?? null);
+    const phoneHref = normalisePhone(ente?.telefono ?? null);
+    const mapsQuery = [ente?.indirizzo, ente?.cap, ente?.comune ?? ente?.provincia, ente?.regione]
+        .filter(Boolean)
+        .join(', ');
+    const mapsHref = mapsQuery
+        ? `https://maps.google.com/?q=${encodeURIComponent(mapsQuery)}`
+        : null;
 
     // JSON-LD
     const jsonLd = {
@@ -183,6 +254,9 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                 {concorso.titolo_breve && concorso.titolo_breve !== concorso.titolo && (
                                     <p className="text-muted-foreground mt-1">{formatConcorsoTitle(concorso.titolo_breve)}</p>
                                 )}
+                                <div className="mt-3">
+                                    <SaveButton concorsoId={concorso.concorso_id} />
+                                </div>
                                 {/* Settori */}
                                 {settori.length > 0 && (
                                     <div className="flex flex-wrap gap-1.5 mt-3">
@@ -460,24 +534,161 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                     </div>
                     {/* Right Sidebar */}
                     <aside className="space-y-6 lg:sticky lg:top-8">
-                        {highlightCards.length > 0 && (
-                            <div className="space-y-6">
-                                <h2 className="text-lg font-semibold flex items-center gap-2">
-                                    <div className="p-1.5 bg-primary/10 rounded-lg">
-                                        <CheckCircle className="w-5 h-5 text-primary" />
-                                    </div>
-                                    In sintesi
-                                </h2>
-                                <CardStack cards={highlightCards} />
-                            </div>
+                        {summaryItems.length > 0 && (
+                            <SintesiSection items={summaryItems} />
                         )}
-                        {highlightCards.length === 0 && (
+                        {summaryItems.length === 0 && (
                             <ProAccountCTA />
                         )}
 
                         {/* Newsletter or other CTAs can be added here */}
                     </aside>
                 </div>
+
+                {/* Ente enrichment blocks */}
+                {ente && (
+                    <section className="mt-12 pt-12 border-t border-border space-y-8">
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                            <div>
+                                <p className="text-xs font-bold uppercase tracking-wider text-blue-700">Profilo ente</p>
+                                <h2 className="text-2xl font-semibold mt-1">Informazioni sull&apos;ente</h2>
+                                <p className="text-sm text-muted-foreground mt-2">
+                                    Dati territoriali e professionali dell&apos;ente che ha pubblicato questo concorso.
+                                </p>
+                            </div>
+                            {concorso.ente_slug && (
+                                <Link
+                                    href={`/ente/${concorso.ente_slug}`}
+                                    className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-secondary transition-colors"
+                                >
+                                    Vai alla scheda ente
+                                    <ChevronRight className="w-4 h-4" />
+                                </Link>
+                            )}
+                        </div>
+
+                        <div className="grid gap-6 lg:grid-cols-2">
+                            <div className="rounded-2xl border border-border bg-white p-6">
+                                <h3 className="text-lg font-semibold flex items-center gap-2">
+                                    <Landmark className="w-5 h-5 text-blue-700" />
+                                    Identità istituzionale
+                                </h3>
+                                <p className="text-sm text-muted-foreground leading-relaxed mt-3">
+                                    {identita.descrizione || 'Profilo istituzionale non ancora disponibile per questo ente.'}
+                                </p>
+                                {identita.ruolo_territoriale && (
+                                    <p className="text-sm text-muted-foreground leading-relaxed mt-3">
+                                        {identita.ruolo_territoriale}
+                                    </p>
+                                )}
+                                <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                                    <div className="rounded-lg bg-muted/40 p-3">
+                                        <p className="text-muted-foreground">Prestigio</p>
+                                        <p className="font-semibold text-sm mt-1">{identita.prestigio || 'N/D'}</p>
+                                    </div>
+                                    <div className="rounded-lg bg-muted/40 p-3">
+                                        <p className="text-muted-foreground">CCNL</p>
+                                        <p className="font-semibold text-sm mt-1">{ccnlLabel}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-border bg-white p-6">
+                                <h3 className="text-lg font-semibold">Contatti e sede</h3>
+                                <dl className="mt-4 space-y-3 text-sm">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <dt className="text-muted-foreground">Indirizzo</dt>
+                                        <dd className="text-right font-medium">{ente.indirizzo || 'N/D'}</dd>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-4">
+                                        <dt className="text-muted-foreground">Comune / Provincia</dt>
+                                        <dd className="text-right font-medium">{[ente.comune || ente.provincia, ente.regione].filter(Boolean).join(', ') || 'N/D'}</dd>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-4">
+                                        <dt className="text-muted-foreground">Telefono</dt>
+                                        <dd className="text-right font-medium">
+                                            {phoneHref
+                                                ? <a href={`tel:${phoneHref}`} className="hover:underline">{ente.telefono}</a>
+                                                : (ente.telefono || 'N/D')}
+                                        </dd>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-4">
+                                        <dt className="text-muted-foreground">PEC</dt>
+                                        <dd className="text-right font-medium break-all">{ente.pec ? <a href={`mailto:${ente.pec}`} className="text-primary hover:underline">{ente.pec}</a> : 'N/D'}</dd>
+                                    </div>
+                                </dl>
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    {website && (
+                                        <a href={website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                                            Sito istituzionale
+                                            <ExternalLink className="w-4 h-4" />
+                                        </a>
+                                    )}
+                                    {mapsHref && (
+                                        <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                                            Google Maps
+                                            <ExternalLink className="w-4 h-4" />
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-6 lg:grid-cols-3">
+                            <div className="rounded-2xl border border-border bg-white p-6">
+                                <h3 className="text-base font-semibold flex items-center gap-2">
+                                    <Train className="w-5 h-5 text-blue-700" />
+                                    Logistica
+                                </h3>
+                                <p className="text-sm text-muted-foreground mt-3"><strong className="text-foreground">Pendolarismo:</strong> {logistica.pendolarismo || 'N/D'}</p>
+                                <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">Stazione vicina:</strong> {logistica.stazione_vicina || 'N/D'}</p>
+                                <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">Accessibilità mezzi:</strong> {logistica.accessibilita_mezzi || 'N/D'}</p>
+                            </div>
+
+                            <div className="rounded-2xl border border-border bg-white p-6">
+                                <h3 className="text-base font-semibold flex items-center gap-2">
+                                    <MapPin className="w-5 h-5 text-blue-700" />
+                                    Vivere il territorio
+                                </h3>
+                                <p className="text-sm text-muted-foreground mt-3"><strong className="text-foreground">Costo vita:</strong> {territorio.costo_vita || 'N/D'}</p>
+                                <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">Ambiente sociale:</strong> {territorio.ambiente_sociale || 'N/D'}</p>
+                                <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">Qualità vita:</strong> {scoreLabel}</p>
+                            </div>
+
+                            <div className="rounded-2xl border border-border bg-white p-6">
+                                <h3 className="text-base font-semibold flex items-center gap-2">
+                                    <BriefcaseBusiness className="w-5 h-5 text-blue-700" />
+                                    Valore professionale
+                                </h3>
+                                <p className="text-sm text-muted-foreground mt-3"><strong className="text-foreground">CCNL:</strong> {ccnlLabel}</p>
+                                <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">Stabilità:</strong> {valore.stabilita_lavorativa || 'N/D'}</p>
+                                {welfareItems.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {welfareItems.map(item => (
+                                            <span key={item} className="rounded-full bg-blue-50 border border-blue-200 px-2.5 py-1 text-xs text-blue-900">
+                                                {item}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {faq.length > 0 && (
+                            <div className="rounded-2xl border border-border bg-white p-6">
+                                <h3 className="text-lg font-semibold">FAQ sull&apos;ente</h3>
+                                <div className="mt-4 space-y-4">
+                                    {faq.map((item) => (
+                                        <div key={item.question} className="border-b border-border pb-4 last:border-b-0 last:pb-0">
+                                            <p className="text-sm font-semibold">{item.question}</p>
+                                            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{item.answer}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </section>
+                )}
 
                 {/* Related concorsi — full width below grid */}
                 {!expired && related.length > 0 && (

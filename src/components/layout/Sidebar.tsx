@@ -1,20 +1,21 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Avatar from '@radix-ui/react-avatar';
 import {
     LayoutDashboard,
-    Link2,
+    Search,
     CreditCard,
-    History,
+    Bookmark,
+    Bot,
     HelpCircle,
     Settings,
     LogOut,
     ChevronDown,
-    ChevronUp,
-    BadgeCheck
+    BadgeCheck,
+    Sparkles
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -23,40 +24,6 @@ type MenuItem = {
     name: string;
     href: string;
     icon?: React.ReactNode;
-    items?: { name: string; href: string }[];
-};
-
-const SubMenu = ({ children, items }: { children: React.ReactNode; items: { name: string; href: string }[] }) => {
-    const [isOpened, setIsOpened] = useState(false);
-
-    return (
-        <div>
-            <button
-                className="w-full flex items-center justify-between text-muted-foreground p-2 rounded-lg hover:bg-muted/50 active:bg-muted duration-150 transition-colors"
-                onClick={() => setIsOpened((v) => !v)}
-                aria-expanded={isOpened}
-                aria-controls="submenu"
-            >
-                <div className="flex items-center gap-x-2">{children}</div>
-                {isOpened ? <ChevronUp className="w-4 h-4 text-muted-foreground/50" /> : <ChevronDown className="w-4 h-4 text-muted-foreground/50" />}
-            </button>
-
-            {isOpened && (
-                <ul id="submenu" className="mx-4 mt-1 px-2 border-l border-gray-100 text-sm font-medium space-y-1">
-                    {items.map((item, idx) => (
-                        <li key={idx}>
-                            <Link
-                                href={item.href}
-                                className="flex items-center gap-x-2 text-muted-foreground p-2 rounded-lg hover:bg-muted/50 active:bg-muted duration-150 transition-all hover:translate-x-1"
-                            >
-                                {item.name}
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
-            )}
-        </div>
-    );
 };
 
 export function Sidebar({ userProfile }: { userProfile: any }) {
@@ -65,44 +32,48 @@ export function Sidebar({ userProfile }: { userProfile: any }) {
 
     const navigation: MenuItem[] = [
         {
-            href: '/dashboard',
-            name: 'Overview',
+            href: '/hub/bacheca',
+            name: 'Bacheca',
             icon: <LayoutDashboard className="w-5 h-5" />,
         },
         {
-            href: '/dashboard/ricerche',
-            name: 'Ricerche',
-            icon: <Link2 className="w-5 h-5" />,
+            href: '/hub/concorsi',
+            name: 'Concorsi',
+            icon: <Search className="w-5 h-5" />,
         },
         {
-            href: '/dashboard/piani',
-            name: 'Piani',
+            href: '/hub/matching',
+            name: 'Matching (Pro)',
+            icon: <Sparkles className="w-5 h-5" />,
+        },
+        {
+            href: '/hub/salvati',
+            name: 'Saved concorsi',
+            icon: <Bookmark className="w-5 h-5" />,
+        },
+        {
+            href: '/hub/genio',
+            name: 'Genio (Pro)',
+            icon: <Bot className="w-5 h-5" />,
+        },
+        {
+            href: '/hub/billing',
+            name: 'Billing (Pro)',
             icon: <CreditCard className="w-5 h-5" />,
-        },
-        {
-            href: '/dashboard/transazioni',
-            name: 'Transazioni',
-            icon: <History className="w-5 h-5" />,
         },
     ];
 
     const navsFooter: MenuItem[] = [
         {
-            href: '/help',
+            href: '/hub/assistenza',
             name: 'Assistenza',
             icon: <HelpCircle className="w-5 h-5" />,
         },
         {
-            href: '/settings',
+            href: '/hub/impostazioni',
             name: 'Impostazioni',
             icon: <Settings className="w-5 h-5" />,
         },
-    ];
-
-    const billingNav = [
-        { name: 'Carte', href: '/dashboard/billing/cards' },
-        { name: 'Checkout', href: '/dashboard/billing/checkouts' },
-        { name: 'Pagamenti', href: '/dashboard/billing/payments' },
     ];
 
     const handleLogout = async () => {
@@ -170,7 +141,7 @@ export function Sidebar({ userProfile }: { userProfile: any }) {
                                         <DropdownMenu.Separator className="h-px bg-gray-100 my-1" />
                                         <DropdownMenu.Item className="outline-none">
                                             <Link
-                                                href="/settings"
+                                                href="/hub/impostazioni"
                                                 className="flex items-center gap-2 p-2 text-sm text-muted-foreground rounded-md hover:bg-muted/50 transition-colors"
                                             >
                                                 <Settings className="w-4 h-4" />
@@ -208,12 +179,6 @@ export function Sidebar({ userProfile }: { userProfile: any }) {
                             </li>
                         ))}
 
-                        <li>
-                            <SubMenu items={billingNav}>
-                                <CreditCard className="w-5 h-5 text-gray-400" />
-                                Fatturazione
-                            </SubMenu>
-                        </li>
                     </ul>
 
                     <div className="pt-4 mt-6 border-t border-gray-100">

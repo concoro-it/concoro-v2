@@ -17,5 +17,5 @@ export async function deleteSearchAction(searchId: string, formData?: FormData):
         throw new Error('Errore durante l\'eliminazione');
     }
 
-    revalidatePath('/dashboard/ricerche');
+    revalidatePath('/hub/ricerche');
 }

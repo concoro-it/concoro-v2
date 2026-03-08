@@ -21,7 +21,7 @@ export default async function SalvatiPage() {
     return (
         <div className="container max-w-container mx-auto px-4 py-8">
             <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-8">
-                <Link href="/dashboard" className="hover:text-foreground">Dashboard</Link>
+                <Link href="/hub/bacheca" className="hover:text-foreground">Dashboard</Link>
                 <ChevronRight className="w-4 h-4" />
                 <span className="text-foreground">Concorsi salvati</span>
             </nav>
@@ -39,7 +39,11 @@ export default async function SalvatiPage() {
             </div>
 
             {savedConcorsi.length > 0 ? (
-                <ConcorsoList concorsi={savedConcorsi} />
+                <ConcorsoList
+                    concorsi={savedConcorsi}
+                    savedIds={savedConcorsi.map((concorso) => concorso.concorso_id)}
+                    detailBasePath="/hub/concorsi"
+                />
             ) : (
                 <div className="text-center py-16 border border-dashed border-border rounded-xl bg-surface">
                     <BookmarkIcon className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />

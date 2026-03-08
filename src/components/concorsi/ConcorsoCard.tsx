@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import type { Concorso } from '@/types/concorso';
 import {
     getFirstRegione, getFirstProvincia, parseSettori,
@@ -11,11 +12,12 @@ import {
 import { formatDateIT } from '@/lib/utils/date';
 import { toUrlSlug } from '@/lib/utils/regioni';
 import { cn } from '@/lib/utils/cn';
+import { SaveButton } from '@/components/concorsi/SaveButton';
 
 interface Props {
     concorso: Concorso;
     saved?: boolean;
-    onSave?: (id: string) => void;
+    detailBasePath?: string;
 }
 
 /** Strip ALL html tags and decode common entities to plain text. */
@@ -69,11 +71,12 @@ function PlainTextWithLinks({ text, className, style }: { text: string; classNam
     );
 }
 
-export function ConcorsoCard({ concorso, saved, onSave }: Props) {
+export function ConcorsoCard({ concorso, saved, detailBasePath }: Props) {
     const [ctaHovered, setCtaHovered] = useState(false);
     const [expanded, setExpanded] = useState(false);
     const [showExpand, setShowExpand] = useState(false);
     const titleRef = useRef<HTMLHeadingElement>(null);
+    const pathname = usePathname();
 
     const regione = getFirstRegione(concorso);
     const provincia = getFirstProvincia(concorso);
@@ -139,8 +142,12 @@ export function ConcorsoCard({ concorso, saved, onSave }: Props) {
     const deadlineLabel = concorso.data_scadenza ? `Scade ${formatDateIT(concorso.data_scadenza)}` : null;
 
     // CTA link always goes to the detail page
+    const isHubContext = pathname?.startsWith('/hub') ?? false;
+    const hubPrefix = isHubContext ? '/hub' : '';
+    const resolvedDetailBasePath = detailBasePath ?? (isHubContext ? '/hub/concorsi' : '/concorsi');
+    const detailHrefBase = resolvedDetailBasePath.replace(/\/$/, '');
     const ctaHref = concorso.slug
-        ? `/concorsi/${concorso.slug}`
+        ? `${detailHrefBase}/${concorso.slug}`
         : normaliseLink(concorso.link_reindirizzamento ?? concorso.link_sito_pa);
 
     // Status
@@ -244,7 +251,7 @@ export function ConcorsoCard({ concorso, saved, onSave }: Props) {
                     {/* City / Provincia */}
                     {provinciaSlug ? (
                         <Link
-                            href={`/provincia/${provinciaSlug}`}
+                            href={`${hubPrefix}/provincia/${provinciaSlug}`}
                             className="text-center text-[9.6px] font-semibold leading-tight hover:underline"
                             style={{ color: 'rgba(30,70,140,0.60)', letterSpacing: '0.38px' }}
                             onClick={e => e.stopPropagation()}
@@ -263,7 +270,7 @@ export function ConcorsoCard({ concorso, saved, onSave }: Props) {
                     {/* Region */}
                     {regionLabel && regioneSlug && (
                         <Link
-                            href={`/regione/${regioneSlug}`}
+                            href={`${hubPrefix}/regione/${regioneSlug}`}
                             className="text-center text-[8.8px] font-medium leading-tight hover:underline"
                             style={{ color: 'rgba(30,70,140,0.40)', letterSpacing: '0.26px' }}
                             onClick={e => e.stopPropagation()}
@@ -290,7 +297,7 @@ export function ConcorsoCard({ concorso, saved, onSave }: Props) {
                     {/* Ente — link to /ente/[slug] */}
                     {concorso.ente_slug ? (
                         <Link
-                            href={`/ente/${concorso.ente_slug}`}
+                            href={`${hubPrefix}/ente/${concorso.ente_slug}`}
                             className="text-[10.9px] font-bold uppercase truncate hover:underline"
                             style={{ color: 'rgba(30,58,110,0.55)', letterSpacing: '0.54px' }}
                             onClick={e => e.stopPropagation()}
@@ -318,25 +325,12 @@ export function ConcorsoCard({ concorso, saved, onSave }: Props) {
                         <div style={{ width: 1, height: 12, background: 'rgba(30,70,140,0.30)' }} />
                         <div className="flex items-center gap-2">
                             {/* Bookmark */}
-                            <button
-                                onClick={e => {
-                                    e.preventDefault();
-                                    onSave?.(concorso.concorso_id);
-                                }}
-                                className="transition-opacity hover:opacity-100"
-                                style={{ opacity: 0.5 }}
-                                title={saved ? 'Rimuovi dai salvati' : 'Salva'}
-                                aria-label="Salva concorso"
-                            >
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill={saved ? 'rgba(30,70,140,0.7)' : 'none'}>
-                                    <path
-                                        d="M4 2.5h8a.5.5 0 0 1 .5.5v10.3l-4.5-2.7-4.5 2.7V3a.5.5 0 0 1 .5-.5Z"
-                                        stroke="rgba(30,70,140,0.70)"
-                                        strokeWidth="1"
-                                        fill={saved ? 'rgba(30,70,140,0.7)' : 'none'}
-                                    />
-                                </svg>
-                            </button>
+                            <SaveButton
+                                concorsoId={concorso.concorso_id}
+                                initialSaved={Boolean(saved)}
+                                iconOnly
+                                className="opacity-50 hover:opacity-100"
+                            />
                             {/* Share */}
                             <button
                                 onClick={e => {

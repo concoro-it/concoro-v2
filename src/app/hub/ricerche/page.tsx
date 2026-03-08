@@ -21,7 +21,7 @@ export default async function RicerchePage() {
     return (
         <div className="container max-w-container mx-auto px-4 py-8">
             <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-8">
-                <Link href="/dashboard" className="hover:text-foreground">Dashboard</Link>
+                <Link href="/hub/bacheca" className="hover:text-foreground">Dashboard</Link>
                 <ChevronRight className="w-4 h-4" />
                 <span className="text-foreground">Ricerche salvate</span>
             </nav>

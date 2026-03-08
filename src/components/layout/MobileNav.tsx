@@ -27,7 +27,7 @@ export function MobileNav() {
         },
         {
             label: 'Profilo',
-            href: '/dashboard',
+            href: '/hub/bacheca',
             icon: User,
         },
     ];

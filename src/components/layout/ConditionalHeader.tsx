@@ -12,7 +12,7 @@ export function ConditionalHeader({ user }: ConditionalHeaderProps) {
     const pathname = usePathname();
 
     // Don't show any header on dashboard routes for logged-in users
-    if (user && pathname?.startsWith('/dashboard')) {
+    if (user && pathname?.startsWith('/hub')) {
         return null;
     }
 

@@ -5,9 +5,10 @@ interface Props {
     concorsi: Concorso[];
     loading?: boolean;
     savedIds?: string[];
+    detailBasePath?: string;
 }
 
-export function ConcorsoList({ concorsi, loading, savedIds = [] }: Props) {
+export function ConcorsoList({ concorsi, loading, savedIds = [], detailBasePath }: Props) {
     if (loading) {
         return (
             <div className="grid grid-cols-1 gap-4">
@@ -37,6 +38,7 @@ export function ConcorsoList({ concorsi, loading, savedIds = [] }: Props) {
                     key={c.concorso_id}
                     concorso={c}
                     saved={savedIds.includes(c.concorso_id)}
+                    detailBasePath={detailBasePath}
                 />
             ))}
         </div>

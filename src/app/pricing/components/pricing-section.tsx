@@ -106,7 +106,7 @@ export function PricingSection({ userId }: { userId?: string }) {
                             </li>
                         ))}
                     </ul>
-                    <Link href={userId ? "/dashboard" : "/signup"}
+                    <Link href={userId ? "/hub/bacheca" : "/signup"}
                         className="block w-full text-center py-2.5 border border-border rounded-xl font-medium text-sm hover:bg-secondary transition-colors">
                         {userId ? "Vai alla Dashboard" : "Inizia gratis"}
                     </Link>

@@ -23,7 +23,7 @@ export function LoginForm() {
         if (error) {
             setError('Email o password non corretti. Riprova.');
         } else {
-            router.push('/dashboard');
+            router.push('/hub/bacheca');
             router.refresh();
         }
         setLoading(false);
