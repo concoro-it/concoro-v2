@@ -37,16 +37,16 @@ interface Props {
 
 const PAGE_STEPS = [
     {
-        title: 'Valuta il profilo ente',
-        description: 'Controlla sede, missione istituzionale e contesto territoriale prima di approfondire i bandi.',
+        title: 'Capisci dove ti stai candidando',
+        description: "Verifica sede, contesto territoriale e ruolo dell'ente prima di dedicare tempo ai bandi.",
     },
     {
-        title: 'Analizza i concorsi attivi',
-        description: 'Apri la sezione dedicata e verifica numero posti, scadenze e requisiti principali.',
+        title: 'Controlla i bandi aperti',
+        description: 'Guarda posti disponibili, scadenze e requisiti principali per capire subito se vale la pena approfondire.',
     },
     {
-        title: 'Monitora e candidati',
-        description: 'Attiva notifiche e salva le opportunita per non perdere nuove pubblicazioni utili.',
+        title: 'Segui gli aggiornamenti giusti',
+        description: 'Attiva le notifiche e monitora le nuove uscite legate a questo ente, alla tua provincia o alla tua regione.',
     },
 ];
 
@@ -125,10 +125,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     const seo = parseJson<EnteMetadataSeo>(data.ente.metadata_seo ?? null, {});
-    const title = seo.og_title || seo.h1_title || `Concorsi pubblici ${data.ente.ente_nome}`;
+    const title = seo.og_title || seo.h1_title || `Concorsi ${data.ente.ente_nome}: bandi, sede e informazioni utili`;
     const description =
         seo.meta_description ||
-        `Scopri tutti i concorsi pubblici aperti per ${data.ente.ente_nome}.`;
+        `Scopri i concorsi di ${data.ente.ente_nome}, la sede, il contesto territoriale e i link utili per monitorare nuovi bandi pubblici.`;
     const image = data.ente.cover_image_url || data.ente.logo_url || undefined;
     const enteRegione = data.ente.regione ? ` ${data.ente.regione}` : '';
     const enteProvincia = data.ente.provincia ? ` ${data.ente.provincia}` : '';
@@ -203,7 +203,7 @@ export default async function EntePage({ params }: Props) {
     const scoreLabel = toScoreLabel(territorio.qualita_vita_score);
     const heroTitle =
         seo.h1_title ||
-        `Concorsi ${ente.ente_nome}: sede, territorio e opportunita`;
+        `Concorsi ${ente.ente_nome}: bandi, sede e contesto`;
     const comuneOrProvincia = ente?.comune || ente?.provincia || 'Italia';
     const regioneSlug = ente?.regione ? toUrlSlug(ente.regione) : null;
     const provinciaSlug = ente?.provincia ? toUrlSlug(ente.provincia) : null;
@@ -274,7 +274,7 @@ export default async function EntePage({ params }: Props) {
         inLanguage: 'it-IT',
         description:
             seo.meta_description ||
-            `Scheda ente ${ente.ente_nome} con concorsi attivi, informazioni territoriali e percorsi utili per candidati della PA.`,
+            `Scheda di ${ente.ente_nome} con concorsi attivi, informazioni sulla sede e riferimenti utili per chi cerca bandi pubblici in zona.`,
         about: {
             '@type': 'GovernmentOrganization',
             name: ente.ente_nome,
@@ -390,13 +390,13 @@ export default async function EntePage({ params }: Props) {
                         </h1>
 
                         <p className="max-w-3xl text-base leading-relaxed text-slate-700">
-                            Concoro organizza questa pagina per aiutarti a capire rapidamente se i concorsi di {ente.ente_nome}
-                            sono coerenti con il tuo profilo, il tuo territorio e le tue priorita professionali.
+                            Qui trovi una panoramica chiara dei concorsi di {ente.ente_nome}, della sede e del contesto in cui opera,
+                            cosi puoi capire piu in fretta se questo ente ha bandi adatti al tuo profilo e alla tua zona.
                         </p>
 
                         <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-sm leading-relaxed text-slate-700">
-                            <strong>Cos&apos;e questa scheda:</strong> un punto unico per vedere bandi attivi, informazioni ufficiali
-                            dell&apos;ente, contesto logistico e link utili alla candidatura.
+                            <strong>Cosa trovi in questa pagina:</strong> bandi aperti, riferimenti ufficiali dell&apos;ente, dati utili sulla sede
+                            e collegamenti rapidi per orientarti prima della candidatura.
                         </div>
 
                         <div className="flex flex-wrap gap-3">
@@ -404,21 +404,21 @@ export default async function EntePage({ params }: Props) {
                                 href="#concorsi"
                                 className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                             >
-                                Vedi concorsi attivi
+                                Vedi i bandi aperti
                                 <Building2 className="h-4 w-4" />
                             </Link>
                             <Link
                                 href={`/concorsi?ente=${slug}`}
                                 className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
                             >
-                                Tutti i bandi ente
+                                Apri tutti i bandi
                                 <ChevronRight className="h-4 w-4" />
                             </Link>
                             <Link
                                 href={`/signup?ente=${slug}`}
                                 className="inline-flex items-center gap-2 rounded-xl border border-[#0A4E88]/30 bg-[#0A4E88]/5 px-5 py-3 text-sm font-semibold text-[#083861] transition hover:bg-[#0A4E88]/10"
                             >
-                                Attiva notifiche
+                                Ricevi nuovi bandi
                                 <Bell className="h-4 w-4" />
                             </Link>
                         </div>
@@ -427,9 +427,9 @@ export default async function EntePage({ params }: Props) {
                     <aside className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-[0_14px_44px_-30px_rgba(15,23,42,0.45)]">
                         <div className="absolute left-0 top-0 h-full w-2 bg-gradient-to-b from-emerald-500 via-white to-rose-500" />
                         <div className="space-y-5 pl-3">
-                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quadro rapido ente</p>
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Panoramica rapida</p>
                             <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-2xl text-slate-900">
-                                Dati principali
+                                Dati utili da controllare
                             </h2>
                             <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-[linear-gradient(140deg,#f2f7ff_0%,#e9f2ff_50%,#deedff_100%)] p-3">
                                 {ente?.cover_image_url ? (
@@ -456,7 +456,7 @@ export default async function EntePage({ params }: Props) {
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Concorsi attivi</p>
+                                    <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Bandi aperti</p>
                                     <p className="mt-1 text-2xl font-semibold text-slate-900">{concorsi.length}</p>
                                 </div>
                                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -507,7 +507,7 @@ export default async function EntePage({ params }: Props) {
                             {ente?.data_scadenza_cache && (
                                 <p className="flex items-start gap-2 text-sm text-slate-700">
                                     <CircleAlert className="mt-0.5 h-4 w-4 text-[#0A4E88]" />
-                                    Ultima scadenza nota: {cacheDeadlineLabel}
+                                    Ultima scadenza rilevata: {cacheDeadlineLabel}
                                 </p>
                             )}
                             {(regioneSlug || provinciaSlug) && (
@@ -539,10 +539,10 @@ export default async function EntePage({ params }: Props) {
                 <div className="container mx-auto max-w-[78rem] rounded-3xl border border-slate-200 bg-white pt-4 p-2 md:p-8">
                     <div className="m-2 mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                         <Landmark className="h-3.5 w-3.5" />
-                        Metodo di orientamento
+                        Come orientarti
                     </div>
                     <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] m-2 mb-5 text-3xl tracking-tight text-slate-900">
-                        Come leggere la pagina ente
+                        Come usare questa scheda ente
                     </h2>
                     <ol className="grid gap-3 md:grid-cols-3">
                         {PAGE_STEPS.map((step, index) => (
@@ -562,15 +562,15 @@ export default async function EntePage({ params }: Props) {
                         <div>
                             <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-600">
                                 <Building2 className="h-3.5 w-3.5" />
-                                Opportunita pubbliche
+                                Bandi e opportunita
                             </p>
                             <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl tracking-tight text-slate-900">
-                                Concorsi di {ente.ente_nome}
+                                Bandi di {ente.ente_nome}
                             </h2>
                             <p className="mt-2 text-sm text-slate-600">
                                 {concorsi.length > 0
                                     ? `Sono disponibili ${concorsi.length} bandi aperti collegati a questo ente.`
-                                    : 'Attualmente non risultano bandi aperti per questo ente.'}
+                                    : 'Al momento non risultano bandi aperti per questo ente.'}
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -596,7 +596,7 @@ export default async function EntePage({ params }: Props) {
                         <ConcorsoList concorsi={concorsi} />
                     ) : (
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-sm leading-relaxed text-slate-700">
-                            Nessun concorso aperto in questo momento. Controlla anche le pagine geografiche o attiva un promemoria per ricevere nuovi aggiornamenti.
+                            Nessun bando aperto in questo momento. Controlla anche i concorsi nella tua regione o provincia, oppure attiva le notifiche per ricevere i prossimi aggiornamenti.
                         </div>
                     )}
                 </div>
@@ -626,7 +626,7 @@ export default async function EntePage({ params }: Props) {
                     <aside className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
                         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Contatti ufficiali</p>
                         <h3 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-2xl tracking-tight text-slate-900">
-                            Informazioni sede
+                            Sede e riferimenti ufficiali
                         </h3>
                         <dl className="mt-5 space-y-4 text-sm">
                             <div className="border-b border-slate-100 pb-3">
@@ -664,9 +664,9 @@ export default async function EntePage({ params }: Props) {
             <section className="px-4 pb-14">
                 <div className="container mx-auto max-w-[78rem] rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
                     <div className="m-2 mb-6">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Territorio e lavoro</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Territorio e lavoro pubblico</p>
                         <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-3xl tracking-tight text-slate-900">
-                            Logistica, qualita della vita e valore professionale
+                            Cosa valutare oltre al bando
                         </h2>
                     </div>
                     <div className="grid gap-4 md:grid-cols-3">
@@ -720,9 +720,9 @@ export default async function EntePage({ params }: Props) {
 
             <section className="px-4 pb-14">
                 <div className="container mx-auto max-w-[78rem] rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
-                    <p className="m-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Curiosita</p>
+                    <p className="m-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Contesto ente</p>
                     <h2 className="m-2 [font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-3xl tracking-tight text-slate-900">
-                        Cosa sapere su {ente.ente_nome}
+                        Informazioni utili su {ente.ente_nome}
                     </h2>
                     <div className="mt-5 m-2 grid gap-3 md:grid-cols-3">
                         {[curiosita.fatto1, curiosita.fatto2, curiosita.fatto3].map((fatto, index) => (
@@ -744,7 +744,7 @@ export default async function EntePage({ params }: Props) {
                                 Domande frequenti
                             </h2>
                             <p className="m-2 mt-3 text-sm leading-relaxed text-slate-600">
-                                Risposte rapide su candidatura, contesto territoriale e informazioni operative dell&apos;ente.
+                                Risposte rapide per capire meglio candidatura, sede, contesto territoriale e riferimenti operativi dell&apos;ente.
                             </p>
                         </div>
                         <div className="space-y-3">
@@ -765,26 +765,26 @@ export default async function EntePage({ params }: Props) {
 
             <section className="px-4 pb-16">
                 <div className="container mx-auto max-w-[78rem] overflow-hidden rounded-3xl border border-slate-300 bg-[linear-gradient(145deg,#0A2E4D_0%,#0E436E_55%,#0A2E4D_100%)] p-8 text-white md:p-10">
-                    <p className="m-4 text-xs font-semibold uppercase tracking-[0.14em] text-sky-200">Monitoraggio concorsi</p>
+                    <p className="m-4 text-xs font-semibold uppercase tracking-[0.14em] text-sky-200">Monitoraggio bandi</p>
                     <h2 className="m-4 [font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-3xl tracking-tight md:text-4xl">
-                        Non perdere i prossimi bandi di {ente.ente_nome}
+                        Tieni d&apos;occhio i prossimi bandi di {ente.ente_nome}
                     </h2>
                     <p className="m-4 mt-3 max-w-3xl text-sm leading-relaxed text-slate-200">
-                        Attiva notifiche su Concoro per seguire nuove pubblicazioni e restare aggiornato sulle opportunita pubbliche utili al tuo percorso.
+                        Attiva le notifiche su Concoro per seguire le nuove pubblicazioni di {ente.ente_nome} e restare aggiornato sui bandi pubblici rilevanti per il tuo percorso.
                     </p>
                     <div className="mt-2 flex flex-wrap">
                         <Link
                             href={`/signup?ente=${slug}`}
                             className="m-4 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
                         >
-                            Attiva notifiche
+                            Attiva le notifiche
                             <Bell className="h-4 w-4" />
                         </Link>
                         <Link
                             href={`/concorsi?ente=${slug}`}
                             className="m-4 inline-flex items-center gap-2 rounded-xl border border-white/35 px-5 py-3 text-sm font-semibold text-white transition hover:border-white"
                         >
-                            Esplora concorsi ente
+                            Esplora i bandi dell&apos;ente
                         </Link>
                     </div>
                     {(website || mapsHref || socialLinks.length > 0 || regioneSlug || provinciaSlug) && (
