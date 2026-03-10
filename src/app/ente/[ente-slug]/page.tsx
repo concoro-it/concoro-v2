@@ -13,10 +13,11 @@ import {
     ShieldCheck,
     Train,
 } from 'lucide-react';
-import { createServiceClient, createStaticAdminClient } from '@/lib/supabase/server';
-import { getAllEnti, getConcorsiByEnte, getEnteBySlug, getEntiWithCount } from '@/lib/supabase/queries';
+import { createStaticAdminClient } from '@/lib/supabase/server';
+import { getAllEnti, getConcorsiByEnte, getEnteBySlug } from '@/lib/supabase/queries';
 import { formatDateIT } from '@/lib/utils/date';
 import { toUrlSlug } from '@/lib/utils/regioni';
+import { getServerAppUrl } from '@/lib/auth/url';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import type {
     EnteAnalisiLogistica,
@@ -33,6 +34,21 @@ import type {
 interface Props {
     params: Promise<{ 'ente-slug': string }>;
 }
+
+const PAGE_STEPS = [
+    {
+        title: 'Valuta il profilo ente',
+        description: 'Controlla sede, missione istituzionale e contesto territoriale prima di approfondire i bandi.',
+    },
+    {
+        title: 'Analizza i concorsi attivi',
+        description: 'Apri la sezione dedicata e verifica numero posti, scadenze e requisiti principali.',
+    },
+    {
+        title: 'Monitora e candidati',
+        description: 'Attiva notifiche e salva le opportunita per non perdere nuove pubblicazioni utili.',
+    },
+];
 
 function parseJson<T>(value: JsonValue | null | undefined, fallback: T): T {
     if (value === null || value === undefined) return fallback;
@@ -101,6 +117,8 @@ async function getEntePageData(slug: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { 'ente-slug': slug } = await params;
     const data = await getEntePageData(slug);
+    const appUrl = getServerAppUrl();
+    const canonicalUrl = `${appUrl}/ente/${slug}`;
 
     if (!data) {
         return { title: 'Ente non trovato' };
@@ -112,17 +130,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         seo.meta_description ||
         `Scopri tutti i concorsi pubblici aperti per ${data.ente.ente_nome}.`;
     const image = data.ente.cover_image_url || data.ente.logo_url || undefined;
+    const enteRegione = data.ente.regione ? ` ${data.ente.regione}` : '';
+    const enteProvincia = data.ente.provincia ? ` ${data.ente.provincia}` : '';
 
     return {
         title,
         description,
+        keywords: [
+            `concorsi ${data.ente.ente_nome}`,
+            `concorsi pubblici ${data.ente.ente_nome}`,
+            `bandi ${data.ente.ente_nome}`,
+            `concorsi pubblici${enteRegione}`,
+            `concorsi pubblici${enteProvincia}`,
+            `lavorare in ${data.ente.ente_nome}`,
+        ],
         alternates: {
-            canonical: `https://www.concoro.it/ente/${slug}`,
+            canonical: canonicalUrl,
         },
         openGraph: {
             title,
             description,
-            url: `https://www.concoro.it/ente/${slug}`,
+            url: canonicalUrl,
             siteName: 'Concoro',
             locale: 'it_IT',
             images: image ? [{ url: image }] : undefined,
@@ -163,7 +191,6 @@ export default async function EntePage({ params }: Props) {
     const seo = parseJson<EnteMetadataSeo>(ente?.metadata_seo, {});
     const social = parseJson<EnteSocialMedia>(ente?.social_media, {});
 
-    const website = normaliseWebsite(ente?.sito_istituzionale ?? null);
     const phoneHref = normalisePhone(ente?.telefono ?? null);
     const mapsQuery = [ente?.indirizzo, ente?.cap, ente?.comune ?? ente?.provincia, ente?.regione]
         .filter(Boolean)
@@ -176,11 +203,13 @@ export default async function EntePage({ params }: Props) {
     const scoreLabel = toScoreLabel(territorio.qualita_vita_score);
     const heroTitle =
         seo.h1_title ||
-        `Lavorare nel ${ente.ente_nome}: sede, territorio e opportunità`;
+        `Concorsi ${ente.ente_nome}: sede, territorio e opportunita`;
     const comuneOrProvincia = ente?.comune || ente?.provincia || 'Italia';
     const regioneSlug = ente?.regione ? toUrlSlug(ente.regione) : null;
     const provinciaSlug = ente?.provincia ? toUrlSlug(ente.provincia) : null;
     const cacheDeadlineLabel = formatDateIT(ente?.data_scadenza_cache ?? null);
+    const appUrl = getServerAppUrl();
+    const pageUrl = `${appUrl}/ente/${slug}`;
 
     const socialLinks = [
         { label: 'Facebook', href: social.facebook },
@@ -189,6 +218,10 @@ export default async function EntePage({ params }: Props) {
         { label: 'Twitter', href: social.twitter },
         { label: 'YouTube', href: social.youtube },
     ].filter((item): item is { label: string; href: string } => Boolean(item.href));
+    const websiteFromConcorsi = concorsi
+        .map((concorso) => normaliseWebsite(concorso.link_sito_pa ?? null))
+        .find((url): url is string => Boolean(url)) ?? null;
+    const website = normaliseWebsite(ente?.sito_istituzionale ?? null) ?? websiteFromConcorsi;
 
     const organizationJsonLd = {
         '@context': 'https://schema.org',
@@ -233,412 +266,495 @@ export default async function EntePage({ params }: Props) {
             })),
         }
         : null;
+    const pageJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: heroTitle,
+        url: pageUrl,
+        inLanguage: 'it-IT',
+        description:
+            seo.meta_description ||
+            `Scheda ente ${ente.ente_nome} con concorsi attivi, informazioni territoriali e percorsi utili per candidati della PA.`,
+        about: {
+            '@type': 'GovernmentOrganization',
+            name: ente.ente_nome,
+        },
+        isPartOf: {
+            '@type': 'WebSite',
+            name: 'Concoro',
+            url: appUrl,
+        },
+        dateModified: ente?.updated_at ?? undefined,
+    };
+    const breadcrumbJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: appUrl,
+            },
+            {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'Enti Pubblici',
+                item: `${appUrl}/ente`,
+            },
+            {
+                '@type': 'ListItem',
+                position: 3,
+                name: ente.ente_nome,
+                item: pageUrl,
+            },
+        ],
+    };
+    const itemListJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: `Concorsi pubblici ${ente.ente_nome}`,
+        itemListElement: concorsi.slice(0, 20).map((concorso, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            name: concorso.titolo_breve || concorso.titolo,
+            url: `${appUrl}/concorsi/${concorso.slug}`,
+        })),
+    };
 
     return (
-        <div className="bg-white text-slate-900">
+        <div className="relative overflow-hidden bg-[hsl(210,55%,98%)] text-slate-900 [font-family:'Avenir_Next',Avenir,'Segoe_UI',-apple-system,BlinkMacSystemFont,'Helvetica_Neue',sans-serif]">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(pageJsonLd) }}
+            />
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
             />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+            />
+            {concorsi.length > 0 && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+                />
+            )}
             {faqJsonLd && (
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
                 />
             )}
-            <div className="border-b border-slate-200 bg-slate-50">
-                <div className="container mx-auto max-w-6xl px-6 py-3 text-sm text-slate-500">
+
+            <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                    backgroundImage:
+                        'radial-gradient(circle at 4% 8%, rgba(18,65,108,0.14), transparent 34%), radial-gradient(circle at 93% 7%, rgba(220,38,38,0.1), transparent 30%), repeating-linear-gradient(90deg, rgba(10,53,91,0.04) 0 1px, transparent 1px 88px)',
+                }}
+            />
+
+            <div className="relative border-b border-slate-200 bg-white/85">
+                <div className="container mx-auto max-w-[78rem] px-4 py-3 text-sm text-slate-500">
                     <nav className="flex flex-wrap items-center gap-2">
                         <Link href="/" className="hover:text-slate-900">Home</Link>
                         <ChevronRight className="h-4 w-4" />
-                        <span>Enti Pubblici</span>
+                        <Link href="/ente" className="hover:text-slate-900">Enti Pubblici</Link>
                         <ChevronRight className="h-4 w-4" />
                         <span className="font-medium text-slate-900">{ente.ente_nome}</span>
                     </nav>
                 </div>
             </div>
 
-            <header
-                className="relative overflow-hidden bg-slate-950"
-                style={
-                    ente?.cover_image_url
-                        ? {
-                            backgroundImage: `linear-gradient(rgba(2, 6, 23, 0.86), rgba(15, 23, 42, 0.92)), url(${ente.cover_image_url})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                        }
-                        : undefined
-                }
-            >
-                <div className="container mx-auto max-w-6xl px-6 py-16 md:py-20">
-                    <div className="grid gap-10 md:grid-cols-[minmax(0,1fr)_320px] md:items-end">
-                        <div>
-                            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-sky-400/30 bg-sky-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-sky-200">
-                                <span className="h-2 w-2 rounded-full bg-sky-300 shadow-[0_0_12px_rgba(125,211,252,0.9)]" />
-                                {'Ente pubblico'}
-                            </div>
-
-                            {ente?.logo_url && (
-                                <div className="mb-5">
-                                    <img
-                                        src={ente.logo_url}
-                                        alt={`Logo ${ente.ente_nome}`}
-                                        className="h-16 w-auto rounded-xl bg-white/95 p-2 shadow-lg"
-                                    />
-                                </div>
-                            )}
-
-                            <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-white md:text-5xl">
-                                {heroTitle}
-                            </h1>
-
-                            <div className="mt-6 flex flex-wrap gap-4 text-sm text-slate-200/85">
-                                <div className="flex items-center gap-2">
-                                    <MapPin className="h-4 w-4 text-sky-300" />
-                                    <span>
-                                        {ente?.indirizzo || 'Sede istituzionale'}{ente?.comune ? `, ${ente.comune}` : ''}
-                                        {ente?.regione ? `, ${ente.regione}` : ''}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Landmark className="h-4 w-4 text-sky-300" />
-                                    <span>CCNL: <strong className="text-white">{ccnlLabel}</strong></span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <ShieldCheck className="h-4 w-4 text-sky-300" />
-                                    <span>Stabilità: <strong className="text-white">{valore.stabilita_lavorativa || 'N/D'}</strong></span>
-                                </div>
-                            </div>
-
-                            <div className="mt-8 rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
-                                <div className="flex items-center gap-3">
-                                    <div className="rounded-2xl border border-sky-300/25 bg-sky-400/15 p-2.5 text-sky-200">
-                                        <Bell className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-slate-200/85">
-                                            <strong className="text-white">Concorsi attivi</strong> presso questo ente.
-                                            {concorsi.length > 0 ? ` Attualmente ne risultano ${concorsi.length}.` : ' Nessun bando attivo in questo momento.'}
-                                            {' '}
-                                            <a href="#concorsi" className="font-semibold text-sky-300 hover:text-sky-200">
-                                                Vai alla sezione bandi
-                                            </a>
-                                        </p>
-                                        <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-300">
-                                            {ente?.data_scadenza_cache && (
-                                                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                                                    Ultima scadenza nota: {cacheDeadlineLabel}
-                                                </span>
-                                            )}
-
-
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+            <header className="relative px-4 pb-14 pt-10">
+                <div className="container mx-auto grid max-w-[78rem] gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+                    <div className="space-y-6">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-white/75 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.11em] text-slate-700 backdrop-blur-sm">
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            Scheda Ente PA
                         </div>
 
-                        <div className="hidden rounded-3xl border border-white/15 bg-white/10 p-6 text-sm text-slate-200 backdrop-blur-sm md:block">
-                            <p className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-slate-300/70">
-                                Profilo ente
-                            </p>
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
-                                    <span className="text-slate-300/75">Prestigio</span>
-                                    <span className="font-semibold text-white">{identita.prestigio || 'N/D'}</span>
-                                </div>
-                                <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
-                                    <span className="text-slate-300/75">Regione</span>
-                                    <span className="font-semibold text-white">{ente?.regione || 'N/D'}</span>
-                                </div>
-                                <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
-                                    <span className="text-slate-300/75">Provincia</span>
-                                    <span className="font-semibold text-white">{ente?.provincia || 'N/D'}</span>
-                                </div>
-                                <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
-                                    <span className="text-slate-300/75">Costo della vita</span>
-                                    <span className="font-semibold text-white">{territorio.costo_vita || 'N/D'}</span>
-                                </div>
-                                <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
-                                    <span className="text-slate-300/75">Qualità della vita</span>
-                                    <span className="rounded-full bg-sky-500 px-3 py-1 text-xs font-bold text-white">{scoreLabel}</span>
-                                </div>
-                                <div className="flex items-center justify-between gap-3">
-                                    <span className="text-slate-300/75">Accessibilità mezzi</span>
-                                    <span className="font-semibold text-white">{logistica.accessibilita_mezzi || 'N/D'}</span>
-                                </div>
-                            </div>
+                        {ente?.logo_url && (
+                            <img
+                                src={ente.logo_url}
+                                alt={`Logo ${ente.ente_nome}`}
+                                className="h-16 w-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.5)]"
+                            />
+                        )}
+
+                        <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] max-w-4xl text-balance text-4xl font-semibold leading-[1.05] tracking-tight text-slate-900 md:text-6xl">
+                            {heroTitle}
+                        </h1>
+
+                        <p className="max-w-3xl text-base leading-relaxed text-slate-700">
+                            Concoro organizza questa pagina per aiutarti a capire rapidamente se i concorsi di {ente.ente_nome}
+                            sono coerenti con il tuo profilo, il tuo territorio e le tue priorita professionali.
+                        </p>
+
+                        <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-sm leading-relaxed text-slate-700">
+                            <strong>Cos&apos;e questa scheda:</strong> un punto unico per vedere bandi attivi, informazioni ufficiali
+                            dell&apos;ente, contesto logistico e link utili alla candidatura.
+                        </div>
+
+                        <div className="flex flex-wrap gap-3">
+                            <Link
+                                href="#concorsi"
+                                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                            >
+                                Vedi concorsi attivi
+                                <Building2 className="h-4 w-4" />
+                            </Link>
+                            <Link
+                                href={`/concorsi?ente=${slug}`}
+                                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
+                            >
+                                Tutti i bandi ente
+                                <ChevronRight className="h-4 w-4" />
+                            </Link>
+                            <Link
+                                href={`/signup?ente=${slug}`}
+                                className="inline-flex items-center gap-2 rounded-xl border border-[#0A4E88]/30 bg-[#0A4E88]/5 px-5 py-3 text-sm font-semibold text-[#083861] transition hover:bg-[#0A4E88]/10"
+                            >
+                                Attiva notifiche
+                                <Bell className="h-4 w-4" />
+                            </Link>
                         </div>
                     </div>
+
+                    <aside className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-[0_14px_44px_-30px_rgba(15,23,42,0.45)]">
+                        <div className="absolute left-0 top-0 h-full w-2 bg-gradient-to-b from-emerald-500 via-white to-rose-500" />
+                        <div className="space-y-5 pl-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quadro rapido ente</p>
+                            <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-2xl text-slate-900">
+                                Dati principali
+                            </h2>
+                            <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-[linear-gradient(140deg,#f2f7ff_0%,#e9f2ff_50%,#deedff_100%)] p-3">
+                                {ente?.cover_image_url ? (
+                                    <img
+                                        src={ente.cover_image_url}
+                                        alt={`${ente.ente_nome} sede`}
+                                        className="h-24 w-full rounded-xl object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-24 w-full items-center justify-center rounded-xl bg-[radial-gradient(circle_at_20%_20%,rgba(10,78,136,0.26),transparent_60%)] text-xs font-semibold uppercase tracking-[0.1em] text-slate-600">
+                                        Profilo territoriale
+                                    </div>
+                                )}
+                                <div className="mt-3 flex items-center justify-between gap-3">
+                                    <p className="line-clamp-1 text-sm font-semibold text-slate-900">{ente.ente_nome}</p>
+                                    {ente?.logo_url && (
+                                        <img
+                                            src={ente.logo_url}
+                                            alt={`Logo ${ente.ente_nome}`}
+                                            className="h-8 w-8 rounded-lg border border-slate-200 bg-white p-1 object-contain"
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Concorsi attivi</p>
+                                    <p className="mt-1 text-2xl font-semibold text-slate-900">{concorsi.length}</p>
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Qualita vita</p>
+                                    <p className="mt-1 text-2xl font-semibold text-slate-900">{scoreLabel}</p>
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Regione</p>
+                                    <p className="mt-1 text-sm font-semibold text-slate-900">{ente?.regione || 'N/D'}</p>
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p className="text-xs uppercase tracking-[0.08em] text-slate-500">CCNL</p>
+                                    <p className="mt-1 text-sm font-semibold text-slate-900">{ccnlLabel}</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                {website ? (
+                                    <a
+                                        href={website}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                                    >
+                                        Sito ente
+                                        <ExternalLink className="h-3.5 w-3.5" />
+                                    </a>
+                                ) : (
+                                    <span className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-400">
+                                        Sito non disponibile
+                                    </span>
+                                )}
+                                {mapsHref ? (
+                                    <a
+                                        href={mapsHref}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                                    >
+                                        Apri mappa
+                                        <MapPin className="h-3.5 w-3.5" />
+                                    </a>
+                                ) : (
+                                    <span className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-400">
+                                        Mappa non disponibile
+                                    </span>
+                                )}
+                            </div>
+                            {ente?.data_scadenza_cache && (
+                                <p className="flex items-start gap-2 text-sm text-slate-700">
+                                    <CircleAlert className="mt-0.5 h-4 w-4 text-[#0A4E88]" />
+                                    Ultima scadenza nota: {cacheDeadlineLabel}
+                                </p>
+                            )}
+                            {(regioneSlug || provinciaSlug) && (
+                                <div className="flex flex-wrap gap-2">
+                                    {regioneSlug && (
+                                        <Link
+                                            href={`/regione/${regioneSlug}`}
+                                            className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                                        >
+                                            Concorsi in {ente?.regione}
+                                        </Link>
+                                    )}
+                                    {provinciaSlug && (
+                                        <Link
+                                            href={`/provincia/${provinciaSlug}`}
+                                            className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                                        >
+                                            Concorsi a {ente?.provincia}
+                                        </Link>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </aside>
                 </div>
             </header>
 
-            <section id="concorsi" className="bg-slate-100 py-16">
-                <div className="container mx-auto max-w-6xl px-6">
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Opportunità aperte</p>
-                    <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Concorsi Pubblici</h2>
-                    <p className="mt-3 max-w-2xl text-sm text-slate-600">
-                        Bandi attivi, in scadenza e opportunità pubbliche collegate a {ente.ente_nome}.
-                    </p>
-
-                    <div className="mt-8">
-                        <ConcorsoList concorsi={concorsi} />
+            <section className="px-4 pb-14">
+                <div className="container mx-auto max-w-[78rem] rounded-3xl border border-slate-200 bg-white pt-4 p-2 md:p-8">
+                    <div className="m-2 mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        <Landmark className="h-3.5 w-3.5" />
+                        Metodo di orientamento
                     </div>
+                    <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] m-2 mb-5 text-3xl tracking-tight text-slate-900">
+                        Come leggere la pagina ente
+                    </h2>
+                    <ol className="grid gap-3 md:grid-cols-3">
+                        {PAGE_STEPS.map((step, index) => (
+                            <li key={step.title} className="rounded-2xl border border-slate-200 bg-white/80 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Passaggio {index + 1}</p>
+                                <h3 className="mt-1 text-base font-semibold text-slate-900">{step.title}</h3>
+                                <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.description}</p>
+                            </li>
+                        ))}
+                    </ol>
                 </div>
             </section>
 
-            <section className="py-16">
-                <div className="container mx-auto max-w-6xl px-6">
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Chi è l&apos;ente</p>
-                    <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Identità Istituzionale</h2>
-
-                    <div className="mt-8 grid gap-6 lg:grid-cols-2">
-                        <div className="overflow-hidden rounded-[28px] bg-gradient-to-br from-slate-950 to-blue-950 p-8 text-white shadow-xl">
-                            <h3 className="text-2xl font-semibold tracking-tight">{ente.ente_nome}</h3>
-                            <p className="mt-4 text-sm leading-7 text-slate-200/85">
-                                {identita.descrizione || 'Profilo istituzionale non ancora disponibile per questo ente.'}
+            <section id="concorsi" className="px-4 pb-14">
+                <div className="container mx-auto max-w-[78rem] rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+                    <div className="m-2 mb-6 flex flex-wrap items-end justify-between gap-4">
+                        <div>
+                            <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-600">
+                                <Building2 className="h-3.5 w-3.5" />
+                                Opportunita pubbliche
+                            </p>
+                            <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl tracking-tight text-slate-900">
+                                Concorsi di {ente.ente_nome}
+                            </h2>
+                            <p className="mt-2 text-sm text-slate-600">
+                                {concorsi.length > 0
+                                    ? `Sono disponibili ${concorsi.length} bandi aperti collegati a questo ente.`
+                                    : 'Attualmente non risultano bandi aperti per questo ente.'}
                             </p>
                         </div>
-
-                        <div className="rounded-[28px] border border-slate-200 bg-white p-8 shadow-sm">
-
-
-                            <dl className="space-y-4 text-sm">
-                                <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
-                                    <dt className="text-slate-500">Indirizzo</dt>
-                                    <dd className="text-right font-medium text-slate-900">{ente?.indirizzo || 'N/D'}</dd>
-                                </div>
-                                <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
-                                    <dt className="text-slate-500">CAP / Comune</dt>
-                                    <dd className="text-right font-medium text-slate-900">
-                                        {[ente?.cap, ente?.comune || ente?.provincia].filter(Boolean).join(' - ') || 'N/D'}
-                                    </dd>
-                                </div>
-                                <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
-                                    <dt className="text-slate-500">Regione</dt>
-                                    <dd className="text-right font-medium text-slate-900">{ente?.regione || 'N/D'}</dd>
-                                </div>
-                                <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
-                                    <dt className="text-slate-500">PEC</dt>
-                                    <dd className="text-right font-medium text-slate-900 break-all">
-                                        {ente?.pec ? <a href={`mailto:${ente.pec}`} className="text-blue-700 hover:underline">{ente.pec}</a> : 'N/D'}
-                                    </dd>
-                                </div>
-                                <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
-                                    <dt className="text-slate-500">Telefono</dt>
-                                    <dd className="text-right font-medium text-slate-900">
-                                        {phoneHref ? (
-                                            <a href={`tel:${phoneHref}`} className="hover:underline">
-                                                {ente?.telefono}
-                                            </a>
-                                        ) : (ente?.telefono || 'N/D')}
-                                    </dd>
-                                </div>
-                                <div className="flex items-start justify-between gap-4">
-                                    <dt className="text-slate-500">Sito istituzionale</dt>
-                                    <dd className="text-right font-medium text-slate-900">
-                                        {website ? (
-                                            <a href={website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-700 hover:underline">
-                                                {ente?.sito_istituzionale}
-                                                <ExternalLink className="h-4 w-4" />
-                                            </a>
-                                        ) : 'N/D'}
-                                    </dd>
-                                </div>
-                            </dl>
-                        </div>
-                    </div>
-
-                    <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-8">
-                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-700">Ruolo nel territorio</p>
-                        <p className="mt-3 text-sm leading-7 text-slate-700">
-                            {identita.ruolo_territoriale || 'Informazioni sul ruolo territoriale non ancora disponibili.'}
-                        </p>
-                        <div className="mt-5 flex flex-wrap gap-2">
-                            {ente?.comune && (
-                                <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                                    Comune: {ente.comune}
-                                </span>
+                        <div className="flex flex-wrap gap-2">
+                            {regioneSlug && (
+                                <Link
+                                    href={`/regione/${regioneSlug}`}
+                                    className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                                >
+                                    Concorsi in {ente?.regione}
+                                </Link>
                             )}
-                            {ente?.provincia && (
-                                <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                                    Provincia: {ente.provincia}
-                                </span>
-                            )}
-                            {ente?.regione && (
-                                <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                                    Regione: {ente.regione}
-                                </span>
+                            {provinciaSlug && (
+                                <Link
+                                    href={`/provincia/${provinciaSlug}`}
+                                    className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                                >
+                                    Concorsi a {ente?.provincia}
+                                </Link>
                             )}
                         </div>
                     </div>
+                    {concorsi.length > 0 ? (
+                        <ConcorsoList concorsi={concorsi} />
+                    ) : (
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-sm leading-relaxed text-slate-700">
+                            Nessun concorso aperto in questo momento. Controlla anche le pagine geografiche o attiva un promemoria per ricevere nuovi aggiornamenti.
+                        </div>
+                    )}
                 </div>
             </section>
 
-            <section className="py-16">
-                <div className="container mx-auto max-w-6xl px-6">
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Dove lavorerai</p>
-                    <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Logistica e Qualità della Vita</h2>
-                    <p className="mt-3 max-w-2xl text-sm text-slate-600">
-                        Informazioni pratiche su mobilità, territorio e valore professionale collegato a questa sede.
-                    </p>
-
-                    <div className="mt-8 grid gap-6 lg:grid-cols-3">
-                        <div className="rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-8 shadow-sm">
-                            <div className="mb-6 flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-slate-950">Pendolarismo</h3>
-                                    <p className="text-sm text-slate-500">Accessibilità e collegamenti</p>
-                                </div>
-                                <Train className="h-8 w-8 text-blue-300" />
-                            </div>
-                            <dl className="space-y-4 text-sm">
-                                <div className="flex justify-between gap-4 border-b border-slate-100 pb-3">
-                                    <dt className="text-slate-500">Pendolarismo</dt>
-                                    <dd className="text-right font-medium text-slate-900">{logistica.pendolarismo || 'N/D'}</dd>
-                                </div>
-                                <div className="flex justify-between gap-4 border-b border-slate-100 pb-3">
-                                    <dt className="text-slate-500">Stazione vicina</dt>
-                                    <dd className="text-right font-medium text-slate-900">{logistica.stazione_vicina || 'N/D'}</dd>
-                                </div>
-                                <div className="flex justify-between gap-4">
-                                    <dt className="text-slate-500">Accessibilità mezzi</dt>
-                                    <dd className="text-right font-medium text-slate-900">{logistica.accessibilita_mezzi || 'N/D'}</dd>
-                                </div>
-                            </dl>
+            <section className="px-4 pb-14">
+                <div className="container mx-auto grid max-w-[78rem] gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+                    <article className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Identita istituzionale</p>
+                        <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-3xl tracking-tight text-slate-900">
+                            {ente.ente_nome}
+                        </h2>
+                        <p className="mt-4 text-sm leading-7 text-slate-700">
+                            {identita.descrizione || 'Profilo istituzionale non ancora disponibile per questo ente.'}
+                        </p>
+                        <div className="mt-6 flex flex-wrap gap-2">
+                            {ente?.comune && <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">Comune: {ente.comune}</span>}
+                            {ente?.provincia && <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">Provincia: {ente.provincia}</span>}
+                            {ente?.regione && <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">Regione: {ente.regione}</span>}
+                            {identita.prestigio && <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">Prestigio: {identita.prestigio}</span>}
                         </div>
-
-                        <div className="rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-8 shadow-sm">
-                            <div className="mb-6 flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-slate-950">Vivere il territorio</h3>
-                                    <p className="text-sm text-slate-500">Servizi, ambiente sociale e contesto</p>
-                                </div>
-                                <MapPin className="h-8 w-8 text-blue-300" />
-                            </div>
-                            <dl className="space-y-4 text-sm">
-                                <div className="flex justify-between gap-4 border-b border-slate-100 pb-3">
-                                    <dt className="text-slate-500">Costo della vita</dt>
-                                    <dd className="text-right font-medium text-slate-900">{territorio.costo_vita || 'N/D'}</dd>
-                                </div>
-                                <div className="flex justify-between gap-4 border-b border-slate-100 pb-3">
-                                    <dt className="text-slate-500">Ambiente sociale</dt>
-                                    <dd className="text-right font-medium text-slate-900">{territorio.ambiente_sociale || 'N/D'}</dd>
-                                </div>
-                                <div className="flex justify-between gap-4">
-                                    <dt className="text-slate-500">Qualità della vita</dt>
-                                    <dd className="rounded-full bg-blue-700 px-3 py-1 text-xs font-bold text-white">{scoreLabel}</dd>
-                                </div>
-                            </dl>
-                            {territorio.servizi_vicini && (
-                                <p className="mt-5 text-sm leading-7 text-slate-600">{territorio.servizi_vicini}</p>
-                            )}
+                        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-relaxed text-slate-700">
+                            <strong>Ruolo nel territorio:</strong> {identita.ruolo_territoriale || 'Informazioni sul ruolo territoriale non ancora disponibili.'}
                         </div>
+                    </article>
 
-                        <div className="rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-8 shadow-sm">
-                            <div className="mb-6 flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-slate-950">Valore professionale</h3>
-                                    <p className="text-sm text-slate-500">Contratto, stabilità e welfare</p>
-                                </div>
-                                <BriefcaseBusiness className="h-8 w-8 text-blue-300" />
+                    <aside className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Contatti ufficiali</p>
+                        <h3 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-2xl tracking-tight text-slate-900">
+                            Informazioni sede
+                        </h3>
+                        <dl className="mt-5 space-y-4 text-sm">
+                            <div className="border-b border-slate-100 pb-3">
+                                <dt className="text-slate-500">Indirizzo</dt>
+                                <dd className="mt-1 font-medium text-slate-900">{ente?.indirizzo || 'N/D'}</dd>
                             </div>
-                            <dl className="space-y-4 text-sm">
-                                <div className="flex justify-between gap-4 border-b border-slate-100 pb-3">
-                                    <dt className="text-slate-500">CCNL</dt>
-                                    <dd className="text-right font-medium text-slate-900">{ccnlLabel}</dd>
-                                </div>
-                                <div className="flex justify-between gap-4 pb-1">
-                                    <dt className="text-slate-500">Stabilità</dt>
-                                    <dd className="text-right font-medium text-slate-900">{valore.stabilita_lavorativa || 'N/D'}</dd>
-                                </div>
-                            </dl>
+                            <div className="border-b border-slate-100 pb-3">
+                                <dt className="text-slate-500">CAP / Comune</dt>
+                                <dd className="mt-1 font-medium text-slate-900">{[ente?.cap, comuneOrProvincia].filter(Boolean).join(' - ') || 'N/D'}</dd>
+                            </div>
+                            <div className="border-b border-slate-100 pb-3">
+                                <dt className="text-slate-500">PEC</dt>
+                                <dd className="mt-1 break-all font-medium text-slate-900">{ente?.pec ? <a href={`mailto:${ente.pec}`} className="text-[#0B4B7F] hover:underline">{ente.pec}</a> : 'N/D'}</dd>
+                            </div>
+                            <div className="border-b border-slate-100 pb-3">
+                                <dt className="text-slate-500">Telefono</dt>
+                                <dd className="mt-1 font-medium text-slate-900">{phoneHref ? <a href={`tel:${phoneHref}`} className="hover:underline">{ente?.telefono}</a> : (ente?.telefono || 'N/D')}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-slate-500">Sito istituzionale</dt>
+                                <dd className="mt-1 font-medium text-slate-900">
+                                    {website ? (
+                                        <a href={website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[#0B4B7F] hover:underline">
+                                            {ente?.sito_istituzionale}
+                                            <ExternalLink className="h-4 w-4" />
+                                        </a>
+                                    ) : 'N/D'}
+                                </dd>
+                            </div>
+                        </dl>
+                    </aside>
+                </div>
+            </section>
 
+            <section className="px-4 pb-14">
+                <div className="container mx-auto max-w-[78rem] rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+                    <div className="m-2 mb-6">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Territorio e lavoro</p>
+                        <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-3xl tracking-tight text-slate-900">
+                            Logistica, qualita della vita e valore professionale
+                        </h2>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                            <Train className="h-5 w-5 text-[#0A4E88]" />
+                            <h3 className="mt-3 text-base font-semibold text-slate-900">Mobilita</h3>
+                            <p className="mt-2 text-sm text-slate-600">Pendolarismo: {logistica.pendolarismo || 'N/D'}</p>
+                            <p className="mt-1 text-sm text-slate-600">Stazione vicina: {logistica.stazione_vicina || 'N/D'}</p>
+                            <p className="mt-1 text-sm text-slate-600">Accessibilita mezzi: {logistica.accessibilita_mezzi || 'N/D'}</p>
+                        </article>
+                        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                            <MapPin className="h-5 w-5 text-[#0A4E88]" />
+                            <h3 className="mt-3 text-base font-semibold text-slate-900">Territorio</h3>
+                            <p className="mt-2 text-sm text-slate-600">Costo della vita: {territorio.costo_vita || 'N/D'}</p>
+                            <p className="mt-1 text-sm text-slate-600">Ambiente sociale: {territorio.ambiente_sociale || 'N/D'}</p>
+                            <p className="mt-1 text-sm text-slate-600">Qualita vita: {scoreLabel}</p>
+                            {territorio.servizi_vicini && <p className="mt-3 text-sm leading-relaxed text-slate-600">{territorio.servizi_vicini}</p>}
+                        </article>
+                        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                            <BriefcaseBusiness className="h-5 w-5 text-[#0A4E88]" />
+                            <h3 className="mt-3 text-base font-semibold text-slate-900">Professione</h3>
+                            <p className="mt-2 text-sm text-slate-600">CCNL: {ccnlLabel}</p>
+                            <p className="mt-1 text-sm text-slate-600">Stabilita: {valore.stabilita_lavorativa || 'N/D'}</p>
                             {welfareItems.length > 0 && (
-                                <div className="mt-5 flex flex-wrap gap-2">
+                                <div className="mt-3 flex flex-wrap gap-2">
                                     {welfareItems.map(item => (
-                                        <span
-                                            key={item}
-                                            className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-slate-800"
-                                        >
+                                        <span key={item} className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
                                             {item}
                                         </span>
                                     ))}
                                 </div>
                             )}
-                        </div>
+                        </article>
                     </div>
-
-                    <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-8 text-center">
-                        <MapPin className="mx-auto h-6 w-6 text-blue-700" />
-                        <p className="mt-3 text-sm font-medium text-slate-900">
-                            {[ente?.indirizzo, ente?.cap, comuneOrProvincia, ente?.regione].filter(Boolean).join(' - ')}
-                        </p>
-                        {ente?.latitudine !== null && ente?.latitudine !== undefined && ente?.longitudine !== null && ente?.longitudine !== undefined && (
-                            <p className="mt-2 text-xs text-slate-500">
-                                Coordinate: {ente.latitudine}, {ente.longitudine}
-                            </p>
-                        )}
+                    <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                        <p className="font-medium text-slate-900">{[ente?.indirizzo, ente?.cap, comuneOrProvincia, ente?.regione].filter(Boolean).join(' - ')}</p>
                         {mapsHref && (
                             <a
                                 href={mapsHref}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-blue-700 hover:underline"
+                                className="mt-2 inline-flex items-center gap-1 font-semibold text-[#0B4B7F] hover:underline"
                             >
-                                Apri in Google Maps
+                                Apri sede in Google Maps
                                 <ExternalLink className="h-4 w-4" />
                             </a>
-                        )}
-                        {ente?.updated_at && (
-                            <p className="mt-3 text-xs text-slate-500">
-                                Record aggiornato il {formatDateIT(ente.updated_at)}
-                            </p>
                         )}
                     </div>
                 </div>
             </section>
 
-            <section className="py-16">
-                <div className="container mx-auto max-w-6xl px-6">
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Lo sapevi?</p>
-                    <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Curiosità sull&apos;ente</h2>
-                    <div className="mt-8 grid gap-6 lg:grid-cols-3">
+            <section className="px-4 pb-14">
+                <div className="container mx-auto max-w-[78rem] rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+                    <p className="m-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Curiosita</p>
+                    <h2 className="m-2 [font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-3xl tracking-tight text-slate-900">
+                        Cosa sapere su {ente.ente_nome}
+                    </h2>
+                    <div className="mt-5 m-2 grid gap-3 md:grid-cols-3">
                         {[curiosita.fatto1, curiosita.fatto2, curiosita.fatto3].map((fatto, index) => (
-                            <div key={index} className="rounded-[24px] border border-slate-200 bg-white p-7 shadow-sm">
-                                <div className="text-4xl font-semibold tracking-tight text-slate-200">
-                                    {String(index + 1).padStart(2, '0')}
-                                </div>
-                                <p className="mt-3 text-sm leading-7 text-slate-700">
-                                    {fatto || 'Curiosità non ancora disponibile.'}
-                                </p>
-                            </div>
+                            <article key={index} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Nota {index + 1}</p>
+                                <p className="mt-2 text-sm leading-relaxed text-slate-700">{fatto || 'Curiosita non ancora disponibile.'}</p>
+                            </article>
                         ))}
                     </div>
                 </div>
             </section>
 
-            <section className="bg-slate-100 py-16">
-                <div className="container mx-auto max-w-6xl px-6">
-                    <div className="grid gap-10 lg:grid-cols-2">
+            <section className="px-4 pb-14">
+                <div className="container mx-auto max-w-[78rem] rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+                    <div className="grid gap-8 lg:grid-cols-2">
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Hai domande?</p>
-                            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Domande frequenti</h2>
-                            <p className="mt-3 text-sm text-slate-600">
-                                Risposte rapide per orientarti su sede, territorio e contratto applicato.
+                            <p className="m-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">FAQ ente</p>
+                            <h2 className="m-2 [font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-3xl tracking-tight text-slate-900">
+                                Domande frequenti
+                            </h2>
+                            <p className="m-2 mt-3 text-sm leading-relaxed text-slate-600">
+                                Risposte rapide su candidatura, contesto territoriale e informazioni operative dell&apos;ente.
                             </p>
                         </div>
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             {faq.length > 0 ? faq.map(item => (
-                                <div key={item.question} className="border-b border-slate-200 pb-4">
-                                    <div className="flex items-start gap-3 text-sm font-semibold text-slate-950">
-                                        <span className="rounded bg-blue-700 px-2 py-0.5 text-xs font-bold text-white">Q</span>
-                                        <span>{item.question}</span>
-                                    </div>
-                                    <p className="pl-9 pt-2 text-sm leading-7 text-slate-600">{item.answer}</p>
-                                </div>
+                                <article key={item.question} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <h3 className="text-sm font-semibold text-slate-900">{item.question}</h3>
+                                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.answer}</p>
+                                </article>
                             )) : (
-                                <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">
+                                <div className="m-2 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
                                     FAQ non ancora disponibili per questo ente.
                                 </div>
                             )}
@@ -647,53 +763,36 @@ export default async function EntePage({ params }: Props) {
                 </div>
             </section>
 
-            <section className="bg-slate-950 py-16">
-                <div className="container mx-auto max-w-4xl px-6 text-center">
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-300">Non perderti nulla</p>
-                    <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white">
-                        Ricevi gli aggiornamenti sui concorsi di {ente.ente_nome}
+            <section className="px-4 pb-16">
+                <div className="container mx-auto max-w-[78rem] overflow-hidden rounded-3xl border border-slate-300 bg-[linear-gradient(145deg,#0A2E4D_0%,#0E436E_55%,#0A2E4D_100%)] p-8 text-white md:p-10">
+                    <p className="m-4 text-xs font-semibold uppercase tracking-[0.14em] text-sky-200">Monitoraggio concorsi</p>
+                    <h2 className="m-4 [font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-3xl tracking-tight md:text-4xl">
+                        Non perdere i prossimi bandi di {ente.ente_nome}
                     </h2>
-                    <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                        Segui i nuovi bandi, controlla la scheda ente e accedi rapidamente alle opportunità pubbliche collegate.
+                    <p className="m-4 mt-3 max-w-3xl text-sm leading-relaxed text-slate-200">
+                        Attiva notifiche su Concoro per seguire nuove pubblicazioni e restare aggiornato sulle opportunita pubbliche utili al tuo percorso.
                     </p>
-                    <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                    <div className="mt-2 flex flex-wrap">
                         <Link
                             href={`/signup?ente=${slug}`}
-                            className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-400"
+                            className="m-4 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
                         >
                             Attiva notifiche
                             <Bell className="h-4 w-4" />
                         </Link>
                         <Link
                             href={`/concorsi?ente=${slug}`}
-                            className="inline-flex items-center gap-2 rounded-full border border-white/25 px-6 py-3 text-sm font-semibold text-white transition hover:border-white"
+                            className="m-4 inline-flex items-center gap-2 rounded-xl border border-white/35 px-5 py-3 text-sm font-semibold text-white transition hover:border-white"
                         >
-                            Tutti i concorsi
+                            Esplora concorsi ente
                         </Link>
                     </div>
-
                     {(website || mapsHref || socialLinks.length > 0 || regioneSlug || provinciaSlug) && (
-                        <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-300">
-                            {website && (
-                                <a href={website} target="_blank" rel="noopener noreferrer" className="hover:text-white">
-                                    Sito istituzionale
-                                </a>
-                            )}
-                            {mapsHref && (
-                                <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="hover:text-white">
-                                    Mappa
-                                </a>
-                            )}
-                            {regioneSlug && (
-                                <Link href={`/regione/${regioneSlug}`} className="hover:text-white">
-                                    Concorsi in {ente?.regione}
-                                </Link>
-                            )}
-                            {provinciaSlug && (
-                                <Link href={`/provincia/${provinciaSlug}`} className="hover:text-white">
-                                    Concorsi a {ente?.provincia}
-                                </Link>
-                            )}
+                        <div className="m-4 mt-2 flex flex-wrap gap-4 text-sm text-slate-200">
+                            {website && <a href={website} target="_blank" rel="noopener noreferrer" className="hover:text-white">Sito istituzionale</a>}
+                            {mapsHref && <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="hover:text-white">Mappa sede</a>}
+                            {regioneSlug && <Link href={`/regione/${regioneSlug}`} className="hover:text-white">Concorsi in {ente?.regione}</Link>}
+                            {provinciaSlug && <Link href={`/provincia/${provinciaSlug}`} className="hover:text-white">Concorsi a {ente?.provincia}</Link>}
                             {socialLinks.map(link => (
                                 <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer" className="hover:text-white">
                                     {link.label}
@@ -701,16 +800,10 @@ export default async function EntePage({ params }: Props) {
                             ))}
                         </div>
                     )}
-
-                    {ente?.last_enriched_at && (
-                        <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-300">
-                            <CircleAlert className="h-4 w-4" />
-                            Scheda aggiornata il {formatDateIT(ente.last_enriched_at)}
-                        </div>
-                    )}
-                    {ente?.created_at && (
-                        <p className="mt-4 text-xs text-slate-400">
-                            Scheda creata il {formatDateIT(ente.created_at)}
+                    {(ente?.last_enriched_at || ente?.created_at) && (
+                        <p className="m-4 mt-5 text-xs text-slate-300">
+                            {ente?.last_enriched_at ? `Scheda aggiornata il ${formatDateIT(ente.last_enriched_at)}.` : ''}
+                            {ente?.created_at ? ` Pubblicata il ${formatDateIT(ente.created_at)}.` : ''}
                         </p>
                     )}
                 </div>
