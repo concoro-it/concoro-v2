@@ -6,8 +6,8 @@ import { getRegioniWithCount } from '@/lib/supabase/queries';
 import { toUrlSlug } from '@/lib/utils/regioni';
 
 export const metadata: Metadata = {
-    title: 'Concorsi per Regione',
-    description: 'Cerca concorsi pubblici per regione italiana. Trova i bandi aperti nella tua regione.',
+    title: 'Concorsi Pubblici per Regione | Cerca bandi nella tua area | Concoro',
+    description: 'Esplora i concorsi pubblici per regione e apri la pagina locale piu vicina a te. Un modo piu rapido per trovare bandi rilevanti nel tuo territorio.',
 };
 
 export const revalidate = 3600;
@@ -24,8 +24,8 @@ export default async function RegioneIndexPage() {
                     {' › '}
                     <span className="text-foreground">Regioni</span>
                 </nav>
-                <h1 className="text-3xl font-bold tracking-tight">Concorsi per Regione</h1>
-                <p className="text-muted-foreground mt-1">Trova i concorsi pubblici nella tua regione italiana</p>
+                <h1 className="text-3xl font-bold tracking-tight">Concorsi pubblici per regione</h1>
+                <p className="text-muted-foreground mt-1">Scegli la tua regione e trova prima i bandi piu vicini, rilevanti e facili da monitorare</p>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">

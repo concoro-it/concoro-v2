@@ -116,7 +116,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     return {
         title: `Concorsi pubblici in provincia di ${matchedProvincia.provincia} | Concoro`,
-        description: `Consulta i concorsi pubblici in provincia di ${matchedProvincia.provincia} (${matchedProvincia.sigla}) e filtra i bandi per ente, settore, scadenza e stato.`,
+        description: `Consulta i concorsi pubblici in provincia di ${matchedProvincia.provincia} (${matchedProvincia.sigla}) e filtra i bandi per ente, settore, scadenza e stato per una ricerca piu locale e precisa.`,
         keywords: [
             `concorsi ${matchedProvincia.provincia}`,
             `concorsi pubblici ${matchedProvincia.provincia}`,
@@ -129,7 +129,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         },
         openGraph: {
             title: `Concorsi pubblici in provincia di ${matchedProvincia.provincia}`,
-            description: `Bandi attivi e scaduti in provincia di ${matchedProvincia.provincia}, organizzati per ente, settore e scadenza.`,
+            description: `Bandi attivi e scaduti in provincia di ${matchedProvincia.provincia}, organizzati per ente, settore e scadenza per aiutarti a cercare piu vicino a te.`,
             url: canonical,
             locale: 'it_IT',
             siteName: 'Concoro',
@@ -177,12 +177,14 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
         ente_slug: enteSlug || undefined,
     };
 
-    const [provinciaData, baseProvinciaData, openSnapshot, closedSnapshot, tier, entiData] = await Promise.all([
-        getConcorsi(supabase, selectedFilters, page, LIMIT),
+    const tier = await getUserTier(supabase);
+    const resultsLimit = tier === 'anon' ? FREE_VISIBLE : LIMIT;
+
+    const [provinciaData, baseProvinciaData, openSnapshot, closedSnapshot, entiData] = await Promise.all([
+        getConcorsi(supabase, selectedFilters, page, resultsLimit),
         getConcorsi(supabase, baseProvinciaFilters, 1, FACET_SCAN_LIMIT),
         getConcorsi(supabase, { provincia: matchedProvincia.provincia, stato: 'aperti', solo_attivi: true }, 1, 1),
         getConcorsi(supabase, { provincia: matchedProvincia.provincia, stato: 'scaduti' }, 1, 1),
-        getUserTier(supabase),
         supabase
             .from('enti')
             .select('ente_nome, ente_slug, regione, comune')
@@ -196,7 +198,7 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
     const count = provinciaData.count ?? 0;
     const totalPages = Math.max(1, Math.ceil(count / LIMIT));
     const isLocked = tier !== 'pro' && tier !== 'admin';
-    const showPaywall = isLocked && (page > 1 || concorsi.length > FREE_VISIBLE);
+    const showPaywall = isLocked && (page > 1 || count > FREE_VISIBLE);
     const visibleResults = showPaywall && page === 1 ? concorsi.slice(0, FREE_VISIBLE) : (showPaywall ? [] : concorsi);
     const lockedResults = showPaywall && page === 1 ? concorsi.slice(FREE_VISIBLE) : [];
 
@@ -285,7 +287,7 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
         name: `Concorsi pubblici in provincia di ${matchedProvincia.provincia}`,
         url: pageUrl,
         inLanguage: 'it-IT',
-        description: `Elenco dei concorsi pubblici in provincia di ${matchedProvincia.provincia}, con filtri per stato, settore, ente e scadenza.`,
+        description: `Elenco dei concorsi pubblici in provincia di ${matchedProvincia.provincia}, con filtri per stato, settore, ente e scadenza per orientare meglio la ricerca locale.`,
         isPartOf: {
             '@type': 'WebSite',
             name: 'Concoro',
@@ -373,17 +375,17 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
                         </div>
 
                         <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] max-w-4xl text-balance text-4xl font-semibold leading-[1.04] tracking-tight text-slate-900 md:text-6xl">
-                            Trova i concorsi pubblici in provincia di
+                            Cerca i concorsi pubblici in provincia di
                             <span className="mx-2 bg-gradient-to-r from-[#0E2F50] via-[#0A4E88] to-[#0E2F50] bg-clip-text text-transparent">
                                 {matchedProvincia.provincia}
                             </span>
-                            senza perdere tempo tra ricerche dispersive.
+                            con una vista davvero locale.
                         </h1>
 
                         <p className="max-w-3xl text-base leading-relaxed text-slate-700 md:text-lg">
-                            Qui trovi i bandi della provincia di {matchedProvincia.provincia} raccolti in una vista piu chiara:
-                            puoi filtrare per ente, settore, stato e scadenza, capire dove ci sono piu opportunita e decidere
-                            piu in fretta quali concorsi approfondire.
+                            Qui trovi i bandi della provincia di {matchedProvincia.provincia} raccolti in modo piu leggibile:
+                            puoi filtrare per ente, settore, stato e scadenza, capire dove si muove di piu il territorio
+                            e decidere piu in fretta quali concorsi approfondire.
                         </p>
 
                         <div className="grid gap-3 sm:grid-cols-2">
@@ -584,9 +586,10 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
                     {showPaywall && (
                         <div className="mt-8">
                             <BlurredResultsSection
-                                concorsi={lockedResults.length > 0 ? lockedResults : concorsi.slice(0, 3)}
+                                concorsi={tier === 'anon' ? [] : (lockedResults.length > 0 ? lockedResults : concorsi.slice(0, 3))}
                                 lockedCount={Math.max(0, count - (page === 1 ? FREE_VISIBLE : 0))}
                                 isLoggedIn={tier !== 'anon'}
+                                useMockResults={tier === 'anon'}
                             />
                         </div>
                     )}

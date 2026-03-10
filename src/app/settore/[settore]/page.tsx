@@ -184,12 +184,14 @@ export default async function SettorePage({ params, searchParams }: Props) {
         ente_slug: enteSlug || undefined,
     };
 
-    const [sectorData, baseSectorData, openSnapshot, closedSnapshot, tier] = await Promise.all([
-        getConcorsi(supabase, selectedFilters, page, LIMIT),
+    const tier = await getUserTier(supabase);
+    const resultsLimit = tier === 'anon' ? FREE_VISIBLE : LIMIT;
+
+    const [sectorData, baseSectorData, openSnapshot, closedSnapshot] = await Promise.all([
+        getConcorsi(supabase, selectedFilters, page, resultsLimit),
         getConcorsi(supabase, baseSettoreFilters, 1, FACET_SCAN_LIMIT),
         getConcorsi(supabase, { settore: originalSettore, stato: 'aperti', solo_attivi: true }, 1, 1),
         getConcorsi(supabase, { settore: originalSettore, stato: 'scaduti' }, 1, 1),
-        getUserTier(supabase),
     ]);
 
     const concorsi = sectorData.data ?? [];
@@ -197,7 +199,7 @@ export default async function SettorePage({ params, searchParams }: Props) {
     const totalPages = Math.max(1, Math.ceil(count / LIMIT));
 
     const isLocked = tier !== 'pro' && tier !== 'admin';
-    const showPaywall = isLocked && (page > 1 || concorsi.length > FREE_VISIBLE);
+    const showPaywall = isLocked && (page > 1 || count > FREE_VISIBLE);
     const visibleResults = showPaywall && page === 1 ? concorsi.slice(0, FREE_VISIBLE) : (showPaywall ? [] : concorsi);
     const lockedResults = showPaywall && page === 1 ? concorsi.slice(FREE_VISIBLE) : [];
 
@@ -540,9 +542,10 @@ export default async function SettorePage({ params, searchParams }: Props) {
                     {showPaywall && (
                         <div className="mt-8">
                             <BlurredResultsSection
-                                concorsi={lockedResults.length > 0 ? lockedResults : concorsi.slice(0, 3)}
+                                concorsi={tier === 'anon' ? [] : (lockedResults.length > 0 ? lockedResults : concorsi.slice(0, 3))}
                                 lockedCount={Math.max(0, count - (page === 1 ? FREE_VISIBLE : 0))}
                                 isLoggedIn={tier !== 'anon'}
+                                useMockResults={tier === 'anon'}
                             />
                         </div>
                     )}

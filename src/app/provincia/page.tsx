@@ -6,8 +6,8 @@ import { getProvinceWithCount } from '@/lib/supabase/queries';
 import { toUrlSlug } from '@/lib/utils/regioni';
 
 export const metadata: Metadata = {
-    title: 'Concorsi per Provincia',
-    description: 'Cerca concorsi pubblici per provincia italiana. Trova i bandi aperti nella tua provincia.',
+    title: 'Concorsi Pubblici per Provincia | Cerca bandi vicino a te | Concoro',
+    description: 'Esplora i concorsi pubblici per provincia e individua i bandi piu vicini a te. Ideale per una ricerca locale piu precisa.',
 };
 
 export const revalidate = 3600;
@@ -24,8 +24,8 @@ export default async function ProvinciaIndexPage() {
                     {' › '}
                     <span className="text-foreground">Province</span>
                 </nav>
-                <h1 className="text-3xl font-bold tracking-tight">Concorsi per Provincia</h1>
-                <p className="text-muted-foreground mt-1">Trova i concorsi pubblici nella tua provincia italiana</p>
+                <h1 className="text-3xl font-bold tracking-tight">Concorsi pubblici per provincia</h1>
+                <p className="text-muted-foreground mt-1">Parti dalla tua provincia per vedere subito i bandi piu vicini e restringere meglio la ricerca</p>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">

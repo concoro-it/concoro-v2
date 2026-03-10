@@ -46,19 +46,19 @@ const REGION_FLAG_BY_SLUG: Record<string, string> = {
 const GEO_SECTIONS = [
     {
         title: 'Concorsi per Regione',
-        description: 'Pagine locali con panoramica bandi attivi e scadenze territoriali.',
+        description: 'Panoramica chiara dei bandi attivi nella tua regione, con scadenze e percorsi locali da aprire subito.',
         href: '/regione',
         icon: MapPinned,
     },
     {
         title: 'Concorsi per Provincia',
-        description: 'Navigazione capillare per area amministrativa e vicinanza geografica.',
+        description: 'Una vista piu vicina al territorio, utile se vuoi capire dove cercare davvero vicino a te.',
         href: '/provincia',
         icon: Compass,
     },
     {
         title: 'Concorsi per Ente',
-        description: 'Accesso diretto ai bandi dei principali enti pubblici italiani.',
+        description: 'Accesso diretto ai bandi pubblicati dai singoli enti, senza passare da ricerche dispersive.',
         href: '/ente',
         icon: Building2,
     },
@@ -72,20 +72,20 @@ const GEO_SECTIONS = [
 
 const FAQ_ITEMS = [
     {
-        q: 'Dove trovare concorsi pubblici affidabili in Italia?',
-        a: 'Su Concoro trovi bandi e avvisi organizzati per regione, provincia, ente e settore. La base dati e allineata alle pubblicazioni ufficiali disponibili su InPA.',
+        q: 'Come trovare concorsi pubblici in Italia senza controllare decine di siti?',
+        a: 'Su Concoro puoi partire da una vista unica e poi restringere la ricerca per regione, provincia, ente, settore o scadenza. Cosi passi piu in fretta dai bandi generici a quelli davvero utili per il tuo profilo e la tua zona.',
     },
     {
-        q: 'Ogni quanto vengono aggiornati i concorsi pubblici su Concoro?',
-        a: 'Il monitoraggio e quotidiano. Le opportunita vengono aggiornate ogni giorno per mantenere la piattaforma allineata alle nuove pubblicazioni e alle scadenze.',
+        q: 'Come cercare concorsi pubblici vicino a me?',
+        a: 'Puoi iniziare dalle pagine dedicate a regioni e province italiane. Se la vicinanza geografica conta, questo e il modo piu rapido per vedere prima i bandi del tuo territorio e poi affinare la ricerca.',
     },
     {
-        q: 'Come cercare concorsi pubblici vicino alla mia zona?',
-        a: 'Puoi navigare pagine locali dedicate a regioni e province italiane. In questo modo visualizzi prima i bandi coerenti con il tuo territorio.',
+        q: 'Posso cercare i bandi anche per ente o settore?',
+        a: 'Si. Se sai gia quali amministrazioni vuoi monitorare o in quale ambito vuoi lavorare, puoi usare i percorsi per ente e settore per arrivare piu rapidamente ai concorsi piu pertinenti.',
     },
     {
-        q: 'Concoro offre anche guide per preparare la candidatura?',
-        a: 'Si. Nel blog trovi guide pratiche su requisiti, prove, documentazione e preparazione, con linguaggio semplice e struttura adatta anche alle ricerche AI.',
+        q: 'I concorsi su Concoro vengono aggiornati spesso?',
+        a: 'Il monitoraggio e quotidiano. La piattaforma segue nuove pubblicazioni e scadenze per aiutarti a tenere sotto controllo le opportunita aperte, fermo restando che prima di candidarti conviene sempre verificare il bando ufficiale.',
     },
 ];
 
@@ -110,9 +110,9 @@ function getRegionFlagPath(regione: string): string | null {
 }
 
 export const metadata: Metadata = {
-    title: 'Concorsi Pubblici in Italia | Piattaforma Concoro',
+    title: 'Concorsi Pubblici in Italia | Trova bandi per regione, provincia ed ente | Concoro',
     description:
-        'Scopri concorsi pubblici per regione, provincia, ente e scadenza. Concoro raccoglie opportunita aggiornate ogni giorno dal portale InPA.',
+        'Trova concorsi pubblici in Italia per regione, provincia, ente e scadenza. Concoro ti aiuta a cercare bandi vicini, monitorare le uscite e orientarti piu in fretta.',
     alternates: { canonical: '/' },
     keywords: [
         'concorsi pubblici',
@@ -168,7 +168,7 @@ export default async function HomePage() {
                 inLanguage: 'it-IT',
                 dateModified: todayIso,
                 description:
-                    'Piattaforma per trovare concorsi pubblici in Italia con navigazione per regione, provincia, ente, settore e scadenza.',
+                    'Piattaforma per trovare concorsi pubblici in Italia con percorsi per regione, provincia, ente, settore e scadenza.',
             },
             {
                 '@type': 'ItemList',
@@ -215,21 +215,20 @@ export default async function HomePage() {
                         </div>
 
                         <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] max-w-3xl text-balance text-4xl font-semibold leading-[1.04] tracking-tight text-slate-900 md:text-6xl">
-                            Il tuo osservatorio sui
+                            Trova i
                             <span className="mx-2 bg-gradient-to-r from-[#0E2F50] via-[#0A4E88] to-[#0E2F50] bg-clip-text text-transparent">
                                 concorsi pubblici
                             </span>
-                            in Italia.
+                            giusti, nel posto giusto.
                         </h1>
 
                         <p className="max-w-2xl text-pretty text-base leading-relaxed text-slate-700 md:text-lg">
-                            Concoro organizza opportunita della Pubblica Amministrazione in percorsi chiari per regione, ente e settore,
-                            con una struttura editoriale pensata per la ricerca locale e per chi vuole orientarsi rapidamente tra i bandi.
+                            Concoro raccoglie e ordina i bandi della Pubblica Amministrazione per regione, provincia, ente e settore,
+                            cosi puoi partire dal tuo territorio, filtrare meglio e capire in pochi minuti quali opportunita vale la pena seguire.
                         </p>
                         <p className="max-w-2xl rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm leading-relaxed text-slate-700">
-                            <strong>Cos&apos;e Concoro:</strong> Concoro e una piattaforma italiana che raccoglie e ordina concorsi pubblici
-                            da fonti ufficiali, aiutando candidati e professionisti a trovare bandi pertinenti per territorio, ente e settore
-                            in pochi passaggi.
+                            <strong>Cos&apos;e Concoro:</strong> una piattaforma italiana per cercare concorsi pubblici da fonti ufficiali,
+                            confrontare bandi vicini o rilevanti per il tuo profilo e non perdere le scadenze piu importanti.
                         </p>
 
                         <div className="flex flex-wrap gap-3">
@@ -267,7 +266,7 @@ export default async function HomePage() {
                         <div className="absolute left-0 top-0 h-full w-2 bg-gradient-to-b from-emerald-500 via-white to-rose-500" />
                         <div className="space-y-5 pl-3">
                             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Bollettino nazionale</p>
-                            <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-2xl text-slate-900">Quadro rapido piattaforma</h2>
+                            <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-2xl text-slate-900">Uno sguardo rapido a Concoro</h2>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -438,7 +437,7 @@ export default async function HomePage() {
                                     <Sparkles className="h-3.5 w-3.5" />
                                     SEO e orientamento GEO
                                 </p>
-                                <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl tracking-tight text-slate-900">Dal blog Concoro</h2>
+                                <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl tracking-tight text-slate-900">Guide per capire meglio i bandi</h2>
                             </div>
                             <Link href="/blog" className="inline-flex items-center gap-1 text-sm font-semibold text-[#0B4B7F] hover:text-[#083861]">
                                 Tutti gli articoli

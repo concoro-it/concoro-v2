@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getNuoviConcorsi } from '@/lib/supabase/queries';
 import { getUserTier } from '@/lib/auth/getUserTier';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
-import { PaywallBanner, BlurredResultsSection } from '@/components/paywall/PaywallBanner';
+import { BlurredResultsSection } from '@/components/paywall/PaywallBanner';
 
 export const metadata: Metadata = {
     title: 'Nuovi Concorsi Pubblici',
@@ -16,12 +16,12 @@ export const revalidate = 3600;
 
 export default async function NuoviPage() {
     const supabase = await createClient();
-    const [{ data: concorsi, count }, tier] = await Promise.all([
-        getNuoviConcorsi(supabase, 1, 50),
-        getUserTier(supabase),
-    ]);
+    const tier = await getUserTier(supabase);
+    const resultsLimit = tier === 'anon' ? FREE_VISIBLE : 50;
+    const { data: concorsi, count } = await getNuoviConcorsi(supabase, 1, resultsLimit);
 
     const isLocked = tier !== 'pro' && tier !== 'admin';
+    const showPaywall = isLocked && count > FREE_VISIBLE;
     const visible = concorsi.slice(0, FREE_VISIBLE);
     const locked = concorsi.slice(FREE_VISIBLE);
 
@@ -47,11 +47,12 @@ export default async function NuoviPage() {
 
             <ConcorsoList concorsi={visible} />
 
-            {isLocked && locked.length > 0 && (
+            {showPaywall && (
                 <BlurredResultsSection
-                    concorsi={locked}
-                    lockedCount={locked.length}
+                    concorsi={tier === 'anon' ? [] : locked}
+                    lockedCount={Math.max(0, count - FREE_VISIBLE)}
                     isLoggedIn={tier !== 'anon'}
+                    useMockResults={tier === 'anon'}
                 />
             )}
 

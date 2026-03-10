@@ -52,6 +52,32 @@ interface PreferencesState {
 const SENTINEL = '__any__';
 const PRO_TIERS: UserTier[] = ['pro', 'admin'];
 const ENTI_PAGE_SIZE = 10;
+const SECTION_ITEMS: Array<{ key: SectionKey; short: string; title: string; description: string }> = [
+    {
+        key: 'basic',
+        short: 'Base',
+        title: 'Criteri Base',
+        description: 'Regione, provincia, settore, tipo, date',
+    },
+    {
+        key: 'compensation',
+        short: 'Compensi',
+        title: 'Compensi e Requisiti',
+        description: 'Dati profilo (v1 non filtra i risultati)',
+    },
+    {
+        key: 'areas',
+        short: 'Interessi',
+        title: 'Aree di Interesse',
+        description: 'Settori preferiti nel profilo',
+    },
+    {
+        key: 'company',
+        short: 'Ente',
+        title: 'Ente',
+        description: 'Filtro ente e metadati',
+    },
+];
 
 function inferDatePreset(value: string | null): DatePostedPreset {
     if (!value) return 'any';
@@ -364,71 +390,55 @@ export function PreferencesControl({
                     Preferenze
                 </Button>
             </DialogTrigger>
-            <DialogContent className="w-[96vw] max-w-5xl p-0 overflow-hidden max-h-[90vh]">
-                <DialogHeader className="px-6 py-4 border-b">
-                    <DialogTitle>Preferenze</DialogTitle>
-                    <DialogDescription>
+            <DialogContent className="w-[96vw] max-w-5xl overflow-hidden border border-slate-200/80 bg-white p-0 max-h-[90vh]">
+                <DialogHeader className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-sky-50/50 px-6 py-5">
+                    <div className="pointer-events-none absolute -right-14 -top-14 h-40 w-40 rounded-full bg-sky-100/50 blur-3xl" />
+                    <div className="relative">
+                        <DialogTitle className="text-2xl font-semibold tracking-tight text-slate-900">Preferenze</DialogTitle>
+                        <DialogDescription className="mt-1 text-slate-600">
                         Imposta i criteri base per filtrare meglio i concorsi.
-                    </DialogDescription>
+                        </DialogDescription>
+                    </div>
                 </DialogHeader>
 
-                <div className="md:hidden border-b bg-muted/20 px-3 py-2">
+                <div className="md:hidden border-b border-slate-100 bg-slate-50/70 px-3 py-2.5">
                     <div className="flex gap-2 overflow-x-auto">
-                        <button
-                            type="button"
-                            onClick={() => setSection('basic')}
-                            className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium ${section === 'basic' ? 'bg-white shadow-sm' : 'bg-transparent'}`}
-                        >
-                            Base
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setSection('compensation')}
-                            className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium ${section === 'compensation' ? 'bg-white shadow-sm' : 'bg-transparent'}`}
-                        >
-                            Compensi
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setSection('areas')}
-                            className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium ${section === 'areas' ? 'bg-white shadow-sm' : 'bg-transparent'}`}
-                        >
-                            Interessi
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setSection('company')}
-                            className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium ${section === 'company' ? 'bg-white shadow-sm' : 'bg-transparent'}`}
-                        >
-                            Ente
-                        </button>
+                        {SECTION_ITEMS.map((item) => (
+                            <button
+                                key={item.key}
+                                type="button"
+                                onClick={() => setSection(item.key)}
+                                className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${section === item.key
+                                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                                    : 'bg-transparent text-slate-500 hover:text-slate-700'}`}
+                            >
+                                {item.short}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
                 <div className="grid md:grid-cols-[260px_1fr] min-h-[560px] max-h-[calc(90vh-180px)]">
-                    <aside className="hidden md:block border-r bg-muted/20 p-4 space-y-2">
-                        <button type="button" onClick={() => setSection('basic')} className={`w-full rounded-lg px-4 py-3 text-left ${section === 'basic' ? 'bg-white shadow-sm' : 'hover:bg-white/70'}`}>
-                            <p className="font-medium">Criteri Base</p>
-                            <p className="text-sm text-muted-foreground">Regione, provincia, settore, tipo, date</p>
-                        </button>
-                        <button type="button" onClick={() => setSection('compensation')} className={`w-full rounded-lg px-4 py-3 text-left ${section === 'compensation' ? 'bg-white shadow-sm' : 'hover:bg-white/70'}`}>
-                            <p className="font-medium">Compensi e Requisiti</p>
-                            <p className="text-sm text-muted-foreground">Dati profilo (v1 non filtra i risultati)</p>
-                        </button>
-                        <button type="button" onClick={() => setSection('areas')} className={`w-full rounded-lg px-4 py-3 text-left ${section === 'areas' ? 'bg-white shadow-sm' : 'hover:bg-white/70'}`}>
-                            <p className="font-medium">Aree di Interesse</p>
-                            <p className="text-sm text-muted-foreground">Settori preferiti nel profilo</p>
-                        </button>
-                        <button type="button" onClick={() => setSection('company')} className={`w-full rounded-lg px-4 py-3 text-left ${section === 'company' ? 'bg-white shadow-sm' : 'hover:bg-white/70'}`}>
-                            <p className="font-medium">Ente</p>
-                            <p className="text-sm text-muted-foreground">Filtro ente e metadati</p>
-                        </button>
+                    <aside className="hidden border-r border-slate-100 bg-slate-50/60 p-4 md:block space-y-2">
+                        {SECTION_ITEMS.map((item) => (
+                            <button
+                                key={item.key}
+                                type="button"
+                                onClick={() => setSection(item.key)}
+                                className={`w-full rounded-xl border px-4 py-3 text-left transition ${section === item.key
+                                    ? 'border-slate-200 bg-white shadow-sm'
+                                    : 'border-transparent bg-transparent hover:border-slate-200 hover:bg-white/70'}`}
+                            >
+                                <p className="font-semibold text-slate-900">{item.title}</p>
+                                <p className="text-sm text-slate-500">{item.description}</p>
+                            </button>
+                        ))}
                     </aside>
 
-                    <div className="p-4 md:p-6 space-y-5 overflow-y-auto">
+                    <div className="space-y-5 overflow-y-auto bg-white p-4 md:p-6">
                         {section === 'basic' && (
                             <>
-                                <h3 className="text-2xl font-semibold">Criteri Base</h3>
+                                <h3 className="text-2xl font-semibold tracking-tight text-slate-900">Criteri Base</h3>
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>Regione</Label>
@@ -525,8 +535,8 @@ export function PreferencesControl({
 
                         {section === 'compensation' && (
                             <>
-                                <h3 className="text-2xl font-semibold">Compensi e Requisiti</h3>
-                                <p className="text-sm text-muted-foreground">
+                                <h3 className="text-2xl font-semibold tracking-tight text-slate-900">Compensi e Requisiti</h3>
+                                <p className="text-sm text-slate-500">
                                     Questi campi sono salvati nel profilo ma non filtrano i risultati in v1.
                                 </p>
                                 <div className="grid md:grid-cols-2 gap-4">
@@ -548,8 +558,8 @@ export function PreferencesControl({
 
                         {section === 'areas' && (
                             <>
-                                <h3 className="text-2xl font-semibold">Aree di Interesse</h3>
-                                <p className="text-sm text-muted-foreground">
+                                <h3 className="text-2xl font-semibold tracking-tight text-slate-900">Aree di Interesse</h3>
+                                <p className="text-sm text-slate-500">
                                     Settori preferiti del profilo. Separali con virgola.
                                 </p>
                                 <div className="space-y-2">
@@ -561,8 +571,8 @@ export function PreferencesControl({
 
                         {section === 'company' && (
                             <>
-                                <h3 className="text-2xl font-semibold">Ente</h3>
-                                <p className="text-sm text-muted-foreground">
+                                <h3 className="text-2xl font-semibold tracking-tight text-slate-900">Ente</h3>
+                                <p className="text-sm text-slate-500">
                                     In v1 è attivo solo il filtro ente.
                                 </p>
                                 <div className="space-y-2 max-w-md">
@@ -614,9 +624,9 @@ export function PreferencesControl({
                     </div>
                 </div>
 
-                <div className="border-t px-6 py-4 flex flex-wrap items-center justify-between gap-2">
+                <div className="border-t border-slate-100 bg-slate-50/70 px-6 py-4 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                        <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Annulla</Button>
+                        <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="rounded-xl">Annulla</Button>
                         <Button type="button" variant="outline" onClick={saveDefaults} disabled={isSavingDefaults}>
                             {isSavingDefaults ? 'Salvataggio...' : 'Salva come predefinite'}
                         </Button>
@@ -624,7 +634,7 @@ export function PreferencesControl({
                             {isSavingPreset ? 'Salvataggio...' : 'Salva preset'}
                         </Button>
                     </div>
-                    <Button type="button" onClick={applyFilters}>Applica</Button>
+                    <Button type="button" onClick={applyFilters} className="rounded-xl px-6">Applica filtri</Button>
                 </div>
             </DialogContent>
         </Dialog>

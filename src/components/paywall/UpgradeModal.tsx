@@ -12,9 +12,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Sparkles, Lock, Zap } from 'lucide-react';
+import { ArrowRight, Check, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
-import { PLANS } from '@/lib/stripe/prices';
 
 interface UpgradeModalProps {
     children?: React.ReactNode;
@@ -31,21 +30,25 @@ export function UpgradeModal({
 }: UpgradeModalProps) {
     const router = useRouter();
     const [internalOpen, setInternalOpen] = useState(false);
-    const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
 
     const isControlled = isOpen !== undefined;
     const open = isControlled ? isOpen : internalOpen;
     const setOpen = isControlled ? onOpenChange! : setInternalOpen;
 
-    const monthlyPrice = PLANS.pro.price_monthly;
-    const yearlyPrice = PLANS.pro.price_yearly;
-    const yearlyMonthlyEquivalent = yearlyPrice / 12;
-    const yearlySavings = Math.round((1 - yearlyMonthlyEquivalent / monthlyPrice) * 100);
-    const ctaPrice = billingCycle === 'yearly'
-        ? `€${yearlyMonthlyEquivalent.toFixed(2).replace('.', ',')}/mese`
-        : `€${monthlyPrice.toFixed(2).replace('.', ',')}/mese`;
-
-    const features = PLANS.pro.features;
+    const registerFeatures = [
+        {
+            title: 'Preferenze sempre salvate',
+            description: 'Regione, settore e filtri restano sincronizzati sul tuo profilo.',
+        },
+        {
+            title: 'Nuovi bandi in evidenza',
+            description: 'Vedi subito i concorsi piu rilevanti senza rifare la ricerca.',
+        },
+        {
+            title: 'Bacheca personale',
+            description: 'Continua da mobile o desktop mantenendo lo stesso stato.',
+        },
+    ];
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -56,119 +59,70 @@ export function UpgradeModal({
                     </div>
                 </DialogTrigger>
             )}
-            <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-0">
-                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 text-white relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
-                        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full border-4 border-white/20" />
-                        <div className="absolute bottom-10 -left-10 w-20 h-20 rounded-full border-2 border-white/20" />
-                        <div className="absolute top-20 left-1/2 w-4 h-4 rounded-full bg-white/40" />
+            <DialogContent className="sm:max-w-[560px] overflow-hidden  border-0 bg-transparent p-0 shadow-none">
+                <div className="relative pt-4 border border-sky-100/80 bg-gradient-to-br from-sky-100/85 via-white to-cyan-100/80 backdrop-blur-sm shadow-2xl shadow-slate-900/10">
+                    <div className=" pointer-events-none absolute -top-28 -right-24 h-56 w-56 bg-blue-100/60 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 bg-cyan-100/60 blur-3xl" />
+
+                    <div className=" relative border-b border-slate-200/70 px-6 pt-6 sm:px-7">
+                        <DialogHeader className="space-y-3">
+                            <div className="flex flex-wrap items-center gap-2 animate-slide-up-fade">
+                                <Badge className="rounded-3xl border-0 bg-slate-900 text-[11px] font-semibold uppercase tracking-[0.12em] text-white hover:bg-slate-900">
+                                    <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                                    Register First
+                                </Badge>
+                                <Badge variant="secondary" className="border border-sky-200 bg-sky-50 text-sky-700">
+                                    Setup rapido
+                                </Badge>
+                            </div>
+                            <DialogTitle className="animate-slide-up-fade delay-100 text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
+                                Crea il tuo account gratis e filtra i concorsi meglio
+                            </DialogTitle>
+                            <DialogDescription className="animate-slide-up-fade delay-300 max-w-xl text-sm text-slate-600 sm:text-base">
+                                Registrandoti una volta, le preferenze restano con te: meno tempo perso e piu candidature pertinenti.
+                            </DialogDescription>
+                        </DialogHeader>
                     </div>
 
-                    <DialogHeader className="relative z-10 space-y-3">
-                        <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 border-0 flex items-center gap-1 backdrop-blur-sm">
-                                <Sparkles className="w-3.5 h-3.5" />
-                                Concoro Pro
-                            </Badge>
-                        </div>
-                        <DialogTitle className="text-2xl sm:text-3xl font-bold tracking-tight text-white leading-tight">
-                            Non perdere il concorso giusto per te
-                        </DialogTitle>
-                        <DialogDescription className="text-blue-100 text-sm sm:text-base mt-2">
-                            Sblocca monitoraggio completo, alert mirati e Genio per capire piu in fretta su quali bandi conviene agire.
-                        </DialogDescription>
-                    </DialogHeader>
-                </div>
-
-                <div className="p-6 bg-white">
-                    <div className="space-y-4 mb-6">
-                        {features.map((feature, i) => (
-                            <div key={i} className="flex items-start gap-3 flex-wrap">
-                                <div className="mt-0.5 flex-shrink-0 bg-blue-100 p-1 rounded-full text-blue-600">
-                                    <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                    <div className="relative space-y-4 p-6 sm:px-7 sm:pb-7">
+                        <div className="animate-slide-up-fade delay-300 space-y-3 rounded-2xl border border-slate-200/80 bg-white/75 p-4 sm:p-5">
+                            {registerFeatures.map((feature) => (
+                                <div key={feature.title} className="flex items-start gap-3">
+                                    <div className="mt-0.5 rounded-full bg-sky-100 p-1 text-sky-700">
+                                        <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-900">{feature.title}</p>
+                                        <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{feature.description}</p>
+                                    </div>
                                 </div>
-                                <span className="text-sm font-medium text-slate-700">{feature}</span>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-6">
-                        <div className="mb-3 grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1">
-                            <button
-                                type="button"
-                                onClick={() => setBillingCycle('yearly')}
-                                className={cn(
-                                    'rounded-md px-3 py-2 text-sm font-semibold transition',
-                                    billingCycle === 'yearly' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
-                                )}
-                            >
-                                Annuale
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setBillingCycle('monthly')}
-                                className={cn(
-                                    'rounded-md px-3 py-2 text-sm font-semibold transition',
-                                    billingCycle === 'monthly' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
-                                )}
-                            >
-                                Mensile
-                            </button>
+                            ))}
                         </div>
 
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm font-semibold text-slate-900">Piano Pro</p>
-                                {billingCycle === 'yearly' && (
-                                    <p className="text-xs text-emerald-600 font-semibold mt-1">
-                                        Miglior scelta per monitorare i concorsi tutto l&apos;anno
-                                    </p>
-                                )}
-                            </div>
-                            <div className="text-right">
-                                <div className="flex items-baseline gap-1 justify-end">
-                                    <span className="text-xl font-bold text-blue-600">
-                                        {billingCycle === 'yearly'
-                                            ? `€${yearlyMonthlyEquivalent.toFixed(2).replace('.', ',')}`
-                                            : `€${monthlyPrice.toFixed(2).replace('.', ',')}`}
-                                    </span>
-                                    <span className="text-xs text-slate-500">/mese</span>
-                                </div>
-                                {billingCycle === 'yearly' && (
-                                    <p className="text-xs text-slate-500 mt-0.5">
-                                        Fatturato annualmente (€{yearlyPrice.toFixed(2).replace('.', ',')})
-                                    </p>
-                                )}
-                                {billingCycle === 'monthly' && (
-                                    <p className="text-xs text-slate-500 mt-0.5">Fatturato mensilmente</p>
-                                )}
+                        <div className="animate-slide-up-fade delay-300 rounded-2xl border border-slate-200/80">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <Button
+                                    className="h-12 w-full rounded-xl text-base font-semibold shadow-md shadow-blue-500/25"
+                                    onClick={() => {
+                                        setOpen(false);
+                                        router.push('/signup?source=preferences-register-modal');
+                                    }}
+                                >
+                                    Registrati gratis
+                                    <ArrowRight className="ml-1 h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="h-12 w-full rounded-xl border-slate-200 text-sm"
+                                    onClick={() => {
+                                        setOpen(false);
+                                        router.push('/pricing?billing=yearly&source=register-modal-secondary');
+                                    }}
+                                >
+                                    Esplora Pro
+                                </Button>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <Button
-                            className="w-full text-base font-semibold h-12 shadow-md shadow-blue-500/20"
-                            onClick={() => {
-                                setOpen(false);
-                                router.push(`/pricing?billing=${billingCycle}&source=upgrade-modal`);
-                            }}
-                        >
-                            Attiva Pro da {ctaPrice}
-                            <Zap className="w-4 h-4 ml-2 fill-current" />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="w-full text-sm h-11 border-slate-200"
-                            onClick={() => setOpen(false)}
-                        >
-                            Continua con Free
-                        </Button>
-                    </div>
-
-                    <div className="mt-4 flex items-center gap-2 justify-center text-xs text-slate-500">
-                        <Lock className="w-3 h-3" />
-                        <span>Pagamento sicuro con Stripe. Disdici quando vuoi.</span>
                     </div>
                 </div>
             </DialogContent>

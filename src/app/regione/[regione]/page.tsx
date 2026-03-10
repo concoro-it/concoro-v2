@@ -43,7 +43,7 @@ const SORT_OPTIONS: Array<{ value: SortFilter; label: string }> = [
 const FAQ_ITEMS = [
     {
         q: 'Come trovare concorsi pubblici in una regione specifica?',
-        a: 'Apri la pagina della tua regione e usa i filtri per stato, settore ed ente. In questo modo riduci subito il numero di bandi e vedi prima le opportunita davvero rilevanti per la tua zona.',
+        a: 'Apri la pagina della tua regione e filtra per stato, settore ed ente. In questo modo parti dal territorio e arrivi piu in fretta ai bandi davvero rilevanti per la tua zona.',
     },
     {
         q: 'I concorsi in questa pagina sono aggiornati?',
@@ -51,7 +51,7 @@ const FAQ_ITEMS = [
     },
     {
         q: 'Questa pagina serve anche per capire dove cercare nella regione?',
-        a: 'Si. Oltre ai bandi attivi, trovi province e enti utili per orientarti meglio e capire dove si concentra la ricerca di concorsi pubblici nella regione selezionata.',
+        a: 'Si. Oltre ai bandi attivi, trovi province ed enti utili per capire dove conviene concentrare la ricerca nella regione selezionata.',
     },
 ];
 
@@ -109,8 +109,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const canonical = `${getServerAppUrl()}/regione/${slug}`;
 
     return {
-        title: `Concorsi pubblici in ${regioneName} | Concoro`,
-        description: `Trova concorsi pubblici in ${regioneName} per ente, settore e scadenza. Una pagina locale per orientarti meglio tra bandi regionali e opportunita vicine.`,
+        title: `Concorsi pubblici in ${regioneName} | Bandi per regione | Concoro`,
+        description: `Trova i concorsi pubblici in ${regioneName} e filtra i bandi per ente, settore e scadenza. Una pagina utile per cercare opportunita vicine e orientarti meglio nel territorio.`,
         keywords: [
             `concorsi ${regioneName}`,
             `concorsi pubblici ${regioneName}`,
@@ -123,7 +123,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         },
         openGraph: {
             title: `Concorsi pubblici in ${regioneName}`,
-            description: `Bandi pubblici e opportunita locali in ${regioneName}, organizzati per ente, settore e scadenza.`,
+            description: `Bandi pubblici e opportunita locali in ${regioneName}, organizzati per ente, settore e scadenza per una ricerca piu chiara.`,
             url: canonical,
             locale: 'it_IT',
             siteName: 'Concoro',
@@ -170,12 +170,14 @@ export default async function RegionePage({ params, searchParams }: Props) {
         ente_slug: enteSlug || undefined,
     };
 
-    const [regionalData, baseRegionalData, openSnapshot, closedSnapshot, tier, entiData] = await Promise.all([
-        getConcorsi(supabase, selectedFilters, page, LIMIT),
+    const tier = await getUserTier(supabase);
+    const resultsLimit = tier === 'anon' ? FREE_VISIBLE : LIMIT;
+
+    const [regionalData, baseRegionalData, openSnapshot, closedSnapshot, entiData] = await Promise.all([
+        getConcorsi(supabase, selectedFilters, page, resultsLimit),
         getConcorsi(supabase, baseRegionalFilters, 1, FACET_SCAN_LIMIT),
         getConcorsi(supabase, { regione: regioneName, stato: 'aperti', solo_attivi: true }, 1, 1),
         getConcorsi(supabase, { regione: regioneName, stato: 'scaduti' }, 1, 1),
-        getUserTier(supabase),
         supabase
             .from('enti')
             .select('ente_nome, ente_slug, provincia, comune')
@@ -189,7 +191,7 @@ export default async function RegionePage({ params, searchParams }: Props) {
     const count = regionalData.count ?? 0;
     const totalPages = Math.max(1, Math.ceil(count / LIMIT));
     const isLocked = tier !== 'pro' && tier !== 'admin';
-    const showPaywall = isLocked && (page > 1 || concorsi.length > FREE_VISIBLE);
+    const showPaywall = isLocked && (page > 1 || count > FREE_VISIBLE);
     const visibleResults = showPaywall && page === 1 ? concorsi.slice(0, FREE_VISIBLE) : (showPaywall ? [] : concorsi);
     const lockedResults = showPaywall && page === 1 ? concorsi.slice(FREE_VISIBLE) : [];
 
@@ -265,7 +267,7 @@ export default async function RegionePage({ params, searchParams }: Props) {
         name: `Concorsi pubblici in ${regioneName}`,
         url: pageUrl,
         inLanguage: 'it-IT',
-        description: `Elenco concorsi pubblici in ${regioneName} con filtri per stato, settore ed ente, pensato per ricerche locali e orientamento rapido.`,
+        description: `Elenco dei concorsi pubblici in ${regioneName} con filtri per stato, settore ed ente, pensato per chi cerca bandi vicini e vuole orientarsi in fretta.`,
         isPartOf: {
             '@type': 'WebSite',
             name: 'Concoro',
@@ -353,16 +355,16 @@ export default async function RegionePage({ params, searchParams }: Props) {
                         </div>
 
                         <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] max-w-4xl text-balance text-4xl font-semibold leading-[1.04] tracking-tight text-slate-900 md:text-6xl">
-                            Concorsi pubblici in
+                            Cerca i concorsi pubblici in
                             <span className="mx-2 bg-gradient-to-r from-[#0E2F50] via-[#0A4E88] to-[#0E2F50] bg-clip-text text-transparent">
                                 {regioneName}
                             </span>
-                            per trovare prima quelli giusti.
+                            con un percorso piu chiaro.
                         </h1>
 
                         <p className="max-w-3xl text-base leading-relaxed text-slate-700 md:text-lg">
-                            Se stai cercando concorsi pubblici in {regioneName}, qui trovi un percorso piu chiaro per orientarti:
-                            bandi filtrabili per ente, settore e stato, con accesso rapido alle aree della regione dove conviene approfondire.
+                            Se vuoi capire quali bandi seguire in {regioneName}, qui trovi una vista locale piu leggibile:
+                            concorsi filtrabili per ente, settore e stato, con accesso rapido alle province e agli enti da monitorare per primi.
                         </p>
 
                         <div className="grid gap-3 sm:grid-cols-2">
@@ -403,7 +405,7 @@ export default async function RegionePage({ params, searchParams }: Props) {
                             </h2>
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                 <p className="text-sm leading-relaxed text-slate-700">
-                                    Province da esplorare per prime se vuoi restringere la ricerca dei bandi nella regione:
+                                    Province da aprire per prime se vuoi restringere la ricerca e capire dove si concentrano piu opportunita nella regione:
                                 </p>
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     {topProvince.length > 0 ? topProvince.map((item) => (
@@ -552,9 +554,10 @@ export default async function RegionePage({ params, searchParams }: Props) {
                     {showPaywall && (
                         <div className="mt-8">
                             <BlurredResultsSection
-                                concorsi={lockedResults.length > 0 ? lockedResults : concorsi.slice(0, 3)}
+                                concorsi={tier === 'anon' ? [] : (lockedResults.length > 0 ? lockedResults : concorsi.slice(0, 3))}
                                 lockedCount={Math.max(0, count - (page === 1 ? FREE_VISIBLE : 0))}
                                 isLoggedIn={tier !== 'anon'}
+                                useMockResults={tier === 'anon'}
                             />
                         </div>
                     )}
@@ -594,7 +597,7 @@ export default async function RegionePage({ params, searchParams }: Props) {
                         <h3 className="mt-3 text-lg font-semibold text-slate-900">Cerca per territorio, non solo per titolo</h3>
                         <p className="mt-2 text-sm leading-relaxed text-slate-700">
                             Chi cerca concorsi pubblici in una regione spesso parte dalla vicinanza. Qui puoi usare il territorio
-                            come primo filtro e poi restringere il campo in base all&apos;ente o al settore che ti interessa.
+                            come primo filtro e poi restringere il campo in base all&apos;ente o al settore che ti interessa davvero.
                         </p>
                     </article>
                     <article className="rounded-3xl border border-slate-200 bg-white p-6">
@@ -609,8 +612,8 @@ export default async function RegionePage({ params, searchParams }: Props) {
                         <Building2 className="h-5 w-5 text-[#0A4E88]" />
                         <h3 className="mt-3 text-lg font-semibold text-slate-900">Una vista regionale piu utile da consultare</h3>
                         <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                            La pagina non mostra solo un elenco. Ti aiuta a capire dove cercare, quali enti monitorare e quali
-                            percorsi locali aprire per continuare la ricerca in modo piu preciso.
+                            La pagina non mostra solo un elenco. Ti aiuta a capire dove cercare, quali enti seguire e quali
+                            percorsi locali aprire per continuare la ricerca senza ripartire ogni volta da zero.
                         </p>
                     </article>
                 </div>

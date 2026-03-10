@@ -5,8 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getEntiWithCount } from '@/lib/supabase/queries';
 
 export const metadata: Metadata = {
-    title: 'Concorsi per Ente',
-    description: 'Cerca concorsi pubblici per ente. Trova i bandi aperti per amministrazione.',
+    title: 'Concorsi Pubblici per Ente | Cerca bandi per amministrazione | Concoro',
+    description: 'Cerca i concorsi pubblici per ente e consulta i bandi delle singole amministrazioni. Utile se sai gia quali enti vuoi monitorare.',
 };
 
 export const revalidate = 3600;
@@ -23,8 +23,8 @@ export default async function EnteIndexPage() {
                     {' › '}
                     <span className="text-foreground">Enti</span>
                 </nav>
-                <h1 className="text-3xl font-bold tracking-tight">Concorsi per Ente</h1>
-                <p className="text-muted-foreground mt-1">Seleziona un ente per vedere tutti i concorsi attivi</p>
+                <h1 className="text-3xl font-bold tracking-tight">Concorsi pubblici per ente</h1>
+                <p className="text-muted-foreground mt-1">Seleziona un ente per vedere i bandi attivi e capire subito quali amministrazioni pubblicano di piu</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -43,4 +43,3 @@ export default async function EnteIndexPage() {
         </div>
     );
 }
-
