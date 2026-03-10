@@ -1,6 +1,7 @@
 import { stripe } from '@/lib/stripe/client';
 import { PLANS } from '@/lib/stripe/prices';
 import { NextResponse } from 'next/server';
+import { getServerAppUrl } from '@/lib/auth/url';
 
 export async function POST(req: Request) {
     try {
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
             return new NextResponse('Invalid priceId', { status: 400 });
         }
 
-        const host = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const host = req.headers.get('origin') || getServerAppUrl();
 
         const checkoutSession = await stripe.checkout.sessions.create({
             mode: 'subscription',

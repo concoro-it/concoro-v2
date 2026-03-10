@@ -13,8 +13,12 @@ function isLocalhostUrl(url: string) {
     }
 }
 
+function getConfiguredSiteUrl() {
+    return process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+}
+
 export function getClientOAuthRedirectUrl() {
-    const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    const configuredSiteUrl = getConfiguredSiteUrl();
     const windowOrigin = stripTrailingSlash(window.location.origin);
     const hasConfiguredSiteUrl = Boolean(configuredSiteUrl && configuredSiteUrl.length > 0);
 
@@ -31,7 +35,7 @@ export function getClientOAuthRedirectUrl() {
 }
 
 export function getRequestBaseUrl(request: NextRequest) {
-    const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    const configuredSiteUrl = getConfiguredSiteUrl();
     if (configuredSiteUrl && !isLocalhostUrl(configuredSiteUrl)) {
         return stripTrailingSlash(configuredSiteUrl);
     }
@@ -46,4 +50,22 @@ export function getRequestBaseUrl(request: NextRequest) {
     if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
 
     return stripTrailingSlash(new URL(request.url).origin);
+}
+
+export function getServerAppUrl() {
+    const configuredSiteUrl = getConfiguredSiteUrl();
+
+    if (configuredSiteUrl && !isLocalhostUrl(configuredSiteUrl)) {
+        return stripTrailingSlash(configuredSiteUrl);
+    }
+
+    if (process.env.NODE_ENV === 'production' && process.env.VERCEL_URL) {
+        return `https://${process.env.VERCEL_URL}`;
+    }
+
+    if (configuredSiteUrl) {
+        return stripTrailingSlash(configuredSiteUrl);
+    }
+
+    return 'http://localhost:3000';
 }

@@ -4,7 +4,7 @@ import { getAllConcorsiSlugs, getAllProvinceSlugs, getAllRegioniSlugs, getAllSet
 
 // Vercel/Next.js dynamic sitemap generation
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.concoro.it';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://concoro.it';
     const supabase = createStaticClient();
 
     // 1. Static Routes

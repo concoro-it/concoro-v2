@@ -3,8 +3,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe/client';
 import { redirect } from 'next/navigation';
+import { getServerAppUrl } from '@/lib/auth/url';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const APP_URL = getServerAppUrl();
 
 export async function createPortalSession() {
     if (!stripe) {

@@ -1,6 +1,7 @@
 import { stripe } from '@/lib/stripe/client';
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { getServerAppUrl } from '@/lib/auth/url';
 
 export async function POST(req: Request) {
     try {
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
             );
         }
 
-        const host = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const host = req.headers.get('origin') || getServerAppUrl();
 
         const session = await stripe.billingPortal.sessions.create({
             customer: profile.stripe_customer_id,

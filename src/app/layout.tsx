@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import { ConditionalHeader } from '@/components/layout/ConditionalHeader';
 import { ConditionalFooter } from '@/components/layout/ConditionalFooter';
 import { createClient } from '@/lib/supabase/server';
+import { getServerAppUrl } from '@/lib/auth/url';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans', weight: ['400', '500', '600', '700', '800'] });
 
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
     },
     description: 'Trova i migliori concorsi pubblici in Italia. Cerca per regione, ente, settore o scadenza. Aggiornati ogni giorno dal portale InPA.',
     keywords: ['concorsi pubblici', 'concorso pubblico', 'bandi concorso', 'lavoro pubblico', 'PA', 'InPA'],
-    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+    metadataBase: new URL(getServerAppUrl()),
     openGraph: {
         type: 'website',
         locale: 'it_IT',
@@ -46,4 +47,3 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </html>
     );
 }
-
