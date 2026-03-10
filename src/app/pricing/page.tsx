@@ -4,11 +4,15 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export const metadata: Metadata = {
-    title: 'Prezzi — Concoro Pro',
-    description: 'Scopri il piano Concoro Pro. Accesso illimitato ai concorsi, ricerche salvate, e AI Assistant.',
+    title: 'Prezzi — Concoro',
+    description: 'Confronta Free e Concoro Pro per monitorare i concorsi giusti, ricevere alert mirati e non perdere le scadenze importanti.',
 };
 
-export default async function PricingPage() {
+export default async function PricingPage({
+    searchParams,
+}: {
+    searchParams?: Promise<{ billing?: string }>;
+}) {
     const cookieStore = await cookies();
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,6 +27,8 @@ export default async function PricingPage() {
     );
 
     const { data: { user } } = await supabase.auth.getUser();
+    const resolvedSearchParams = await searchParams;
+    const initialBilling = resolvedSearchParams?.billing === 'monthly' ? 'monthly' : 'yearly';
 
-    return <PricingSection userId={user?.id} />;
+    return <PricingSection userId={user?.id} initialBilling={initialBilling} />;
 }

@@ -81,12 +81,12 @@ export default async function DashboardPage() {
                     <div className="flex-1">
                         <h3 className="font-semibold">Passa a Concoro Pro</h3>
                         <p className="text-sm text-muted-foreground mt-0.5">
-                            Accesso illimitato, ricerche salvate, AI Assistant Genio e tanto altro.
+                            Monitora bandi rilevanti, ricevi alert mirati e usa Genio per capire piu in fretta dove candidarti.
                         </p>
                     </div>
                     <Link href="/pricing"
                         className="flex-shrink-0 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity">
-                        Abbonati
+                        Scopri Pro
                     </Link>
                 </div>
             )}

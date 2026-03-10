@@ -84,8 +84,8 @@ export function BillingSection({ tier, isPro, stripeCustomerId }: BillingSection
                         </div>
                         <p className="text-muted-foreground max-w-md">
                             {isPro
-                                ? 'Il tuo abbonamento è attivo. Hai accesso a tutte le funzionalità esclusive di Concoro.'
-                                : 'Sblocca il pieno potenziale di Concoro con funzionalità avanzate e assistente AI.'}
+                                ? 'Il tuo abbonamento e attivo. Hai accesso al monitoraggio completo, agli alert e a Genio.'
+                                : 'Passa a Pro per seguire i concorsi in modo continuativo, con meno rumore e piu segnali utili.'}
                         </p>
                     </div>
 
@@ -153,8 +153,8 @@ export function BillingSection({ tier, isPro, stripeCustomerId }: BillingSection
                 <div className="grid sm:grid-cols-3 gap-4">
                     {[
                         'Accesso illimitato ai concorsi',
-                        'Ricerche salvate e avvisi via email',
-                        'Assistente AI Genio illimitato'
+                        'Ricerche salvate e alert email mirati',
+                        'Genio per orientarti piu in fretta'
                     ].map((feature, i) => (
                         <div key={i} className="flex items-center gap-3 p-4 bg-white/50 border border-border rounded-xl">
                             <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />

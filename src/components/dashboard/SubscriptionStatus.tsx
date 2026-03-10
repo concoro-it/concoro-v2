@@ -84,10 +84,10 @@ export function SubscriptionStatus({ subscription }: SubscriptionStatusProps) {
                             <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                             <div>
                                 <p className="text-sm font-medium text-green-900">
-                                    Il tuo piano Premium è attivo
+                                    Il tuo piano Pro e attivo
                                 </p>
                                 <p className="text-sm text-green-700 mt-1">
-                                    Hai pieno accesso a tutti i concorsi, ai filtri avanzati e al supporto dell'AI.
+                                    Hai pieno accesso ai concorsi, agli alert mirati e al supporto di Genio.
                                 </p>
                             </div>
                         </div>
@@ -123,7 +123,7 @@ export function SubscriptionStatus({ subscription }: SubscriptionStatusProps) {
                 ) : (
                     <div className="space-y-4">
                         <p className="text-sm text-muted-foreground">
-                            Attualmente stai utilizzando il piano Base gratuito. I concorsi mostrati sono limitati o oscurati.
+                            Stai usando il piano gratuito. Passa a Pro quando vuoi monitorare piu bandi senza limiti e con notifiche mirate.
                         </p>
                     </div>
                 )}
@@ -146,13 +146,13 @@ export function SubscriptionStatus({ subscription }: SubscriptionStatusProps) {
                 ) : (
                     <>
                         <p className="text-xs text-muted-foreground text-center sm:text-left">
-                            Passa a Premium per sbloccare tutti i contenuti
+                            Passa a Pro per seguire i concorsi senza interruzioni
                         </p>
                         <Button
                             className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 transition-opacity text-white"
                             onClick={() => window.location.href = '/pricing'}
                         >
-                            Passa a Premium
+                            Passa a Pro
                         </Button>
                     </>
                 )}
