@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { getClientOAuthRedirectUrl } from '@/lib/auth/url';
 
 interface GoogleButtonProps {
     className?: string;
@@ -20,8 +21,7 @@ export function GoogleButton({ className, text = "Continua con Google" }: Google
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    // Make sure the callback route exists in the API
-                    redirectTo: `${window.location.origin}/api/auth/callback`,
+                    redirectTo: getClientOAuthRedirectUrl(),
                     queryParams: {
                         access_type: 'offline',
                         prompt: 'consent',

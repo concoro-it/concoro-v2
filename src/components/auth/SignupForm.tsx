@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, Loader2, Check } from 'lucide-react';
+import { getClientOAuthRedirectUrl } from '@/lib/auth/url';
 
 export function SignupForm() {
     const [email, setEmail] = useState('');
@@ -39,7 +40,7 @@ export function SignupForm() {
     async function handleGoogle() {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+            options: { redirectTo: getClientOAuthRedirectUrl() },
         });
         if (error) setError('Errore con Google OAuth. Riprova.');
     }
