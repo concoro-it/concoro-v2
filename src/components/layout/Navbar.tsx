@@ -3,16 +3,26 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
-import { Menu, X, Search, BookmarkIcon, ChevronDown, LogOut, User, Settings, CreditCard } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { Menu, X } from 'lucide-react';
 import { useScroll } from '@/components/ui/use-scroll';
 import { cn } from '@/lib/utils';
+import type { User } from '@supabase/supabase-js';
 
-export function Navbar() {
+interface NavbarProps {
+    user: User;
+}
+
+export function Navbar({ user }: NavbarProps) {
     const [mobileOpen, setMobileOpen] = useState(false);
-    const router = useRouter();
     const scrolled = useScroll(10);
+    const profileImage =
+        typeof user.user_metadata?.avatar_url === 'string' && user.user_metadata.avatar_url.trim().length > 0
+            ? user.user_metadata.avatar_url
+            : '/fav.png';
+    const profileLabel = typeof user.user_metadata?.full_name === 'string' && user.user_metadata.full_name.trim().length > 0
+        ? user.user_metadata.full_name
+        : (user.email ?? 'Profilo');
+    const profileInitial = (profileLabel.charAt(0) || 'P').toUpperCase();
 
     return (
         <nav className={cn(
@@ -49,16 +59,20 @@ export function Navbar() {
                 {/* Desktop Actions */}
                 <div className="hidden md:flex items-center gap-3">
                     <Link
-                        href="/login"
-                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                        href="/dashboard"
+                        className="inline-flex items-center justify-center h-10 w-10 rounded-full ring-1 ring-border overflow-hidden bg-muted hover:opacity-90 transition-opacity"
+                        aria-label="Vai al profilo"
+                        title={profileLabel}
                     >
-                        Accedi
-                    </Link>
-                    <Link
-                        href="/signup"
-                        className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:opacity-90 transition-opacity"
-                    >
-                        Registrati
+                        {profileImage === '/fav.png' ? (
+                            <span className="text-sm font-semibold text-foreground">{profileInitial}</span>
+                        ) : (
+                            <img
+                                src={profileImage}
+                                alt={profileLabel}
+                                className="h-full w-full object-cover"
+                            />
+                        )}
                     </Link>
                 </div>
 
@@ -83,11 +97,8 @@ export function Navbar() {
                     <Link href="/blog" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Blog</Link>
                     <Link href="/pricing" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Prezzi</Link>
                     <div className="pt-2 border-t border-border flex flex-col gap-2">
-                        <Link href="/login" className="block py-2 text-sm font-medium text-center border border-border rounded-lg">
-                            Accedi
-                        </Link>
-                        <Link href="/signup" className="block py-2 text-sm font-medium text-center bg-primary text-primary-foreground rounded-lg">
-                            Registrati
+                        <Link href="/dashboard" className="block py-2 text-sm font-medium text-center border border-border rounded-lg" onClick={() => setMobileOpen(false)}>
+                            Profilo
                         </Link>
                     </div>
                 </div>

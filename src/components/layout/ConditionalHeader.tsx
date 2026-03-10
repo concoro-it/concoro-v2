@@ -22,5 +22,5 @@ export function ConditionalHeader({ user }: ConditionalHeaderProps) {
     }
 
     // Show existing Navbar for logged-in users on other pages
-    return <Navbar />;
+    return <Navbar user={user} />;
 }
