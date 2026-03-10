@@ -391,24 +391,116 @@ export async function getConcorsiByEnteName(
 export async function getRelatedConcorsi(
     supabase: SupabaseClient,
     concorsoId: string,
-    settori: string[],
-    regioni: string[]
+    options: {
+        enteSlug?: string | null;
+        enteNome?: string | null;
+        province?: string[];
+        settori?: string[];
+        limit?: number;
+    }
 ): Promise<Concorso[]> {
-    let query = supabase
-        .from('concorsi')
-        .select(CONCORSI_COLS)
-        .eq('is_active', true)
-        .neq('concorso_id', concorsoId)
-        .limit(4);
+    const targetLimit = options.limit ?? 4;
+    const candidateLimit = Math.max(6, targetLimit * 3);
+    const province = (options.province ?? []).filter(Boolean);
+    const settori = (options.settori ?? []).filter(Boolean);
 
-    if (settori.length > 0) {
-        query = query.overlaps('settori', settori);
-    } else if (regioni.length > 0) {
-        query = query.overlaps('regioni_array', regioni);
+    const picked = new Map<string, Concorso>();
+
+    const shuffle = <T>(items: T[]): T[] => {
+        const arr = [...items];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    };
+
+    const appendUnique = (rows: Concorso[] | null | undefined) => {
+        if (!rows) return;
+        for (const row of rows) {
+            if (!row?.concorso_id) continue;
+            if (row.concorso_id === concorsoId) continue;
+            if (!picked.has(row.concorso_id)) {
+                picked.set(row.concorso_id, row);
+            }
+            if (picked.size >= targetLimit) break;
+        }
+    };
+
+    // 1) Same ente first (strongest intent signal)
+    if (options.enteSlug) {
+        const { data } = await supabase
+            .from('concorsi')
+            .select(CONCORSI_COLS)
+            .eq('is_active', true)
+            .neq('concorso_id', concorsoId)
+            .eq('ente_slug', options.enteSlug)
+            .order('data_scadenza', { ascending: true, nullsFirst: false })
+            .limit(candidateLimit);
+        appendUnique(shuffle((data as Concorso[]) ?? []));
+    } else if (options.enteNome) {
+        const { data } = await supabase
+            .from('concorsi')
+            .select(CONCORSI_COLS)
+            .eq('is_active', true)
+            .neq('concorso_id', concorsoId)
+            .eq('ente_nome', options.enteNome)
+            .order('data_scadenza', { ascending: true, nullsFirst: false })
+            .limit(candidateLimit);
+        appendUnique(shuffle((data as Concorso[]) ?? []));
     }
 
-    const { data } = await query.order('data_scadenza', { ascending: true });
-    return (data as Concorso[]) ?? [];
+    // 2) Same city/province (local relevance)
+    if (picked.size < targetLimit && province.length > 0) {
+        const { data } = await supabase
+            .from('concorsi_view')
+            .select(CONCORSI_COLS)
+            .eq('is_active', true)
+            .neq('concorso_id', concorsoId)
+            .overlaps('province_names', province)
+            .order('data_scadenza', { ascending: true, nullsFirst: false })
+            .limit(candidateLimit);
+        appendUnique(shuffle((data as Concorso[]) ?? []));
+    }
+
+    // 3) Same sectors even across different cities
+    if (picked.size < targetLimit && settori.length > 0) {
+        const { data } = await supabase
+            .from('concorsi')
+            .select(CONCORSI_COLS)
+            .eq('is_active', true)
+            .neq('concorso_id', concorsoId)
+            .overlaps('settori', settori)
+            .order('data_scadenza', { ascending: true, nullsFirst: false })
+            .limit(candidateLimit);
+        appendUnique(shuffle((data as Concorso[]) ?? []));
+    }
+
+    // 4) Fallback: active random concorsi
+    if (picked.size < targetLimit) {
+        const needed = targetLimit - picked.size;
+        const { count } = await supabase
+            .from('concorsi')
+            .select('concorso_id', { count: 'exact', head: true })
+            .eq('is_active', true)
+            .neq('concorso_id', concorsoId);
+
+        const total = count ?? 0;
+        const start = total > needed ? Math.floor(Math.random() * Math.max(1, total - needed)) : 0;
+        const end = start + Math.max(needed * 3, needed + 2) - 1;
+
+        const { data } = await supabase
+            .from('concorsi')
+            .select(CONCORSI_COLS)
+            .eq('is_active', true)
+            .neq('concorso_id', concorsoId)
+            .order('data_pubblicazione', { ascending: false, nullsFirst: false })
+            .range(start, end);
+
+        appendUnique(shuffle((data as Concorso[]) ?? []));
+    }
+
+    return Array.from(picked.values()).slice(0, targetLimit);
 }
 
 export async function getUserProfile(

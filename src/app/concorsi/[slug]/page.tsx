@@ -153,7 +153,13 @@ export default async function ConcorsoDetailPage({ params }: Props) {
             }))
     ];
 
-    const related = await getRelatedConcorsi(supabase, concorso.concorso_id, settori, regioni);
+    const related = await getRelatedConcorsi(supabase, concorso.concorso_id, {
+        enteSlug: concorso.ente_slug,
+        enteNome: concorso.ente_nome,
+        province,
+        settori,
+        limit: 4,
+    });
     let ente = concorso.ente_slug ? await getEnteBySlug(supabase, concorso.ente_slug) : null;
     if (!ente && concorso.ente_nome) {
         ente = await getEnteByName(supabase, concorso.ente_nome);
