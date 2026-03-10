@@ -13,13 +13,14 @@ import {
 import { formatDateIT, isExpired } from '@/lib/utils/date';
 import {
     MapPin, CalendarDays, Users, Building2, FileText, ExternalLink,
-    AlertTriangle, CheckCircle, ChevronRight, Download, Globe, Phone, Landmark, Train, BriefcaseBusiness
+    AlertTriangle, CheckCircle, ChevronRight, Download, Globe, Phone, Landmark, Train, BriefcaseBusiness, ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { toUrlSlug } from '@/lib/utils/regioni';
 import { cn } from '@/lib/utils/cn';
 import { ProAccountCTA } from '@/components/ui/pro-account-cta';
 import { SaveButton } from '@/components/concorsi/SaveButton';
+import { ShareButton } from '@/components/concorsi/ShareButton';
 import { SintesiSection, type SintesiItem } from '@/components/concorsi/SintesiSection';
 import type {
     EnteAnalisiLogistica,
@@ -29,6 +30,7 @@ import type {
     EnteVivereTerritorio,
     JsonValue
 } from '@/types/ente';
+import { getServerAppUrl } from '@/lib/auth/url';
 
 interface Props {
     params: Promise<{ slug: string }>;
@@ -70,6 +72,17 @@ function normalisePhone(phone: string | null): string | null {
     return phone.replace(/\s+/g, '');
 }
 
+function formatTimeIT(value: string | null | undefined): string | null {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return new Intl.DateTimeFormat('it-IT', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/Rome',
+    }).format(date);
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
     const supabase = await createClient();
@@ -100,8 +113,10 @@ export const revalidate = 3600;
 export default async function ConcorsoDetailPage({ params }: Props) {
     const { slug } = await params;
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
     const concorso = await getConcorsoBySlug(supabase, slug);
     if (!concorso) notFound();
+    const isGuestUser = !user;
 
     const expired = isExpired(concorso.data_scadenza) || concorso.status === 'CLOSED';
     const regioni = parseRegioni(concorso);
@@ -162,6 +177,8 @@ export default async function ConcorsoDetailPage({ params }: Props) {
         : null;
 
     // JSON-LD
+    const appUrl = getServerAppUrl();
+    const canonicalUrl = `${appUrl}/concorsi/${slug}`;
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'JobPosting',
@@ -186,340 +203,420 @@ export default async function ConcorsoDetailPage({ params }: Props) {
         totalJobOpenings: concorso.num_posti ?? undefined,
         employmentType: concorso.is_remote ? 'TELECOMMUTE' : 'FULL_TIME',
     };
+    const breadcrumbJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: appUrl },
+            { '@type': 'ListItem', position: 2, name: 'Concorsi', item: `${appUrl}/concorsi` },
+            { '@type': 'ListItem', position: 3, name: formatConcorsoTitle(concorso.titolo_breve ?? concorso.titolo), item: canonicalUrl },
+        ],
+    };
+    const pageJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: formatConcorsoTitle(concorso.titolo_breve ?? concorso.titolo),
+        url: canonicalUrl,
+        inLanguage: 'it-IT',
+        description: concorso.riassunto ?? `Dettagli del concorso ${concorso.titolo}.`,
+        isPartOf: {
+            '@type': 'WebSite',
+            name: 'Concoro',
+            url: appUrl,
+        },
+        about: {
+            '@type': 'Organization',
+            name: concorso.ente_nome ?? 'Ente pubblico',
+        },
+    };
+    const faqJsonLd = faq.length > 0 ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faq.map((item) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: item.answer,
+            },
+        })),
+    } : null;
+    const fullTitle = formatConcorsoTitle(concorso.titolo);
+    const shortTitle = concorso.titolo_breve ? formatConcorsoTitle(concorso.titolo_breve) : null;
+    const useShortHeroTitle = Boolean(shortTitle && fullTitle.length > 110 && shortTitle.length >= 18);
+    const heroTitle = useShortHeroTitle ? shortTitle! : fullTitle;
+    const primaryPlace = province[0] ?? regioni[0] ?? 'Italia';
+    const enteHeroImage = ente?.cover_image_url ?? ente?.logo_url ?? null;
 
     return (
         <>
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pageJsonLd) }} />
+            {faqJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />}
 
-            <div className="container max-w-6xl mx-auto px-4 py-8">
-                {/* Breadcrumb */}
-                <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-6">
-                    <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
-                    <ChevronRight className="w-4 h-4" />
-                    <Link href="/concorsi" className="hover:text-foreground transition-colors">Concorsi</Link>
-                    <ChevronRight className="w-4 h-4" />
-                    <span className="text-foreground line-clamp-1">{formatConcorsoTitle(concorso.titolo_breve ?? concorso.titolo)}</span>
-                </nav>
+            <div className="relative overflow-hidden bg-[hsl(210,55%,98%)] text-slate-900 [font-family:'Avenir_Next',Avenir,'Segoe_UI',-apple-system,BlinkMacSystemFont,'Helvetica_Neue',sans-serif]">
+                <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                        backgroundImage:
+                            'radial-gradient(circle at 10% 8%, rgba(14,47,80,0.17), transparent 35%), radial-gradient(circle at 90% 10%, rgba(16,185,129,0.12), transparent 34%), repeating-linear-gradient(90deg, rgba(10,53,91,0.035) 0 1px, transparent 1px 84px)',
+                    }}
+                />
 
-                {/* Expired warning */}
-                {expired && (
-                    <div className="flex items-start gap-3 p-4 mb-6 rounded-xl bg-amber-50 border border-amber-200 text-amber-800">
-                        <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <p className="font-semibold text-sm">Bando scaduto</p>
-                            <p className="text-sm mt-0.5">
-                                Questo bando è scaduto il {formatDateIT(concorso.data_scadenza)}. Non è più possibile candidarsi.
-                            </p>
-                        </div>
+                <div className="relative border-b border-slate-200 bg-white/85">
+                    <div className="container mx-auto max-w-[78rem] px-4 py-3 text-sm text-slate-500">
+                        <nav className="flex flex-wrap items-center gap-2">
+                            <Link href="/" className="hover:text-slate-900">Home</Link>
+                            <ChevronRight className="h-4 w-4" />
+                            <Link href="/concorsi" className="hover:text-slate-900">Concorsi</Link>
+                            <ChevronRight className="h-4 w-4" />
+                            <span className="line-clamp-1 font-medium text-slate-900">{formatConcorsoTitle(concorso.titolo_breve ?? concorso.titolo)}</span>
+                        </nav>
                     </div>
-                )}
+                </div>
 
-                {/* Grid Layout */}
-                <div className="grid lg:grid-cols-[1fr_300px] gap-8 items-start">
-                    {/* Main Content Column */}
-                    <div className="space-y-8">
-                        {/* Main card */}
-                        <div className="bg-white rounded-xl border border-border p-6 space-y-6">
-                            {/* Header */}
-                            <div>
-                                <div className="flex items-center gap-2 mb-3">
-                                    {concorso.favicon_url
-                                        ? <img src={concorso.favicon_url} alt="" className="w-6 h-6 rounded object-contain" />
-                                        : <Building2 className="w-5 h-5 text-muted-foreground" />
-                                    }
-                                    {concorso.ente_slug
-                                        ? <Link href={`/ente/${concorso.ente_slug}`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                                            {concorso.ente_nome}
-                                        </Link>
-                                        : <span className="text-sm text-muted-foreground">{concorso.ente_nome}</span>
-                                    }
-                                    {urgencyLabel && (
-                                        <div className={cn(
-                                            "ml-auto flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border",
-                                            urgencyColor
-                                        )}>
-                                            <span className={cn(
-                                                "w-2 h-2 rounded-full animate-pulse",
-                                                urgencyLevel === 0 ? "bg-gray-400" :
-                                                    urgencyLevel === 1 ? "bg-red-500" :
-                                                        urgencyLevel === 2 ? "bg-orange-500" :
-                                                            urgencyLevel === 3 ? "bg-yellow-500" :
-                                                                "bg-emerald-500"
-                                            )} />
-                                            {urgencyLabel}
-                                        </div>
-                                    )}
+                <header className="relative px-4 pb-12 pt-10 md:pb-16">
+                    <div className="container mx-auto grid max-w-[78rem] gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+                        <div className="space-y-6">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-white/75 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.11em] text-slate-700 backdrop-blur-sm">
+                                    <ShieldCheck className="h-3.5 w-3.5" />
+                                    Scheda concorso ufficiale
                                 </div>
-                                <h1 className="text-2xl font-semibold tracking-tight">{formatConcorsoTitle(concorso.titolo)}</h1>
-                                {concorso.titolo_breve && concorso.titolo_breve !== concorso.titolo && (
-                                    <p className="text-muted-foreground mt-1">{formatConcorsoTitle(concorso.titolo_breve)}</p>
-                                )}
-                                <div className="mt-3">
-                                    <SaveButton concorsoId={concorso.concorso_id} />
-                                </div>
-                                {/* Settori */}
-                                {settori.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5 mt-3">
-                                        {settori.map(s => (
-                                            <Link key={s} href={`/settore/${encodeURIComponent(s)}`}
-                                                className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors">
-                                                {s}
-                                            </Link>
-                                        ))}
-                                    </div>
+                                {urgencyLabel && (
+                                    <span className={cn(
+                                        'ml-auto inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.1em]',
+                                        urgencyColor
+                                    )}>
+                                        <span className={cn(
+                                            'h-2 w-2 rounded-full animate-pulse',
+                                            urgencyLevel === 0 ? 'bg-gray-400' :
+                                                urgencyLevel === 1 ? 'bg-red-500' :
+                                                    urgencyLevel === 2 ? 'bg-orange-500' :
+                                                        urgencyLevel === 3 ? 'bg-yellow-500' :
+                                                            'bg-emerald-500'
+                                        )} />
+                                        {urgencyLabel}
+                                    </span>
                                 )}
                             </div>
 
-                            {/* Key details */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
-                                {(province.length > 0 || regioni.length > 0) && (
-                                    <div className="flex items-start gap-2">
-                                        <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Luogo</p>
-                                            <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm font-medium">
-                                                {province.map((p, i) => (
-                                                    <span key={p}>
-                                                        <Link href={`/provincia/${toUrlSlug(p)}`} className="text-primary hover:underline transition-all">
-                                                            {p}
+                            <div className="flex flex-wrap items-center gap-2">
+                                {concorso.favicon_url
+                                    ? <img src={concorso.favicon_url} alt="" className="h-7 w-7 rounded object-contain" />
+                                    : <Building2 className="h-5 w-5 text-slate-500" />
+                                }
+                            {concorso.ente_slug
+                                    ? <Link href={`/ente/${concorso.ente_slug}`} className="text-sm font-semibold text-slate-700 hover:text-[#0A4E88] transition-colors">
+                                        {concorso.ente_nome}
+                                    </Link>
+                                    : <span className="text-sm font-semibold text-slate-700">{concorso.ente_nome}</span>
+                                }
+                            </div>
+
+                            <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] max-w-3xl text-balance text-4xl font-semibold leading-[1.08] tracking-tight text-slate-900 md:text-5xl">
+                                {heroTitle}
+                            </h1>
+
+                            {useShortHeroTitle && (
+                                <p className="max-w-3xl text-base leading-relaxed text-slate-600 md:text-lg">
+                                    {fullTitle}
+                                </p>
+                            )}
+
+                            {concorso.riassunto && (
+                                <p className="max-w-3xl rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm leading-relaxed text-slate-700">
+                                    {concorso.riassunto}
+                                </p>
+                            )}
+
+                            <div className="flex flex-wrap gap-3">
+                                {!expired && concorso.link_reindirizzamento && (
+                                    <a
+                                        href={concorso.link_reindirizzamento}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                                    >
+                                        Vai al portale candidatura
+                                        <ExternalLink className="h-4 w-4" />
+                                    </a>
+                                )}
+                                {!expired && normaliseLink(concorso.link_sito_pa) && (
+                                    <a
+                                        href={normaliseLink(concorso.link_sito_pa)!}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
+                                    >
+                                        <Globe className="h-4 w-4" />
+                                        Sito dell&apos;ente
+                                    </a>
+                                )}
+                            </div>
+                        </div>
+
+                        <aside className="space-y-4">
+                            <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-[0_14px_44px_-30px_rgba(15,23,42,0.45)]">
+                                <div className="flex items-center justify-between gap-3">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-500">Panoramica rapida</p>
+                                    <div className="flex items-center gap-2">
+                                        {concorso.slug && (
+                                            <ShareButton
+                                                title={formatConcorsoTitle(concorso.titolo_breve ?? concorso.titolo)}
+                                                slug={concorso.slug}
+                                                iconOnly
+                                                className="h-9 w-9 rounded-full"
+                                            />
+                                        )}
+                                        <SaveButton concorsoId={concorso.concorso_id} />
+                                    </div>
+                                </div>
+                                <dl className="mt-3 grid gap-2 text-sm">
+                                    <div className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                        <dt className="text-slate-500">Scadenza</dt>
+                                        <dd className="text-right font-semibold text-slate-900">{concorso.data_scadenza ? formatDateIT(concorso.data_scadenza) : 'N/D'}</dd>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                        <dt className="text-slate-500">Posti</dt>
+                                        <dd className="text-right font-semibold text-slate-900">{concorso.num_posti ?? 'N/D'}</dd>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                        <dt className="text-slate-500">Luogo</dt>
+                                        <dd className="text-right font-semibold text-slate-900">{primaryPlace}</dd>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                        <dt className="text-slate-500">Tipo procedura</dt>
+                                        <dd className="text-right font-semibold text-slate-900">{concorso.tipo_procedura ? concorso.tipo_procedura.replace('_', ' ').toLowerCase() : 'N/D'}</dd>
+                                    </div>
+                                    {concorso.collocazione_organizzativa && (
+                                        <div className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                            <dt className="text-slate-500">Collocazione</dt>
+                                            <dd className="text-right font-semibold text-slate-900">{concorso.collocazione_organizzativa}</dd>
+                                        </div>
+                                    )}
+                                    <div className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                        <dt className="text-slate-500">Settore</dt>
+                                        <dd className="text-right font-semibold text-slate-900">
+                                            {settori.length > 0 ? (
+                                                <span className="inline-flex flex-wrap justify-end gap-1">
+                                                    {settori.slice(0, 3).map((s) => (
+                                                        <Link
+                                                            key={s}
+                                                            href={`/settore/${encodeURIComponent(s)}`}
+                                                            className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] text-slate-700 transition hover:bg-slate-100"
+                                                        >
+                                                            {s}
                                                         </Link>
-                                                        {i < province.length - 1 || regioni.length > 0 ? <span className="text-muted-foreground">, </span> : null}
-                                                    </span>
-                                                ))}
-                                                {regioni.map((r, i) => (
-                                                    <span key={r}>
-                                                        <Link href={`/regione/${toUrlSlug(r)}`} className="text-primary hover:underline transition-all">
-                                                            {r}
-                                                        </Link>
-                                                        {i < regioni.length - 1 ? <span className="text-muted-foreground">, </span> : null}
-                                                    </span>
-                                                ))}
+                                                    ))}
+                                                </span>
+                                            ) : 'N/D'}
+                                        </dd>
+                                    </div>
+                                </dl>
+                                {(enteHeroImage || (ente?.comune ?? ente?.provincia ?? ente?.regione) || concorso.ente_nome) && (
+                                    concorso.ente_slug ? (
+                                        <Link
+                                            href={`/ente/${concorso.ente_slug}`}
+                                            className="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 transition hover:border-slate-300 hover:bg-slate-100"
+                                        >
+                                            {enteHeroImage ? (
+                                                <img
+                                                    src={enteHeroImage}
+                                                    alt={`${concorso.ente_nome ?? 'Ente'} immagine`}
+                                                    className="h-14 w-20 rounded-lg object-cover"
+                                                />
+                                            ) : (
+                                                <div className="flex h-14 w-20 items-center justify-center rounded-lg border border-slate-200 bg-white">
+                                                    <Building2 className="h-5 w-5 text-slate-500" />
+                                                </div>
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Ente</p>
+                                                <p className="line-clamp-1 text-sm font-semibold text-slate-900">{concorso.ente_nome ?? 'Ente pubblico'}</p>
+                                                <p className="mt-0.5 line-clamp-1 text-xs text-slate-600">
+                                                    {[ente?.comune ?? ente?.provincia, ente?.regione].filter(Boolean).join(', ') || 'Italia'}
+                                                </p>
+                                            </div>
+                                            <ChevronRight className="h-4 w-4 text-slate-400" />
+                                        </Link>
+                                    ) : (
+                                        <div className="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                            {enteHeroImage ? (
+                                                <img
+                                                    src={enteHeroImage}
+                                                    alt={`${concorso.ente_nome ?? 'Ente'} immagine`}
+                                                    className="h-14 w-20 rounded-lg object-cover"
+                                                />
+                                            ) : (
+                                                <div className="flex h-14 w-20 items-center justify-center rounded-lg border border-slate-200 bg-white">
+                                                    <Building2 className="h-5 w-5 text-slate-500" />
+                                                </div>
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Ente</p>
+                                                <p className="line-clamp-1 text-sm font-semibold text-slate-900">{concorso.ente_nome ?? 'Ente pubblico'}</p>
+                                                <p className="mt-0.5 line-clamp-1 text-xs text-slate-600">
+                                                    {[ente?.comune ?? ente?.provincia, ente?.regione].filter(Boolean).join(', ') || 'Italia'}
+                                                </p>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
-                                {!province.length && !regioni.length && (
-                                    <div className="flex items-start gap-2">
-                                        <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Luogo</p>
-                                            <p className="text-sm font-medium">Italia</p>
-                                        </div>
-                                    </div>
-                                )}
-                                {concorso.data_scadenza && (
-                                    <div className="flex items-start gap-2">
-                                        <CalendarDays className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Scadenza</p>
-                                            <p className="text-sm font-medium">{formatDateIT(concorso.data_scadenza)}</p>
-                                        </div>
-                                    </div>
-                                )}
-                                {concorso.num_posti && (
-                                    <div className="flex items-start gap-2">
-                                        <Users className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Posti</p>
-                                            <p className="text-sm font-medium">{concorso.num_posti}</p>
-                                        </div>
-                                    </div>
-                                )}
-                                {concorso.tipo_procedura && (
-                                    <div className="flex items-start gap-2">
-                                        <FileText className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Tipo</p>
-                                            <p className="text-sm font-medium capitalize">{concorso.tipo_procedura.replace('_', ' ').toLowerCase()}</p>
-                                        </div>
-                                    </div>
-                                )}
-                                {concorso.data_pubblicazione && (
-                                    <div className="flex items-start gap-2">
-                                        <CalendarDays className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Pubblicato</p>
-                                            <p className="text-sm font-medium">{formatDateIT(concorso.data_pubblicazione)}</p>
-                                        </div>
-                                    </div>
-                                )}
-                                {concorso.collocazione_organizzativa && (
-                                    <div className="flex items-start gap-2">
-                                        <Building2 className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Collocazione</p>
-                                            <p className="text-sm font-medium">{concorso.collocazione_organizzativa}</p>
-                                        </div>
-                                    </div>
+                                    )
                                 )}
                             </div>
+                        </aside>
+                    </div>
+                </header>
 
-                            {/* AI Summary */}
-                            {concorso.riassunto && (
-                                <div className="rounded-lg p-5" style={{ backgroundImage: 'linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%)' }}>
-                                    <p className="text-xs font-semibold text-blue-900/70 mb-2 uppercase tracking-wide">Riepilogo</p>
-                                    <p className="text-sm text-blue-900 leading-relaxed">{concorso.riassunto}</p>
-                                </div>
-                            )}
-
-                            {/* Description */}
-                            {concorso.descrizione && (
-                                <div>
-                                    <h2 className="text-lg font-semibold mb-3">Descrizione</h2>
-                                    <div
-                                        className="prose prose-sm max-w-none text-sm leading-relaxed"
-                                        dangerouslySetInnerHTML={{ __html: formatHtmlDescription(concorso.descrizione) }}
-                                    />
-                                </div>
-                            )}
-
-                            {/* Requisiti */}
-                            {requisiti.length > 0 && (
-                                <div className="border border-border rounded-lg p-5">
-                                    <h2 className="text-lg font-semibold mb-4">Requisiti</h2>
-                                    <ul className="space-y-2">
-                                        {requisiti.map((r, i) => (
-                                            <li key={i} className="flex items-start gap-2 text-sm">
-                                                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                                                <span>{r}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-
-                            {/* Programma esame */}
-                            {concorso.programma_di_esame && (
-                                <div className="border border-border rounded-lg p-5">
-                                    <h2 className="text-lg font-semibold mb-3">Programma d&apos;Esame</h2>
-                                    <p className="text-sm leading-relaxed text-muted-foreground">{concorso.programma_di_esame}</p>
-                                </div>
-                            )}
-
-                            {/* Capacità */}
-                            {capacita.length > 0 && (
-                                <div className="border border-border rounded-lg p-5">
-                                    <h2 className="text-lg font-semibold mb-3">Capacità Richieste</h2>
-                                    <div className="flex flex-wrap gap-2">
-                                        {capacita.map((c, i) => (
-                                            <span key={i} className="text-xs bg-secondary px-2.5 py-1 rounded-full">{c}</span>
-                                        ))}
+                <div className="px-4 pb-14">
+                    <div className="container mx-auto max-w-[78rem] space-y-10">
+                        {expired && (
+                            <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-900">
+                                <div className="flex items-start gap-3">
+                                    <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+                                    <div>
+                                        <p className="text-sm font-semibold">Bando scaduto</p>
+                                        <p className="mt-0.5 text-sm">
+                                            Questo bando è scaduto il {formatDateIT(concorso.data_scadenza)}. Non è più possibile candidarsi.
+                                        </p>
                                     </div>
                                 </div>
-                            )}
+                            </div>
+                        )}
 
-                            {/* Conoscenze */}
-                            {conoscenze.length > 0 && (
-                                <div className="border border-border rounded-lg p-5">
-                                    <h2 className="text-lg font-semibold mb-3">Conoscenze Tecnico-Specialistiche</h2>
-                                    <div className="flex flex-wrap gap-2">
-                                        {conoscenze.map((c, i) => (
-                                            <span key={i} className="text-xs bg-secondary px-2.5 py-1 rounded-full">{c}</span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+                            <article className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+                                {concorso.descrizione && (
+                                    <section>
+                                        <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl tracking-tight text-slate-900">Descrizione</h2>
+                                        <div
+                                            className="prose prose-slate mt-4 max-w-none text-sm leading-relaxed"
+                                            dangerouslySetInnerHTML={{ __html: formatHtmlDescription(concorso.descrizione) }}
+                                        />
+                                    </section>
+                                )}
 
-                            {/* Contatti */}
-                            {concorso.contatti && (
-                                <div className="border border-border rounded-lg p-5">
-                                    <h2 className="text-lg font-semibold mb-2">Contatti</h2>
-                                    <p className="text-sm flex items-center gap-2 text-muted-foreground">
-                                        <Phone className="w-4 h-4" />
-                                        {concorso.contatti}
-                                    </p>
-                                </div>
-                            )}
+                                {requisiti.length > 0 && (
+                                    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <h2 className="text-lg font-semibold text-slate-900">Requisiti</h2>
+                                        <ul className="mt-3 space-y-2">
+                                            {requisiti.map((r, i) => (
+                                                <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                                                    <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
+                                                    <span>{r}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </section>
+                                )}
 
-                            {/* Action buttons — hidden for expired */}
-                            {!expired && (
-                                <div className="space-y-3 pt-2">
-                                    {concorso.link_reindirizzamento && (
-                                        <a href={concorso.link_reindirizzamento} target="_blank" rel="noopener noreferrer"
-                                            className="flex items-center justify-center gap-2 w-full py-3 px-6 bg-primary text-primary-foreground font-semibold rounded-xl hover:opacity-90 transition-opacity">
-                                            Vai al Portale di Candidatura
-                                            <ExternalLink className="w-4 h-4" />
-                                        </a>
-                                    )}
-                                    {normaliseLink(concorso.link_sito_pa) && (
-                                        <a href={normaliseLink(concorso.link_sito_pa)!} target="_blank" rel="noopener noreferrer"
-                                            className="flex items-center justify-center gap-2 w-full py-2.5 px-6 border border-border font-medium rounded-xl hover:bg-secondary transition-colors text-sm">
-                                            <Globe className="w-4 h-4" />
-                                            Sito dell&apos;Ente
-                                            <ExternalLink className="w-4 h-4 opacity-50" />
-                                        </a>
-                                    )}
-                                </div>
-                            )}
+                                {concorso.programma_di_esame && (
+                                    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <h2 className="text-lg font-semibold text-slate-900">Programma d&apos;esame</h2>
+                                        <p className="mt-3 text-sm leading-relaxed text-slate-700">{concorso.programma_di_esame}</p>
+                                    </section>
+                                )}
 
-                            {/* PDF Downloads — always visible */}
-                            {linkAllegati.length > 0 && (
-                                <div>
-                                    <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
-                                        <Download className="w-4 h-4" />
-                                        Allegati ({allegatoCount})
-                                    </h2>
-                                    <div className="space-y-2">
-                                        {linkAllegati.map((url, i) => (
-                                            <a key={i} href={url} target="_blank" rel="noopener noreferrer"
-                                                className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-secondary transition-colors group text-sm">
-                                                <FileText className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
-                                                <span className="flex-1 truncate">
-                                                    {concorso.allegati?.[i]?.label ?? `Allegato ${i + 1}`}
-                                                </span>
-                                                <Download className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                            </a>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                                {capacita.length > 0 && (
+                                    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <h2 className="text-lg font-semibold text-slate-900">Capacità richieste</h2>
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            {capacita.map((c, i) => (
+                                                <span key={i} className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">{c}</span>
+                                            ))}
+                                        </div>
+                                    </section>
+                                )}
 
-                            {/* Enrichment Deep Dive */}
-                            {concorso.annuncio_enrichment && (
-                                <div className="space-y-8 pt-8 border-t border-border mt-8">
-                                    <div className="space-y-4">
-                                        <h2 className="text-xl font-semibold">Analisi Approfondita</h2>
-                                        <div className="bg-white rounded-xl border border-border divide-y divide-border overflow-hidden">
+                                {conoscenze.length > 0 && (
+                                    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <h2 className="text-lg font-semibold text-slate-900">Conoscenze tecnico-specialistiche</h2>
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            {conoscenze.map((c, i) => (
+                                                <span key={i} className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">{c}</span>
+                                            ))}
+                                        </div>
+                                    </section>
+                                )}
+
+                                {concorso.contatti && (
+                                    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <h2 className="text-lg font-semibold text-slate-900">Contatti</h2>
+                                        <p className="mt-3 flex items-center gap-2 text-sm text-slate-700">
+                                            <Phone className="h-4 w-4" />
+                                            {concorso.contatti}
+                                        </p>
+                                    </section>
+                                )}
+
+                                {linkAllegati.length > 0 && (
+                                    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <h2 className="text-lg font-semibold text-slate-900">Allegati ({allegatoCount})</h2>
+                                        <div className="mt-3 space-y-2">
+                                            {linkAllegati.map((url, i) => (
+                                                <a
+                                                    key={i}
+                                                    href={url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="group flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-sm transition hover:border-slate-300 hover:bg-slate-100"
+                                                >
+                                                    <FileText className="h-4 w-4 flex-shrink-0 text-slate-500 transition group-hover:text-[#0A4E88]" />
+                                                    <span className="min-w-0 flex-1 break-all leading-snug text-slate-800">
+                                                        {concorso.allegati?.[i]?.label ?? `Allegato ${i + 1}`}
+                                                    </span>
+                                                    <Download className="h-4 w-4 flex-shrink-0 text-slate-500" />
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </section>
+                                )}
+
+                                {concorso.annuncio_enrichment && (
+                                    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-2xl tracking-tight text-slate-900">Analisi approfondita</h2>
+                                        <div className="mt-4 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white">
                                             {concorso.annuncio_enrichment.ccnl_focus && (
                                                 <div className="p-4">
-                                                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Inquadramento contrattuale</h3>
-                                                    <p className="text-sm leading-relaxed">{concorso.annuncio_enrichment.ccnl_focus}</p>
+                                                    <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Inquadramento contrattuale</h3>
+                                                    <p className="mt-1 text-sm leading-relaxed text-slate-700">{concorso.annuncio_enrichment.ccnl_focus}</p>
                                                 </div>
                                             )}
                                             {concorso.annuncio_enrichment.graduatoria_insight && (
                                                 <div className="p-4">
-                                                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Suggerimenti sulla graduatoria</h3>
-                                                    <p className="text-sm leading-relaxed">{concorso.annuncio_enrichment.graduatoria_insight}</p>
+                                                    <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Suggerimenti sulla graduatoria</h3>
+                                                    <p className="mt-1 text-sm leading-relaxed text-slate-700">{concorso.annuncio_enrichment.graduatoria_insight}</p>
                                                 </div>
                                             )}
                                             {(concorso.annuncio_enrichment.livello_concorrenza || concorso.annuncio_enrichment.smart_working_guess) && (
-                                                <div className="p-4 grid grid-cols-2 gap-4">
+                                                <div className="grid gap-4 p-4 md:grid-cols-2">
                                                     {concorso.annuncio_enrichment.livello_concorrenza && (
                                                         <div>
-                                                            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Livello concorrenza</h3>
-                                                            <p className="text-sm font-medium">{concorso.annuncio_enrichment.livello_concorrenza}</p>
+                                                            <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Livello concorrenza</h3>
+                                                            <p className="mt-1 text-sm font-medium text-slate-900">{concorso.annuncio_enrichment.livello_concorrenza}</p>
                                                         </div>
                                                     )}
                                                     {concorso.annuncio_enrichment.smart_working_guess && (
                                                         <div>
-                                                            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Smart Working</h3>
-                                                            <p className="text-sm font-medium">{concorso.annuncio_enrichment.smart_working_guess}</p>
+                                                            <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Smart working</h3>
+                                                            <p className="mt-1 text-sm font-medium text-slate-900">{concorso.annuncio_enrichment.smart_working_guess}</p>
                                                         </div>
                                                     )}
                                                 </div>
                                             )}
                                             {concorso.annuncio_enrichment.normativa_summary && (
                                                 <div className="p-4">
-                                                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Sintesi normativa</h3>
-                                                    <p className="text-sm leading-relaxed">{concorso.annuncio_enrichment.normativa_summary}</p>
+                                                    <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Sintesi normativa</h3>
+                                                    <p className="mt-1 text-sm leading-relaxed text-slate-700">{concorso.annuncio_enrichment.normativa_summary}</p>
                                                 </div>
                                             )}
                                             {concorso.annuncio_enrichment.normativa_riferimento && Array.isArray(concorso.annuncio_enrichment.normativa_riferimento) && (
                                                 <div className="p-4">
-                                                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Riferimenti normativi</h3>
-                                                    <div className="flex flex-wrap gap-2">
+                                                    <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Riferimenti normativi</h3>
+                                                    <div className="mt-2 flex flex-wrap gap-2">
                                                         {concorso.annuncio_enrichment.normativa_riferimento.map((item: string, i: number) => (
-                                                            <span key={i} className="text-[11px] bg-muted px-2 py-0.5 rounded text-muted-foreground">
+                                                            <span key={i} className="rounded-full border border-slate-300 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
                                                                 {item}
                                                             </span>
                                                         ))}
@@ -527,176 +624,310 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    {/* Right Sidebar */}
-                    <aside className="space-y-6 lg:sticky lg:top-8">
-                        {summaryItems.length > 0 && (
-                            <SintesiSection items={summaryItems} />
-                        )}
-                        {summaryItems.length === 0 && (
-                            <ProAccountCTA />
-                        )}
-
-                        {/* Newsletter or other CTAs can be added here */}
-                    </aside>
-                </div>
-
-                {/* Ente enrichment blocks */}
-                {ente && (
-                    <section className="mt-12 pt-12 border-t border-border space-y-8">
-                        <div className="flex items-center justify-between gap-4 flex-wrap">
-                            <div>
-                                <p className="text-xs font-bold uppercase tracking-wider text-blue-700">Profilo ente</p>
-                                <h2 className="text-2xl font-semibold mt-1">Informazioni sull&apos;ente</h2>
-                                <p className="text-sm text-muted-foreground mt-2">
-                                    Dati territoriali e professionali dell&apos;ente che ha pubblicato questo concorso.
-                                </p>
-                            </div>
-                            {concorso.ente_slug && (
-                                <Link
-                                    href={`/ente/${concorso.ente_slug}`}
-                                    className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-secondary transition-colors"
-                                >
-                                    Vai alla scheda ente
-                                    <ChevronRight className="w-4 h-4" />
-                                </Link>
-                            )}
-                        </div>
-
-                        <div className="grid gap-6 lg:grid-cols-2">
-                            <div className="rounded-2xl border border-border bg-white p-6">
-                                <h3 className="text-lg font-semibold flex items-center gap-2">
-                                    <Landmark className="w-5 h-5 text-blue-700" />
-                                    Identità istituzionale
-                                </h3>
-                                <p className="text-sm text-muted-foreground leading-relaxed mt-3">
-                                    {identita.descrizione || 'Profilo istituzionale non ancora disponibile per questo ente.'}
-                                </p>
-                                {identita.ruolo_territoriale && (
-                                    <p className="text-sm text-muted-foreground leading-relaxed mt-3">
-                                        {identita.ruolo_territoriale}
-                                    </p>
+                                    </section>
                                 )}
-                                <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                                    <div className="rounded-lg bg-muted/40 p-3">
-                                        <p className="text-muted-foreground">Prestigio</p>
-                                        <p className="font-semibold text-sm mt-1">{identita.prestigio || 'N/D'}</p>
-                                    </div>
-                                    <div className="rounded-lg bg-muted/40 p-3">
-                                        <p className="text-muted-foreground">CCNL</p>
-                                        <p className="font-semibold text-sm mt-1">{ccnlLabel}</p>
-                                    </div>
-                                </div>
-                            </div>
+                            </article>
 
-                            <div className="rounded-2xl border border-border bg-white p-6">
-                                <h3 className="text-lg font-semibold">Contatti e sede</h3>
-                                <dl className="mt-4 space-y-3 text-sm">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <dt className="text-muted-foreground">Indirizzo</dt>
-                                        <dd className="text-right font-medium">{ente.indirizzo || 'N/D'}</dd>
-                                    </div>
-                                    <div className="flex items-start justify-between gap-4">
-                                        <dt className="text-muted-foreground">Comune / Provincia</dt>
-                                        <dd className="text-right font-medium">{[ente.comune || ente.provincia, ente.regione].filter(Boolean).join(', ') || 'N/D'}</dd>
-                                    </div>
-                                    <div className="flex items-start justify-between gap-4">
-                                        <dt className="text-muted-foreground">Telefono</dt>
-                                        <dd className="text-right font-medium">
-                                            {phoneHref
-                                                ? <a href={`tel:${phoneHref}`} className="hover:underline">{ente.telefono}</a>
-                                                : (ente.telefono || 'N/D')}
-                                        </dd>
-                                    </div>
-                                    <div className="flex items-start justify-between gap-4">
-                                        <dt className="text-muted-foreground">PEC</dt>
-                                        <dd className="text-right font-medium break-all">{ente.pec ? <a href={`mailto:${ente.pec}`} className="text-primary hover:underline">{ente.pec}</a> : 'N/D'}</dd>
-                                    </div>
-                                </dl>
-                                <div className="mt-4 flex flex-wrap gap-2">
-                                    {website && (
-                                        <a href={website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
-                                            Sito istituzionale
-                                            <ExternalLink className="w-4 h-4" />
-                                        </a>
-                                    )}
-                                    {mapsHref && (
-                                        <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
-                                            Google Maps
-                                            <ExternalLink className="w-4 h-4" />
-                                        </a>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid gap-6 lg:grid-cols-3">
-                            <div className="rounded-2xl border border-border bg-white p-6">
-                                <h3 className="text-base font-semibold flex items-center gap-2">
-                                    <Train className="w-5 h-5 text-blue-700" />
-                                    Logistica
-                                </h3>
-                                <p className="text-sm text-muted-foreground mt-3"><strong className="text-foreground">Pendolarismo:</strong> {logistica.pendolarismo || 'N/D'}</p>
-                                <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">Stazione vicina:</strong> {logistica.stazione_vicina || 'N/D'}</p>
-                                <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">Accessibilità mezzi:</strong> {logistica.accessibilita_mezzi || 'N/D'}</p>
-                            </div>
-
-                            <div className="rounded-2xl border border-border bg-white p-6">
-                                <h3 className="text-base font-semibold flex items-center gap-2">
-                                    <MapPin className="w-5 h-5 text-blue-700" />
-                                    Vivere il territorio
-                                </h3>
-                                <p className="text-sm text-muted-foreground mt-3"><strong className="text-foreground">Costo vita:</strong> {territorio.costo_vita || 'N/D'}</p>
-                                <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">Ambiente sociale:</strong> {territorio.ambiente_sociale || 'N/D'}</p>
-                                <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">Qualità vita:</strong> {scoreLabel}</p>
-                            </div>
-
-                            <div className="rounded-2xl border border-border bg-white p-6">
-                                <h3 className="text-base font-semibold flex items-center gap-2">
-                                    <BriefcaseBusiness className="w-5 h-5 text-blue-700" />
-                                    Valore professionale
-                                </h3>
-                                <p className="text-sm text-muted-foreground mt-3"><strong className="text-foreground">CCNL:</strong> {ccnlLabel}</p>
-                                <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">Stabilità:</strong> {valore.stabilita_lavorativa || 'N/D'}</p>
-                                {welfareItems.length > 0 && (
-                                    <div className="mt-3 flex flex-wrap gap-2">
-                                        {welfareItems.map(item => (
-                                            <span key={item} className="rounded-full bg-blue-50 border border-blue-200 px-2.5 py-1 text-xs text-blue-900">
-                                                {item}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {faq.length > 0 && (
-                            <div className="rounded-2xl border border-border bg-white p-6">
-                                <h3 className="text-lg font-semibold">FAQ sull&apos;ente</h3>
-                                <div className="mt-4 space-y-4">
-                                    {faq.map((item) => (
-                                        <div key={item.question} className="border-b border-border pb-4 last:border-b-0 last:pb-0">
-                                            <p className="text-sm font-semibold">{item.question}</p>
-                                            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{item.answer}</p>
+                            <aside className="space-y-6 lg:sticky lg:top-8">
+                                {summaryItems.length > 0 ? (
+                                    <SintesiSection items={summaryItems} />
+                                ) : (
+                                    isGuestUser ? (
+                                        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_36px_-28px_rgba(15,23,42,0.55)]">
+                                            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0A4E88] via-sky-500 to-emerald-500" />
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Account gratuito</p>
+                                            <h3 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-2xl leading-tight text-slate-900">
+                                                Prima registrati, poi personalizza la ricerca.
+                                            </h3>
+                                            <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                                                Inizia gratis: salvi i bandi migliori, imposti preferenze e continui dove avevi lasciato.
+                                            </p>
+                                            <ul className="mt-4 space-y-2.5 text-xs text-slate-700">
+                                                <li className="flex items-start gap-2">
+                                                    <CheckCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-emerald-600" />
+                                                    <span>Concorsi salvati e filtri personali sincronizzati</span>
+                                                </li>
+                                                <li className="flex items-start gap-2">
+                                                    <CheckCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-emerald-600" />
+                                                    <span>Dashboard pronta per monitorare i prossimi bandi</span>
+                                                </li>
+                                                <li className="flex items-start gap-2">
+                                                    <CheckCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-emerald-600" />
+                                                    <span>Registrazione veloce, meno di un minuto</span>
+                                                </li>
+                                            </ul>
+                                            <Link
+                                                href={`/signup?source=concorso-sidebar-register&concorso=${encodeURIComponent(slug)}`}
+                                                className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                                            >
+                                                Registrati gratis
+                                            </Link>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </section>
-                )}
+                                    ) : (
+                                        <ProAccountCTA />
+                                    )
+                                )}
 
-                {/* Related concorsi — full width below grid */}
-                {!expired && related.length > 0 && (
-                    <div className="mt-12 pt-12 border-t border-border">
-                        <h2 className="text-2xl font-semibold mb-6">Concorsi Correlati</h2>
-                        <ConcorsoList concorsi={related} />
+                                <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_36px_-30px_rgba(15,23,42,0.45)]">
+                                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-slate-300 via-slate-200 to-slate-300" />
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Percorsi utili</p>
+                                    <h3 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-xl leading-tight text-slate-900">
+                                        Esplora altri territori collegati a questo bando
+                                    </h3>
+                                    <div className="mt-4 space-y-3">
+                                        {province.length > 0 && (
+                                            <div>
+                                                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-500">Province</p>
+                                                <div className="flex flex-wrap gap-2 text-xs font-semibold">
+                                                    {province.slice(0, 4).map((p) => (
+                                                        <Link key={p} href={`/provincia/${toUrlSlug(p)}`} className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-slate-700 transition hover:border-slate-400 hover:bg-slate-100">
+                                                            {p}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {regioni.length > 0 && (
+                                            <div>
+                                                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-500">Regioni</p>
+                                                <div className="flex flex-wrap gap-2 text-xs font-semibold">
+                                                    {regioni.slice(0, 3).map((r) => (
+                                                        <Link key={r} href={`/regione/${toUrlSlug(r)}`} className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-slate-700 transition hover:border-slate-400 hover:bg-slate-100">
+                                                            {r}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {concorso.ente_slug && (
+                                            <Link href={`/ente/${concorso.ente_slug}`} className="inline-flex items-center gap-2 rounded-full border border-[#0A4E88]/30 bg-[#0A4E88]/5 px-3 py-1.5 text-xs font-semibold text-[#083861] transition hover:bg-[#0A4E88]/10">
+                                                Vai alla pagina ente
+                                                <ChevronRight className="h-3.5 w-3.5" />
+                                            </Link>
+                                        )}
+                                    </div>
+                                </div>
+                            </aside>
+                        </div>
+
+                        {ente && (
+                            <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">Profilo ente</p>
+                                        <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-1 text-3xl tracking-tight text-slate-900">Informazioni territoriali e professionali</h2>
+                                    </div>
+                                    {concorso.ente_slug && (
+                                        <Link
+                                            href={`/ente/${concorso.ente_slug}`}
+                                            className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                                        >
+                                            Vai alla scheda ente
+                                            <ChevronRight className="h-4 w-4" />
+                                        </Link>
+                                    )}
+                                </div>
+
+                                <div className="grid gap-6 lg:grid-cols-2">
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                                            <Landmark className="h-5 w-5 text-[#0A4E88]" />
+                                            Identità istituzionale
+                                        </h3>
+                                        <p className="mt-3 text-sm leading-relaxed text-slate-700">
+                                            {identita.descrizione || 'Profilo istituzionale non ancora disponibile per questo ente.'}
+                                        </p>
+                                        {identita.ruolo_territoriale && (
+                                            <p className="mt-3 text-sm leading-relaxed text-slate-700">{identita.ruolo_territoriale}</p>
+                                        )}
+                                        <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                                            <div className="rounded-lg border border-slate-200 bg-white p-3">
+                                                <p className="text-slate-500">Prestigio</p>
+                                                <p className="mt-1 text-sm font-semibold text-slate-900">{identita.prestigio || 'N/D'}</p>
+                                            </div>
+                                            <div className="rounded-lg border border-slate-200 bg-white p-3">
+                                                <p className="text-slate-500">CCNL</p>
+                                                <p className="mt-1 text-sm font-semibold text-slate-900">{ccnlLabel}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <h3 className="text-lg font-semibold text-slate-900">Contatti e sede</h3>
+                                        {(enteHeroImage || (ente?.comune ?? ente?.provincia ?? ente?.regione) || concorso.ente_nome) && (
+                                            concorso.ente_slug ? (
+                                                <Link
+                                                    href={`/ente/${concorso.ente_slug}`}
+                                                    className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 transition hover:border-slate-300 hover:bg-slate-100"
+                                                >
+                                                    {enteHeroImage ? (
+                                                        <img
+                                                            src={enteHeroImage}
+                                                            alt={`${concorso.ente_nome ?? 'Ente'} immagine`}
+                                                            className="h-14 w-20 rounded-lg object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-14 w-20 items-center justify-center rounded-lg border border-slate-200 bg-slate-50">
+                                                            <Building2 className="h-5 w-5 text-slate-500" />
+                                                        </div>
+                                                    )}
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Ente</p>
+                                                        <p className="line-clamp-1 text-sm font-semibold text-slate-900">{concorso.ente_nome ?? 'Ente pubblico'}</p>
+                                                        <p className="mt-0.5 line-clamp-1 text-xs text-slate-600">
+                                                            {[ente?.comune ?? ente?.provincia, ente?.regione].filter(Boolean).join(', ') || 'Italia'}
+                                                        </p>
+                                                    </div>
+                                                    <ChevronRight className="h-4 w-4 text-slate-400" />
+                                                </Link>
+                                            ) : (
+                                                <div className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                                                    {enteHeroImage ? (
+                                                        <img
+                                                            src={enteHeroImage}
+                                                            alt={`${concorso.ente_nome ?? 'Ente'} immagine`}
+                                                            className="h-14 w-20 rounded-lg object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-14 w-20 items-center justify-center rounded-lg border border-slate-200 bg-slate-50">
+                                                            <Building2 className="h-5 w-5 text-slate-500" />
+                                                        </div>
+                                                    )}
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Ente</p>
+                                                        <p className="line-clamp-1 text-sm font-semibold text-slate-900">{concorso.ente_nome ?? 'Ente pubblico'}</p>
+                                                        <p className="mt-0.5 line-clamp-1 text-xs text-slate-600">
+                                                            {[ente?.comune ?? ente?.provincia, ente?.regione].filter(Boolean).join(', ') || 'Italia'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )
+                                        )}
+                                        <dl className="mt-4 space-y-3 text-sm text-slate-700">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <dt className="text-slate-500">Indirizzo</dt>
+                                                <dd className="text-right font-medium">{ente.indirizzo || 'N/D'}</dd>
+                                            </div>
+                                            <div className="flex items-start justify-between gap-4">
+                                                <dt className="text-slate-500">Comune / Provincia</dt>
+                                                <dd className="text-right font-medium">{[ente.comune || ente.provincia, ente.regione].filter(Boolean).join(', ') || 'N/D'}</dd>
+                                            </div>
+                                            <div className="flex items-start justify-between gap-4">
+                                                <dt className="text-slate-500">Telefono</dt>
+                                                <dd className="text-right font-medium">
+                                                    {phoneHref ? <a href={`tel:${phoneHref}`} className="hover:underline">{ente.telefono}</a> : (ente.telefono || 'N/D')}
+                                                </dd>
+                                            </div>
+                                            <div className="flex items-start justify-between gap-4">
+                                                <dt className="text-slate-500">PEC</dt>
+                                                <dd className="break-all text-right font-medium">
+                                                    {ente.pec ? <a href={`mailto:${ente.pec}`} className="text-[#0A4E88] hover:underline">{ente.pec}</a> : 'N/D'}
+                                                </dd>
+                                            </div>
+                                        </dl>
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            {website && (
+                                                <a href={website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                                                    Sito istituzionale
+                                                    <ExternalLink className="h-3.5 w-3.5" />
+                                                </a>
+                                            )}
+                                            {mapsHref && (
+                                                <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                                                    Google Maps
+                                                    <ExternalLink className="h-3.5 w-3.5" />
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-6 lg:grid-cols-3">
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900">
+                                            <Train className="h-5 w-5 text-[#0A4E88]" />
+                                            Logistica
+                                        </h3>
+                                        <p className="mt-3 text-sm text-slate-700"><strong className="text-slate-900">Pendolarismo:</strong> {logistica.pendolarismo || 'N/D'}</p>
+                                        <p className="mt-2 text-sm text-slate-700"><strong className="text-slate-900">Stazione vicina:</strong> {logistica.stazione_vicina || 'N/D'}</p>
+                                        <p className="mt-2 text-sm text-slate-700"><strong className="text-slate-900">Accessibilità mezzi:</strong> {logistica.accessibilita_mezzi || 'N/D'}</p>
+                                    </div>
+
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900">
+                                            <MapPin className="h-5 w-5 text-[#0A4E88]" />
+                                            Vivere il territorio
+                                        </h3>
+                                        <p className="mt-3 text-sm text-slate-700"><strong className="text-slate-900">Costo vita:</strong> {territorio.costo_vita || 'N/D'}</p>
+                                        <p className="mt-2 text-sm text-slate-700"><strong className="text-slate-900">Ambiente sociale:</strong> {territorio.ambiente_sociale || 'N/D'}</p>
+                                        <p className="mt-2 text-sm text-slate-700"><strong className="text-slate-900">Qualità vita:</strong> {scoreLabel}</p>
+                                    </div>
+
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900">
+                                            <BriefcaseBusiness className="h-5 w-5 text-[#0A4E88]" />
+                                            Valore professionale
+                                        </h3>
+                                        <p className="mt-3 text-sm text-slate-700"><strong className="text-slate-900">CCNL:</strong> {ccnlLabel}</p>
+                                        <p className="mt-2 text-sm text-slate-700"><strong className="text-slate-900">Stabilità:</strong> {valore.stabilita_lavorativa || 'N/D'}</p>
+                                        {welfareItems.length > 0 && (
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                {welfareItems.map((item) => (
+                                                    <span key={item} className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">
+                                                        {item}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {faq.length > 0 && (
+                                    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <h3 className="text-lg font-semibold text-slate-900">FAQ sull&apos;ente</h3>
+                                        <div className="mt-4 space-y-3">
+                                            {faq.map((item) => (
+                                                <article key={item.question} className="rounded-xl border border-slate-200 bg-white p-4">
+                                                    <h4 className="text-sm font-semibold text-slate-900">{item.question}</h4>
+                                                    <p className="mt-2 text-sm leading-relaxed text-slate-700">{item.answer}</p>
+                                                </article>
+                                            ))}
+                                        </div>
+                                    </section>
+                                )}
+                            </section>
+                        )}
+
+                        {!expired && related.length > 0 && (
+                            <section className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+                                <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl tracking-tight text-slate-900">Concorsi correlati</h2>
+                                <div className="mt-5">
+                                    <ConcorsoList concorsi={related} />
+                                </div>
+                            </section>
+                        )}
+
+                        {concorso.data_pubblicazione && (
+                            <section className="rounded-xl border border-slate-200/80 bg-white/70 p-3">
+                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                    <div className="flex items-start gap-2">
+                                        <CalendarDays className="mt-0.5 h-3.5 w-3.5 text-slate-500" />
+                                        <div>
+                                            <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Pubblicato</p>
+                                            <p className="text-xs font-medium text-slate-700">
+                                                {formatDateIT(concorso.data_pubblicazione)}
+                                                {formatTimeIT(concorso.data_pubblicazione) ? ` - ${formatTimeIT(concorso.data_pubblicazione)}` : ''}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="text-[11px] text-slate-500">
+                                        ID: <span className="font-medium text-slate-700">{concorso.concorso_id}</span>
+                                    </div>
+                                </div>
+                            </section>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
         </>
     );

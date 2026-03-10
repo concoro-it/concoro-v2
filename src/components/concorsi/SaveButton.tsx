@@ -6,6 +6,7 @@ import { BookmarkIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { UpgradeModal } from '@/components/paywall/UpgradeModal';
 
 interface SaveButtonProps {
     concorsoId: string;
@@ -22,6 +23,7 @@ export function SaveButton({
 }: SaveButtonProps) {
     const [isSaved, setIsSaved] = useState(initialSaved);
     const [isLoading, setIsLoading] = useState(false);
+    const [showRegisterModal, setShowRegisterModal] = useState(false);
     const supabase = createClient();
 
     useEffect(() => {
@@ -55,9 +57,8 @@ export function SaveButton({
             const { data: { session } } = await supabase.auth.getSession();
 
             if (!session) {
-                toast.error('Devi accedere per salvare un concorso');
+                setShowRegisterModal(true);
                 setIsLoading(false);
-                // Could open a login modal here instead
                 return;
             }
 
@@ -92,26 +93,29 @@ export function SaveButton({
     };
 
     return (
-        <Button
-            variant={iconOnly ? 'ghost' : (isSaved ? 'secondary' : 'outline')}
-            size={iconOnly ? 'icon' : 'sm'}
-            onClick={handleSaveToggle}
-            disabled={isLoading}
-            className={cn(
-                "transition-all",
-                iconOnly ? "h-8 w-8 rounded-full" : "rounded-full",
-                isSaved && !iconOnly ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20" : "",
-                className
-            )}
-            title={isSaved ? "Rimuovi dai salvati" : "Salva concorso"}
-        >
-            <BookmarkIcon
+        <>
+            <Button
+                variant={iconOnly ? 'ghost' : (isSaved ? 'secondary' : 'outline')}
+                size={iconOnly ? 'icon' : 'sm'}
+                onClick={handleSaveToggle}
+                disabled={isLoading}
                 className={cn(
-                    iconOnly ? "h-4 w-4" : "h-4 w-4 mr-2",
-                    isSaved ? "fill-primary text-primary" : "text-muted-foreground"
+                    "transition-all",
+                    iconOnly ? "h-8 w-8 rounded-full" : "rounded-full",
+                    isSaved && !iconOnly ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20" : "",
+                    className
                 )}
-            />
-            {!iconOnly && (isSaved ? 'Salvato' : 'Salva')}
-        </Button>
+                title={isSaved ? "Rimuovi dai salvati" : "Salva concorso"}
+            >
+                <BookmarkIcon
+                    className={cn(
+                        iconOnly ? "h-4 w-4" : "h-4 w-4 mr-2",
+                        isSaved ? "fill-primary text-primary" : "text-muted-foreground"
+                    )}
+                />
+                {!iconOnly && (isSaved ? 'Salvato' : 'Salva')}
+            </Button>
+            <UpgradeModal isOpen={showRegisterModal} onOpenChange={setShowRegisterModal} />
+        </>
     );
 }
