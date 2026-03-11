@@ -256,14 +256,14 @@ export async function getRegioniWithCount(supabase: SupabaseClient): Promise<Arr
         .sort((a, b) => b.count - a.count);
 }
 
-export async function getProvinceWithCount(supabase: SupabaseClient): Promise<Array<{ provincia: string; sigla: string; count: number }>> {
+export async function getProvinceWithCount(supabase: SupabaseClient): Promise<Array<{ provincia: string; sigla: string; regione: string | null; count: number }>> {
     const { data } = await supabase
         .from('concorsi')
         .select('province_array')
         .eq('is_active', true);
     if (!data) return [];
 
-    const counts: Record<string, { provincia: string; sigla: string; count: number }> = {};
+    const counts: Record<string, { provincia: string; sigla: string; regione: string | null; count: number }> = {};
     for (const row of data) {
         const arr = row.province_array as any[];
         if (!Array.isArray(arr)) continue;
@@ -272,8 +272,10 @@ export async function getProvinceWithCount(supabase: SupabaseClient): Promise<Ar
                 const parsed = typeof s === 'string' ? JSON.parse(s) : s;
                 const name = parsed?.provincia?.denominazione || parsed?.denominazione;
                 const sigla = parsed?.provincia?.sigla || parsed?.provincia?.codice || parsed?.sigla || parsed?.codice;
+                const regione = parsed?.regione?.denominazione || parsed?.regione || null;
                 if (name && sigla) {
-                    if (!counts[name]) counts[name] = { provincia: name, sigla, count: 0 };
+                    if (!counts[name]) counts[name] = { provincia: name, sigla, regione: typeof regione === 'string' ? regione : null, count: 0 };
+                    if (!counts[name].regione && typeof regione === 'string') counts[name].regione = regione;
                     counts[name].count++;
                 }
             } catch { /* skip */ }

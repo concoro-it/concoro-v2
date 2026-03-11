@@ -27,7 +27,7 @@ export function toUrlSlug(str: string): string {
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
-        .replace(/['']/g, '')
+        .replace(/['’]/g, '-')
         .replace(/\s+/g, '-')
         .replace(/[^a-z0-9-]/g, '')
         .replace(/-+/g, '-')
@@ -39,5 +39,7 @@ export function getAllRegioni(): string[] {
 }
 
 export function regioneFromSlug(slug: string): string | null {
-    return REGIONE_SLUG_MAP[slug] ?? null;
+    if (REGIONE_SLUG_MAP[slug]) return REGIONE_SLUG_MAP[slug];
+    if (slug === 'valle-daosta') return REGIONE_SLUG_MAP['valle-d-aosta'];
+    return null;
 }

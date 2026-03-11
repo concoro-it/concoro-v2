@@ -1,126 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-
-const PROVINCIA_TO_REGIONE: Record<string, string> = {
-    'laquila': 'abruzzo',
-    chieti: 'abruzzo',
-    pescara: 'abruzzo',
-    teramo: 'abruzzo',
-    matera: 'basilicata',
-    potenza: 'basilicata',
-    catanzaro: 'calabria',
-    cosenza: 'calabria',
-    crotone: 'calabria',
-    reggiocalabria: 'calabria',
-    vibovalentia: 'calabria',
-    avellino: 'campania',
-    benevento: 'campania',
-    caserta: 'campania',
-    napoli: 'campania',
-    salerno: 'campania',
-    bologna: 'emiliaromagna',
-    ferrara: 'emiliaromagna',
-    forlicesena: 'emiliaromagna',
-    modena: 'emiliaromagna',
-    parma: 'emiliaromagna',
-    piacenza: 'emiliaromagna',
-    ravenna: 'emiliaromagna',
-    reggioemilia: 'emiliaromagna',
-    reggionellemilia: 'emiliaromagna',
-    rimini: 'emiliaromagna',
-    gorizia: 'friuliveneziagiulia',
-    pordenone: 'friuliveneziagiulia',
-    trieste: 'friuliveneziagiulia',
-    udine: 'friuliveneziagiulia',
-    frosinone: 'lazio',
-    latina: 'lazio',
-    rieti: 'lazio',
-    roma: 'lazio',
-    viterbo: 'lazio',
-    genova: 'liguria',
-    imperia: 'liguria',
-    laspezia: 'liguria',
-    savona: 'liguria',
-    bergamo: 'lombardia',
-    brescia: 'lombardia',
-    como: 'lombardia',
-    cremona: 'lombardia',
-    lecco: 'lombardia',
-    lodi: 'lombardia',
-    mantova: 'lombardia',
-    milano: 'lombardia',
-    monzaedellabrianza: 'lombardia',
-    monzabrianza: 'lombardia',
-    pavia: 'lombardia',
-    sondrio: 'lombardia',
-    varese: 'lombardia',
-    ancona: 'marche',
-    ascolipiceno: 'marche',
-    fermo: 'marche',
-    macerata: 'marche',
-    pesaroeurbino: 'marche',
-    campobasso: 'molise',
-    isernia: 'molise',
-    alessandria: 'piemonte',
-    asti: 'piemonte',
-    biella: 'piemonte',
-    cuneo: 'piemonte',
-    novara: 'piemonte',
-    torino: 'piemonte',
-    verbanocusioossola: 'piemonte',
-    vercelli: 'piemonte',
-    bari: 'puglia',
-    barlettaandriatrani: 'puglia',
-    brindisi: 'puglia',
-    foggia: 'puglia',
-    lecce: 'puglia',
-    taranto: 'puglia',
-    cagliari: 'sardegna',
-    nuoro: 'sardegna',
-    oristano: 'sardegna',
-    sassari: 'sardegna',
-    sudsardegna: 'sardegna',
-    agrigento: 'sicilia',
-    caltanissetta: 'sicilia',
-    catania: 'sicilia',
-    enna: 'sicilia',
-    messina: 'sicilia',
-    palermo: 'sicilia',
-    ragusa: 'sicilia',
-    siracusa: 'sicilia',
-    trapani: 'sicilia',
-    arezzo: 'toscana',
-    firenze: 'toscana',
-    grosseto: 'toscana',
-    livorno: 'toscana',
-    lucca: 'toscana',
-    massacarrara: 'toscana',
-    pisa: 'toscana',
-    pistoia: 'toscana',
-    prato: 'toscana',
-    siena: 'toscana',
-    bolzano: 'trentinoaltoadige',
-    trento: 'trentinoaltoadige',
-    perugia: 'umbria',
-    terni: 'umbria',
-    aosta: 'valledaosta',
-    belluno: 'veneto',
-    padova: 'veneto',
-    rovigo: 'veneto',
-    treviso: 'veneto',
-    venezia: 'veneto',
-    verona: 'veneto',
-    vicenza: 'veneto',
-};
-
-function normalize(value: string): string {
-    return value
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/['’]/g, '')
-        .replace(/[^a-z0-9]/g, '');
-}
+import { normalizeProvinceKey, provinceToRegionSlug } from '@/lib/utils/province-region-map';
 
 export async function GET(req: NextRequest) {
     const supabase = await createClient();
@@ -150,9 +30,9 @@ export async function GET(req: NextRequest) {
         }
     }
 
-    const normalizedRegion = normalize(regione);
+    const normalizedRegion = normalizeProvinceKey(regione);
     const mapped = Object.entries(counts)
-        .filter(([provincia]) => PROVINCIA_TO_REGIONE[normalize(provincia)] === normalizedRegion)
+        .filter(([provincia]) => provinceToRegionSlug(provincia) === normalizedRegion)
         .map(([value, count]) => ({ value, label: `${value} (${count})` }))
         .sort((a, b) => a.value.localeCompare(b.value, 'it'));
 

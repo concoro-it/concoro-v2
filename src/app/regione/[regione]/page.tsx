@@ -19,7 +19,7 @@ import { getServerAppUrl } from '@/lib/auth/url';
 import { BlurredResultsSection } from '@/components/paywall/PaywallBanner';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import { EnteComboboxFilter } from '@/components/regione/EnteComboboxFilter';
-import { REGIONE_SLUG_MAP, toUrlSlug } from '@/lib/utils/regioni';
+import { REGIONE_SLUG_MAP, regioneFromSlug, toUrlSlug } from '@/lib/utils/regioni';
 import type { ConcorsoFilters } from '@/types/concorso';
 
 const FREE_VISIBLE = 5;
@@ -104,7 +104,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { regione: slug } = await params;
-    const regioneName = REGIONE_SLUG_MAP[slug];
+    const regioneName = regioneFromSlug(slug);
     if (!regioneName) return { title: 'Regione non trovata' };
     const canonical = `${getServerAppUrl()}/regione/${slug}`;
 
@@ -135,7 +135,7 @@ export const revalidate = 3600;
 
 export default async function RegionePage({ params, searchParams }: Props) {
     const { regione: slug } = await params;
-    const regioneName = REGIONE_SLUG_MAP[slug];
+    const regioneName = regioneFromSlug(slug);
 
     if (!regioneName) {
         return (

@@ -13,7 +13,7 @@ import {
     Sparkles,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getFeaturedConcorsi, getRegioniWithCount, getSettoriWithCount, getLatestArticoli } from '@/lib/supabase/queries';
+import { getFeaturedConcorsi, getLatestArticoli, getProvinceWithCount, getRegioniWithCount, getSettoriWithCount } from '@/lib/supabase/queries';
 import { ConcorsoCard } from '@/components/concorsi/ConcorsoCard';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getServerAppUrl } from '@/lib/auth/url';
@@ -39,7 +39,8 @@ const REGION_FLAG_BY_SLUG: Record<string, string> = {
     toscana: '/Regions/Flag_of_Tuscany.svg',
     'trentino-alto-adige': '/Regions/Flag_of_Trentino-South_Tyrol.svg',
     umbria: '/Regions/Flag_of_Umbria.svg',
-    'valle-d-aosta': "/Regions/Flag_of_Valle_d'Aosta.svg",
+    'valle-d-aosta': '/Regions/Flag_of_Valle_Aosta.svg',
+    'valle-daosta': '/Regions/Flag_of_Valle_Aosta.svg',
     veneto: '/Regions/Flag_of_Veneto.svg',
 };
 
@@ -49,24 +50,28 @@ const GEO_SECTIONS = [
         description: 'Panoramica chiara dei bandi attivi nella tua regione, con scadenze e percorsi locali da aprire subito.',
         href: '/regione',
         icon: MapPinned,
+        accent: 'from-slate-300 via-slate-400 to-slate-500',
     },
     {
         title: 'Concorsi per Provincia',
         description: 'Una vista piu vicina al territorio, utile se vuoi capire dove cercare davvero vicino a te.',
         href: '/provincia',
         icon: Compass,
+        accent: 'from-emerald-200 via-emerald-300 to-teal-300',
     },
     {
         title: 'Concorsi per Ente',
         description: 'Accesso diretto ai bandi pubblicati dai singoli enti, senza passare da ricerche dispersive.',
         href: '/ente',
         icon: Building2,
+        accent: 'from-amber-200 via-amber-300 to-orange-300',
     },
     {
         title: 'Guide e approfondimenti',
         description: 'Contenuti editoriali su requisiti, prove e preparazione ai concorsi.',
         href: '/blog',
         icon: Newspaper,
+        accent: 'from-indigo-200 via-violet-200 to-fuchsia-200',
     },
 ];
 
@@ -126,24 +131,18 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
     const supabase = await createClient();
-    const [featured, regioni, settori, articoli] = await Promise.all([
+    const [featured, regioni, province, settori, articoli] = await Promise.all([
         getFeaturedConcorsi(supabase),
         getRegioniWithCount(supabase),
+        getProvinceWithCount(supabase),
         getSettoriWithCount(supabase),
         getLatestArticoli(supabase, 3),
     ]);
 
     const featuredCount = featured.length;
     const regioniCount = regioni.length;
+    const provinceCount = province.length;
     const settoriCount = settori.length;
-    const totalRegionalOpenings = regioni.reduce((sum, item) => sum + item.count, 0);
-
-    const timeChips = [
-        { label: 'In scadenza oggi', href: '/scadenza/oggi', color: 'border-rose-300/70 bg-rose-50 text-rose-800' },
-        { label: 'Questa settimana', href: '/scadenza/questa-settimana', color: 'border-amber-300/70 bg-amber-50 text-amber-800' },
-        { label: 'Nuovi arrivi', href: '/scadenza/nuovi', color: 'border-emerald-300/70 bg-emerald-50 text-emerald-800' },
-        { label: 'Questo mese', href: '/scadenza/questo-mese', color: 'border-sky-300/70 bg-sky-50 text-sky-800' },
-    ];
 
     const appUrl = getServerAppUrl();
     const todayIso = new Date().toISOString();
@@ -226,72 +225,61 @@ export default async function HomePage() {
                             Concoro raccoglie e ordina i bandi della Pubblica Amministrazione per regione, provincia, ente e settore,
                             cosi puoi partire dal tuo territorio, filtrare meglio e capire in pochi minuti quali opportunita vale la pena seguire.
                         </p>
-                        <p className="max-w-2xl rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm leading-relaxed text-slate-700">
-                            <strong>Cos&apos;e Concoro:</strong> una piattaforma italiana per cercare concorsi pubblici da fonti ufficiali,
-                            confrontare bandi vicini o rilevanti per il tuo profilo e non perdere le scadenze piu importanti.
-                        </p>
 
                         <div className="flex flex-wrap gap-3">
                             <Link
-                                href="/concorsi"
+                                href="/hub"
                                 className="group inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                             >
-                                Esplora tutti i concorsi
+                                Registrati gratis
                                 <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                             </Link>
                             <Link
-                                href="/scadenza"
+                                href="/hub"
                                 className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
                             >
                                 <Clock3 className="h-4 w-4" />
-                                Vai alle scadenze
+                                Vai alla Hub
                             </Link>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 pt-2">
-                            {timeChips.map((chip, idx) => (
-                                <Link
-                                    key={chip.href}
-                                    href={chip.href}
-                                    className={`animate-appear rounded-full border px-3.5 py-1.5 text-xs font-semibold ${chip.color}`}
-                                    style={{ animationDelay: `${120 * idx}ms` }}
-                                >
-                                    {chip.label}
-                                </Link>
-                            ))}
                         </div>
                     </div>
 
                     <aside className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-[0_14px_46px_-28px_rgba(15,23,42,0.35)]">
                         <div className="absolute left-0 top-0 h-full w-2 bg-gradient-to-b from-emerald-500 via-white to-rose-500" />
                         <div className="space-y-5 pl-3">
-                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Bollettino nazionale</p>
-                            <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-2xl text-slate-900">Uno sguardo rapido a Concoro</h2>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Concorsi in evidenza</p>
-                                    <p className="mt-1 text-2xl font-semibold text-slate-900">{featuredCount}</p>
+                            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-slate-500">
+                                <Sparkles className="h-3.5 w-3.5" />
+                                Panoramica generale
+                            </p>
+                            <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-2xl text-slate-900">
+                                Dati nazionali Concoro
+                            </h2>
+                            <p className="text-sm leading-relaxed text-slate-600">
+                                Parti da una vista completa e crea la tua ricerca personale nella Hub per salvare i filtri che usi piu spesso.
+                            </p>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3">
+                                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Concorsi in evidenza</p>
+                                    <p className="mt-1 text-xl font-semibold text-slate-900">{featuredCount}</p>
                                 </div>
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Regioni coperte</p>
-                                    <p className="mt-1 text-2xl font-semibold text-slate-900">{regioniCount}</p>
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3">
+                                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Regioni coperte</p>
+                                    <p className="mt-1 text-xl font-semibold text-slate-900">{regioniCount}</p>
                                 </div>
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Settori attivi</p>
-                                    <p className="mt-1 text-2xl font-semibold text-slate-900">{settoriCount}</p>
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3">
+                                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Province coperte</p>
+                                    <p className="mt-1 text-xl font-semibold text-slate-900">{provinceCount}</p>
                                 </div>
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Bandi mappati</p>
-                                    <p className="mt-1 text-2xl font-semibold text-slate-900">{totalRegionalOpenings}</p>
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3">
+                                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Settori attivi</p>
+                                    <p className="mt-1 text-xl font-semibold text-slate-900">{settoriCount}</p>
                                 </div>
                             </div>
-
                             <Link
-                                href="/concorsi"
+                                href="/hub"
                                 className="inline-flex items-center gap-2 text-sm font-semibold text-[#0B4B7F] hover:text-[#083861]"
                             >
-                                Apri l&apos;archivio completo
+                                Registrati e apri la tua Hub
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                         </div>
@@ -308,6 +296,10 @@ export default async function HomePage() {
                     <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mb-5 text-3xl tracking-tight text-slate-900">
                         Metodo in 3 passaggi
                     </h2>
+                         <p className="mt-5 rounded-2xl bg-white px-2 py-2 text-sm leading-relaxed text-slate-700">
+                        <strong>Cos&apos;e Concoro:</strong> una piattaforma italiana per cercare concorsi pubblici da fonti ufficiali,
+                        confrontare bandi vicini o rilevanti per il tuo profilo e non perdere le scadenze piu importanti.
+                    </p>
                     <ol className="grid gap-3 md:grid-cols-3">
                         {HOW_IT_WORKS_STEPS.map((step, index) => (
                             <li key={step.title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -317,6 +309,7 @@ export default async function HomePage() {
                             </li>
                         ))}
                     </ol>
+
                     <p className="mt-5 text-xs text-slate-500">
                         Fonte dati: pubblicazioni ufficiali su InPA. Aggiornamento continuo della piattaforma.
                     </p>
@@ -329,12 +322,9 @@ export default async function HomePage() {
                             <Link
                                 key={section.href}
                                 href={section.href}
-                                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-[0_12px_36px_-30px_rgba(15,23,42,0.55)] transition-all hover:-translate-y-0.5 hover:border-slate-300"
+                                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_36px_-30px_rgba(15,23,42,0.45)] transition-all hover:-translate-y-0.5 hover:border-slate-300"
                             >
-                                <div
-                                    className="absolute -right-8 -top-10 h-24 w-24 rounded-full bg-[radial-gradient(circle,rgba(14,47,80,0.24),transparent_64%)]"
-                                    aria-hidden
-                                />
+                                <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${section.accent}`} aria-hidden />
                                 <p className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700">
                                     <Icon className="h-5 w-5" />
                                 </p>
@@ -344,7 +334,6 @@ export default async function HomePage() {
                                     Esplora
                                     <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                                 </p>
-                                <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-transparent via-[#0A4E88]/70 to-transparent" />
                                 <span className="sr-only">Apri sezione {index + 1}</span>
                             </Link>
                         );
@@ -391,15 +380,16 @@ export default async function HomePage() {
                                         className="group relative isolate overflow-hidden rounded-2xl border border-slate-200 bg-[linear-gradient(160deg,#f8fbff_0%,#ecf4ff_52%,#dfeefe_100%)] p-4 transition-all hover:-translate-y-0.5 hover:border-[#0A4E88]/30"
                                     >
                                         {flagPath && (
-                                            <img
-                                                src={flagPath}
-                                                alt={`${regione} simbolo`}
-                                                className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full object-contain opacity-20 transition group-hover:opacity-30"
-                                            />
+                                            <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 overflow-hidden rounded-full opacity-20 transition group-hover:opacity-30">
+                                                <img
+                                                    src={flagPath}
+                                                    alt={`${regione} simbolo`}
+                                                    className="h-full w-full object-cover object-center"
+                                                />
+                                            </div>
                                         )}
                                         <h3 className="relative z-[1] line-clamp-1 text-sm font-semibold text-slate-900">{regione}</h3>
                                         <p className="relative z-[1] mt-1 text-xs text-slate-600">{count} concorsi aperti</p>
-                                        <div className="mt-3 h-px w-full bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
                                     </Link>
                                 );
                             })}
