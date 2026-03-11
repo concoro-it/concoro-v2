@@ -216,6 +216,22 @@ export async function getFeaturedConcorsi(supabase: SupabaseClient): Promise<Con
     return (data as Concorso[]) ?? [];
 }
 
+export async function getActiveConcorsiCount(supabase: SupabaseClient): Promise<number> {
+    const now = new Date().toISOString();
+    const { count, error } = await supabase
+        .from('concorsi')
+        .select('concorso_id', { count: 'exact', head: true })
+        .eq('is_active', true)
+        .gte('data_scadenza', now);
+
+    if (error) {
+        console.error('Error in getActiveConcorsiCount:', error);
+        return 0;
+    }
+
+    return count ?? 0;
+}
+
 export async function getRegioniWithCount(supabase: SupabaseClient): Promise<Array<{ regione: string; count: number }>> {
     const now = new Date().toISOString();
     const { data, error } = await supabase

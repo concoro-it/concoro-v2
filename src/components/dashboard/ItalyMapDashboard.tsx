@@ -19,6 +19,7 @@ interface RegionCountRow {
 
 interface ItalyMapDashboardProps {
     regionCounts: RegionCountRow[];
+    activeTotalCount?: number;
 }
 
 const MAP_VIEWBOX_WIDTH = 1480;
@@ -33,7 +34,7 @@ const normalizeRegionName = (value: string): string =>
         .replace(/[\s-]+/g, " ")
         .trim();
 
-const ItalyMapDashboard = ({ regionCounts }: ItalyMapDashboardProps) => {
+const ItalyMapDashboard = ({ regionCounts, activeTotalCount }: ItalyMapDashboardProps) => {
     // Map State
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -75,6 +76,7 @@ const ItalyMapDashboard = ({ regionCounts }: ItalyMapDashboardProps) => {
     const totalCount = useMemo(() => {
         return Object.values(regionData).reduce((acc, curr) => acc + curr.count, 0);
     }, [regionData]);
+    const displayedTotalCount = activeTotalCount ?? totalCount;
 
     const rankingStats = useMemo(() => {
         const values = sortedRegions.map((r) => r.count).sort((a, b) => a - b);
@@ -275,7 +277,7 @@ const ItalyMapDashboard = ({ regionCounts }: ItalyMapDashboardProps) => {
                         </div>
                         <div className={styles.statPill}>
                             <span>Concorsi Attivi:</span>
-                            <strong>{totalCount.toLocaleString()}</strong>
+                            <strong>{displayedTotalCount.toLocaleString()}</strong>
                             <span className={`${styles.badge} ${styles.badgeUp}`}>Dati live</span>
                         </div>
                     </div>
