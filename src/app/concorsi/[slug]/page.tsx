@@ -253,6 +253,19 @@ export default async function ConcorsoDetailPage({ params }: Props) {
     const heroTitle = useShortHeroTitle ? shortTitle! : fullTitle;
     const primaryPlace = province[0] ?? regioni[0] ?? 'Italia';
     const enteHeroImage = ente?.cover_image_url ?? ente?.logo_url ?? null;
+    const hasDescriptionContent = Boolean(
+        concorso.descrizione && stripHtmlStyling(concorso.descrizione).trim().length > 0
+    );
+    const hasMainDetailContent = Boolean(
+        concorso.descrizione
+        || requisiti.length > 0
+        || concorso.programma_di_esame
+        || capacita.length > 0
+        || conoscenze.length > 0
+        || concorso.contatti
+        || linkAllegati.length > 0
+        || concorso.annuncio_enrichment
+    );
 
     return (
         <>
@@ -491,8 +504,12 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                             </div>
                         )}
 
-                        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-                            <article className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+                        {(hasMainDetailContent || hasDescriptionContent) && (
+                        <div className={cn(
+                            'grid gap-8',
+                            hasDescriptionContent ? 'lg:grid-cols-[1fr_320px]' : 'lg:grid-cols-1'
+                        )}>
+                            {hasMainDetailContent && <article className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
                                 {concorso.descrizione && (
                                     <section>
                                         <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl tracking-tight text-slate-900">Descrizione</h2>
@@ -632,9 +649,9 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                         </div>
                                     </section>
                                 )}
-                            </article>
+                            </article>}
 
-                            <aside className="space-y-6 lg:sticky lg:top-8">
+                            {hasDescriptionContent && <aside className="space-y-6 lg:sticky lg:top-8">
                                 {summaryItems.length > 0 ? (
                                     <SintesiSection items={summaryItems} />
                                 ) : (
@@ -675,46 +692,47 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                 )}
 
                                 <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_36px_-30px_rgba(15,23,42,0.45)]">
-                                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-slate-300 via-slate-200 to-slate-300" />
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Percorsi utili</p>
-                                    <h3 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-xl leading-tight text-slate-900">
-                                        Esplora altri territori collegati a questo bando
-                                    </h3>
-                                    <div className="mt-4 space-y-3">
-                                        {province.length > 0 && (
-                                            <div>
-                                                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-500">Province</p>
-                                                <div className="flex flex-wrap gap-2 text-xs font-semibold">
-                                                    {province.slice(0, 4).map((p) => (
-                                                        <Link key={p} href={`/provincia/${toUrlSlug(p)}`} className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-slate-700 transition hover:border-slate-400 hover:bg-slate-100">
-                                                            {p}
-                                                        </Link>
-                                                    ))}
+                                        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-slate-300 via-slate-200 to-slate-300" />
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Percorsi utili</p>
+                                        <h3 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-xl leading-tight text-slate-900">
+                                            Esplora altri territori collegati a questo bando
+                                        </h3>
+                                        <div className="mt-4 space-y-3">
+                                            {province.length > 0 && (
+                                                <div>
+                                                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-500">Province</p>
+                                                    <div className="flex flex-wrap gap-2 text-xs font-semibold">
+                                                        {province.slice(0, 4).map((p) => (
+                                                            <Link key={p} href={`/provincia/${toUrlSlug(p)}`} className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-slate-700 transition hover:border-slate-400 hover:bg-slate-100">
+                                                                {p}
+                                                            </Link>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
-                                        {regioni.length > 0 && (
-                                            <div>
-                                                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-500">Regioni</p>
-                                                <div className="flex flex-wrap gap-2 text-xs font-semibold">
-                                                    {regioni.slice(0, 3).map((r) => (
-                                                        <Link key={r} href={`/regione/${toUrlSlug(r)}`} className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-slate-700 transition hover:border-slate-400 hover:bg-slate-100">
-                                                            {r}
-                                                        </Link>
-                                                    ))}
+                                            )}
+                                            {regioni.length > 0 && (
+                                                <div>
+                                                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-500">Regioni</p>
+                                                    <div className="flex flex-wrap gap-2 text-xs font-semibold">
+                                                        {regioni.slice(0, 3).map((r) => (
+                                                            <Link key={r} href={`/regione/${toUrlSlug(r)}`} className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-slate-700 transition hover:border-slate-400 hover:bg-slate-100">
+                                                                {r}
+                                                            </Link>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
-                                        {concorso.ente_slug && (
-                                            <Link href={`/ente/${concorso.ente_slug}`} className="inline-flex items-center gap-2 rounded-full border border-[#0A4E88]/30 bg-[#0A4E88]/5 px-3 py-1.5 text-xs font-semibold text-[#083861] transition hover:bg-[#0A4E88]/10">
-                                                Vai alla pagina ente
-                                                <ChevronRight className="h-3.5 w-3.5" />
-                                            </Link>
-                                        )}
-                                    </div>
+                                            )}
+                                            {concorso.ente_slug && (
+                                                <Link href={`/ente/${concorso.ente_slug}`} className="inline-flex items-center gap-2 rounded-full border border-[#0A4E88]/30 bg-[#0A4E88]/5 px-3 py-1.5 text-xs font-semibold text-[#083861] transition hover:bg-[#0A4E88]/10">
+                                                    Vai alla pagina ente
+                                                    <ChevronRight className="h-3.5 w-3.5" />
+                                                </Link>
+                                            )}
+                                        </div>
                                 </div>
-                            </aside>
+                            </aside>}
                         </div>
+                        )}
 
                         {ente && (
                             <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
