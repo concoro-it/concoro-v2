@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 
 export interface NewsArticle {
+  id?: string;
   href: string;
   title: string;
   summary: string;
@@ -21,7 +22,10 @@ const OPACITY_FACTOR = 0.1;
 
 export function News({ articles }: { articles: NewsArticle[] }) {
   const [dismissedNews, setDismissedNews] = React.useState<string[]>([]);
-  const cards = articles.filter(({ href }) => !dismissedNews.includes(href));
+  const cards = articles.filter((article) => {
+    const articleId = article.id ?? `${article.href}-${article.title}`;
+    return !dismissedNews.includes(articleId);
+  });
   const cardCount = cards.length;
   const [showCompleted, setShowCompleted] = React.useState(cardCount > 0);
 
@@ -38,9 +42,11 @@ export function News({ articles }: { articles: NewsArticle[] }) {
   return cards.length || showCompleted ? (
     <div className="group overflow-hidden px-3 pb-3 pt-8" data-active={cardCount !== 0}>
       <div className="relative size-full">
-        {[...cards].reverse().map(({ href, title, summary, image }, idx) => (
+        {[...cards].reverse().map(({ id, href, title, summary, image }, idx) => {
+          const articleId = id ?? `${href}-${title}`;
+          return (
           <div
-            key={href}
+            key={articleId}
             className={cn(
               "absolute left-0 top-0 size-full scale-[var(--scale)] transition-[opacity,transform] duration-200",
               cardCount - idx > 3
@@ -67,10 +73,10 @@ export function News({ articles }: { articles: NewsArticle[] }) {
               href={href}
               hideContent={cardCount - idx > 2}
               active={idx === cardCount - 1}
-              onDismiss={() => setDismissedNews([href, ...dismissedNews.slice(0, 50)])}
+              onDismiss={() => setDismissedNews((prev) => [articleId, ...prev.slice(0, 50)])}
             />
           </div>
-        ))}
+        )})}
         <div className="pointer-events-none invisible" aria-hidden>
           <NewsCard title="Titolo" description="Descrizione" />
         </div>

@@ -2,8 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Avatar from '@radix-ui/react-avatar';
+import * as Tooltip from '@radix-ui/react-tooltip';
 import { News, type NewsArticle } from '@/components/ui/sidebar-news';
 import {
     LayoutDashboard,
@@ -18,11 +18,15 @@ import {
     Bot,
     HelpCircle,
     LogOut,
+    Sparkles,
     ChevronDown,
-    Sparkles
+    PanelLeftClose,
+    PanelLeftOpen,
+    UserCircle2
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 type MenuItem = {
     name: string;
@@ -31,9 +35,68 @@ type MenuItem = {
     pro?: boolean;
 };
 
+function SidebarTooltip({
+    enabled,
+    content,
+    children,
+}: {
+    enabled: boolean;
+    content: string;
+    children: React.ReactNode;
+}) {
+    if (!enabled) return <>{children}</>;
+
+    return (
+        <Tooltip.Root delayDuration={120}>
+            <Tooltip.Trigger asChild>{children}</Tooltip.Trigger>
+            <Tooltip.Portal>
+                <Tooltip.Content
+                    side="right"
+                    sideOffset={10}
+                    className="z-50 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-lg"
+                >
+                    {content}
+                    <Tooltip.Arrow className="fill-white" />
+                </Tooltip.Content>
+            </Tooltip.Portal>
+        </Tooltip.Root>
+    );
+}
+
+const CONCORSI_SUBMENU: MenuItem[] = [
+    {
+        href: '/hub/regione',
+        name: 'Regioni',
+        icon: <MapPin className="w-4 h-4" />,
+    },
+    {
+        href: '/hub/provincia',
+        name: 'Province',
+        icon: <MapPinned className="w-4 h-4" />,
+    },
+    {
+        href: '/hub/ente',
+        name: 'Ente',
+        icon: <Building2 className="w-4 h-4" />,
+    },
+    {
+        href: '/hub/settore',
+        name: 'Settori',
+        icon: <Briefcase className="w-4 h-4" />,
+    },
+    {
+        href: '/hub/scadenza',
+        name: 'Scadenze',
+        icon: <CalendarDays className="w-4 h-4" />,
+    },
+];
+
 export function Sidebar({ userProfile }: { userProfile: any }) {
     const router = useRouter();
+    const pathname = usePathname();
     const supabase = createClient();
+    const [isCollapsed, setIsCollapsed] = React.useState(false);
+    const [isConcorsiOpen, setIsConcorsiOpen] = React.useState(false);
 
     const navigation: MenuItem[] = [
         {
@@ -47,29 +110,9 @@ export function Sidebar({ userProfile }: { userProfile: any }) {
             icon: <Search className="w-5 h-5" />,
         },
         {
-            href: '/hub/regione',
-            name: 'Regioni',
-            icon: <MapPin className="w-5 h-5" />,
-        },
-        {
-            href: '/hub/provincia',
-            name: 'Province',
-            icon: <MapPinned className="w-5 h-5" />,
-        },
-        {
-            href: '/hub/ente',
-            name: 'Ente',
-            icon: <Building2 className="w-5 h-5" />,
-        },
-        {
-            href: '/hub/settore',
-            name: 'Settori',
-            icon: <Briefcase className="w-5 h-5" />,
-        },
-        {
-            href: '/hub/scadenza',
-            name: 'Scadenze',
-            icon: <CalendarDays className="w-5 h-5" />,
+            href: '/hub/salvati',
+            name: 'Salvati',
+            icon: <Bookmark className="w-5 h-5" />,
         },
         {
             href: '/hub/matching',
@@ -78,16 +121,20 @@ export function Sidebar({ userProfile }: { userProfile: any }) {
             pro: true,
         },
         {
-            href: '/hub/salvati',
-            name: 'Salvato',
-            icon: <Bookmark className="w-5 h-5" />,
-            pro: true,
-        },
-        {
             href: '/hub/genio',
             name: 'Genio',
             icon: <Bot className="w-5 h-5" />,
             pro: true,
+        },
+        {
+            href: '/hub/billing',
+            name: 'Billing',
+            icon: <CreditCard className="w-5 h-5" />,
+        },
+        {
+            href: '/hub/assistenza',
+            name: 'Assistenza',
+            icon: <HelpCircle className="w-5 h-5" />,
         },
     ];
 
@@ -99,133 +146,232 @@ export function Sidebar({ userProfile }: { userProfile: any }) {
 
     const sidebarNewsArticles: NewsArticle[] = [
         {
+            id: 'guide-plan',
             href: 'https://concoro.it',
             title: 'Guida rapida: prepara il prossimo concorso',
             summary: 'Un piano essenziale per organizzare studio, test e candidatura in modo efficace.',
             image: '/Layer_2-1.svg',
         },
         {
-            href: 'https://concoro.it',
+            id: 'news-bandi',
+            href: 'https://concoro.it/concorsi',
             title: 'Aggiornamenti bandi e nuove opportunita',
             summary: 'Le ultime novita sulle posizioni aperte nella PA in tutta Italia.',
             image: '/Layer_2-2.svg',
         },
         {
-            href: 'https://concoro.it',
+            id: 'tips-quiz',
+            href: 'https://concoro.it/blog',
             title: 'Come migliorare i punteggi ai quiz',
             summary: 'Strategie pratiche per aumentare precisione e velocita nelle simulazioni.',
             image: '/Layer_2.svg',
         },
     ];
 
+    React.useEffect(() => {
+        const cached = window.localStorage.getItem('hub-sidebar-collapsed');
+        if (cached === '1') setIsCollapsed(true);
+    }, []);
+
+    React.useEffect(() => {
+        window.localStorage.setItem('hub-sidebar-collapsed', isCollapsed ? '1' : '0');
+    }, [isCollapsed]);
+
+    React.useEffect(() => {
+        const isConcorsiRoute =
+            pathname === '/hub/concorsi' ||
+            CONCORSI_SUBMENU.some((item) => pathname?.startsWith(item.href));
+        if (isConcorsiRoute) setIsConcorsiOpen(true);
+    }, [pathname]);
+
     return (
-        <nav className="fixed top-0 left-0 w-full h-full border-r bg-background sm:w-80 transition-all duration-300 ease-in-out z-40">
-            <div className="flex h-full flex-col px-4 py-5">
-                <div className="flex justify-start">
-                    <img src="/concoro-logo-light.png" alt="Concoro" className="h-7 w-auto opacity-90" />
+        <Tooltip.Provider>
+            <nav
+                className={cn(
+                    'sticky top-0 z-40 h-screen border-r bg-background transition-[width] duration-300 ease-in-out',
+                    isCollapsed ? 'w-[92px]' : 'w-80'
+                )}
+            >
+            <div className={cn('flex h-full flex-col px-3 py-5', isCollapsed ? 'items-center' : 'px-4')}>
+                <div
+                    className={cn(
+                        'flex w-full',
+                        isCollapsed ? 'flex-col items-center gap-3' : 'items-center justify-between'
+                    )}
+                >
+                    {isCollapsed ? (
+                        <img
+                            src="/fav.png"
+                            alt="Concoro"
+                            className="h-9 w-9 rounded-xl border border-border/60 bg-white p-1 shadow-sm"
+                        />
+                    ) : (
+                        <img src="/concoro-logo-light.png" alt="Concoro" className="h-7 w-auto opacity-90" />
+                    )}
+                    <SidebarTooltip enabled={isCollapsed} content="Sidebar ac">
+                        <button
+                            type="button"
+                            aria-label={isCollapsed ? 'Sidebar ac' : 'Sidebar kapat'}
+                            onClick={() => setIsCollapsed((prev) => !prev)}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                        >
+                            {isCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+                        </button>
+                    </SidebarTooltip>
                 </div>
 
-                <div className="flex-1 flex items-center">
-                    <ul className="w-full text-sm font-medium space-y-1">
+                <div className={cn('mt-4 w-full flex-1', isCollapsed ? 'overflow-visible' : 'overflow-y-auto')}>
+                    <ul className="w-full space-y-1 text-sm font-medium">
                         {navigation.map((item, idx) => (
-                            <li key={idx}>
-                                <Link
-                                    href={item.href}
-                                    className="flex items-center gap-x-2 text-muted-foreground p-2.5 rounded-lg hover:bg-muted/50 active:bg-muted transition-all duration-200 group"
-                                >
-                                    <div className="text-muted-foreground/60 group-hover:text-primary transition-colors">
-                                        {item.icon}
-                                    </div>
-                                    <span className="group-hover:translate-x-0.5 transition-transform">{item.name}</span>
-                                    {item.pro && (
-                                        <span className="ml-auto inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-700">
-                                            PRO
-                                        </span>
-                                    )}
-                                </Link>
+                            <li key={idx} className="w-full">
+                                {item.href === '/hub/concorsi' ? (
+                                    <>
+                                        <div className="flex items-center gap-1">
+                                            <SidebarTooltip enabled={isCollapsed} content={item.name}>
+                                                <Link
+                                                    href={item.href}
+                                                    title={item.name}
+                                                    className={cn(
+                                                        'group flex min-w-0 flex-1 items-center rounded-lg p-2.5 text-muted-foreground transition-all duration-200 hover:bg-muted/50 active:bg-muted',
+                                                        pathname?.startsWith('/hub/concorsi') && 'bg-muted/60 text-foreground',
+                                                        isCollapsed ? 'justify-center' : 'gap-x-2'
+                                                    )}
+                                                >
+                                                    <div className="text-muted-foreground/70 transition-colors group-hover:text-primary">
+                                                        {item.icon}
+                                                    </div>
+                                                    {!isCollapsed && (
+                                                        <span className="truncate transition-transform group-hover:translate-x-0.5">
+                                                            {item.name}
+                                                        </span>
+                                                    )}
+                                                </Link>
+                                            </SidebarTooltip>
+                                            {!isCollapsed && (
+                                                <button
+                                                    type="button"
+                                                    aria-label="Concorsi alt menuyu ac veya kapat"
+                                                    onClick={() => setIsConcorsiOpen((prev) => !prev)}
+                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                                                >
+                                                    <ChevronDown
+                                                        className={cn(
+                                                            'h-4 w-4 transition-transform duration-200',
+                                                            isConcorsiOpen && 'rotate-180'
+                                                        )}
+                                                    />
+                                                </button>
+                                            )}
+                                        </div>
+                                        {!isCollapsed && isConcorsiOpen && (
+                                            <ul className="ml-3 mt-1 space-y-0.5 border-l border-border/70 pl-3">
+                                                {CONCORSI_SUBMENU.map((submenu) => (
+                                                    <li key={submenu.href}>
+                                                        <Link
+                                                            href={submenu.href}
+                                                            className={cn(
+                                                                'group flex items-center gap-2 rounded-md px-2 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground',
+                                                                pathname?.startsWith(submenu.href) && 'bg-muted/60 text-foreground'
+                                                            )}
+                                                        >
+                                                            <span className="text-muted-foreground/70 transition-colors group-hover:text-primary">
+                                                                {submenu.icon}
+                                                            </span>
+                                                            <span>{submenu.name}</span>
+                                                        </Link>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </>
+                                ) : (
+                                    <SidebarTooltip enabled={isCollapsed} content={item.name}>
+                                        <Link
+                                            href={item.href}
+                                            title={item.name}
+                                            className={cn(
+                                                'group flex items-center rounded-lg p-2.5 text-muted-foreground transition-all duration-200 hover:bg-muted/50 active:bg-muted',
+                                                pathname?.startsWith(item.href) && 'bg-muted/60 text-foreground',
+                                                isCollapsed ? 'justify-center' : 'gap-x-2'
+                                            )}
+                                        >
+                                            <div className="text-muted-foreground/70 transition-colors group-hover:text-primary">
+                                                {item.icon}
+                                            </div>
+                                            {!isCollapsed && (
+                                                <span className="transition-transform group-hover:translate-x-0.5">{item.name}</span>
+                                            )}
+                                            {!isCollapsed && item.pro && (
+                                                <span className="ml-auto inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-700">
+                                                    PRO
+                                                </span>
+                                            )}
+                                        </Link>
+                                    </SidebarTooltip>
+                                )}
                             </li>
                         ))}
                     </ul>
                 </div>
 
-                <div className="pt-3 border-t border-border">
-                    <div className="rounded-xl">
-                        <News articles={sidebarNewsArticles} />
-                    </div>
-
-                    <Link
-                        href="/hub/assistenza"
-                        className="mb-3 flex items-center gap-x-2 text-muted-foreground p-2.5 rounded-lg hover:bg-muted/50 active:bg-muted transition-all duration-200 group text-sm font-medium"
-                    >
-                        <div className="text-muted-foreground/60 group-hover:text-primary transition-colors">
-                            <HelpCircle className="w-5 h-5" />
+                <div className="w-full border-t border-border pt-3">
+                    {!isCollapsed && (
+                        <div className="rounded-xl">
+                            <News articles={sidebarNewsArticles} />
                         </div>
-                        <span className="group-hover:translate-x-0.5 transition-transform">Assistenza</span>
-                    </Link>
+                    )}
 
-                    <div className="flex items-center gap-x-2">
-                        <Link
-                            href="/hub/profile"
-                            className="min-w-0 flex-1 flex items-center gap-x-3 rounded-lg p-2.5 hover:bg-muted/50 transition-colors"
-                        >
-                            <Avatar.Root className="inline-flex items-center justify-center align-middle overflow-hidden select-none w-10 h-10 rounded-full ring-2 ring-gray-100 ring-offset-2">
-                                <Avatar.Image
-                                    className="w-full h-full object-cover"
-                                    src={userProfile?.avatar_url || '/fav.png'}
-                                    alt={userProfile?.full_name || 'User'}
-                                />
-                                <Avatar.Fallback className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500 font-medium">
-                                    {userProfile?.full_name?.charAt(0) || 'U'}
-                                </Avatar.Fallback>
-                            </Avatar.Root>
-                            <div className="min-w-0">
-                                <span className="block text-foreground text-sm font-semibold truncate">
-                                    {userProfile?.full_name || 'Utente Concoro'}
-                                </span>
-                                <span className="block text-muted-foreground text-xs truncate">
-                                    {userProfile?.email || 'utente@concoro.it'}
-                                </span>
-                            </div>
-                        </Link>
+                    <div className={cn('mt-2 flex items-center gap-2', isCollapsed && 'flex-col items-center')}>
+                        <SidebarTooltip enabled={isCollapsed} content="Profilo">
+                            <Link
+                                href="/hub/profile"
+                                title="Profilo"
+                                className={cn(
+                                    'min-w-0 rounded-lg p-2.5 transition-colors hover:bg-muted/50',
+                                    isCollapsed ? 'flex h-11 w-11 items-center justify-center' : 'flex flex-1 items-center gap-3'
+                                )}
+                            >
+                                {isCollapsed ? (
+                                    <UserCircle2 className="h-6 w-6 text-muted-foreground" />
+                                ) : (
+                                    <>
+                                        <Avatar.Root className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full align-middle ring-2 ring-gray-100 ring-offset-2 select-none">
+                                            <Avatar.Image
+                                                className="h-full w-full object-cover"
+                                                src={userProfile?.avatar_url || '/fav.png'}
+                                                alt={userProfile?.full_name || 'User'}
+                                            />
+                                            <Avatar.Fallback className="flex h-full w-full items-center justify-center bg-gray-100 font-medium text-gray-500">
+                                                {userProfile?.full_name?.charAt(0) || 'U'}
+                                            </Avatar.Fallback>
+                                        </Avatar.Root>
+                                        <div className="min-w-0">
+                                            <span className="block truncate text-sm font-semibold text-foreground">
+                                                {userProfile?.full_name || 'Utente Concoro'}
+                                            </span>
+                                            <span className="block truncate text-xs text-muted-foreground">
+                                                {userProfile?.email || 'utente@concoro.it'}
+                                            </span>
+                                        </div>
+                                    </>
+                                )}
+                            </Link>
+                        </SidebarTooltip>
 
-                        <DropdownMenu.Root>
-                            <DropdownMenu.Trigger asChild>
-                                <button
-                                    className="p-2 rounded-lg text-muted-foreground/70 hover:bg-muted/50 active:bg-muted outline-none transition-colors"
-                                    aria-label="Opzioni profilo"
-                                >
-                                    <ChevronDown className="w-5 h-5" />
-                                </button>
-                            </DropdownMenu.Trigger>
-
-                            <DropdownMenu.Portal>
-                                <DropdownMenu.Content
-                                    className="z-50 min-w-[140px] bg-card rounded-xl p-1.5 shadow-xl border border-border animate-in fade-in zoom-in duration-200"
-                                    sideOffset={8}
-                                    align="end"
-                                >
-                                    <DropdownMenu.Item className="outline-none">
-                                        <Link
-                                            href="/hub/billing"
-                                            className="w-full flex items-center gap-2 p-2 text-sm text-muted-foreground rounded-md hover:bg-muted/50 transition-colors"
-                                        >
-                                            <CreditCard className="w-4 h-4" />
-                                            Billing
-                                        </Link>
-                                    </DropdownMenu.Item>
-                                    <DropdownMenu.Separator className="h-px bg-border my-1" />
-                                    <DropdownMenu.Item className="outline-none" onSelect={handleLogout}>
-                                        <button className="w-full flex items-center gap-2 p-2 text-sm text-red-600 rounded-md hover:bg-red-50 transition-colors">
-                                            <LogOut className="w-4 h-4" />
-                                            Esci
-                                        </button>
-                                    </DropdownMenu.Item>
-                                </DropdownMenu.Content>
-                            </DropdownMenu.Portal>
-                        </DropdownMenu.Root>
+                        <SidebarTooltip enabled={isCollapsed} content="Esci">
+                            <button
+                                type="button"
+                                title="Esci"
+                                onClick={handleLogout}
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600"
+                            >
+                                <LogOut className="h-5 w-5" />
+                            </button>
+                        </SidebarTooltip>
                     </div>
                 </div>
             </div>
-        </nav>
+            </nav>
+        </Tooltip.Provider>
     );
 }

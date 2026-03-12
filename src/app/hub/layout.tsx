@@ -27,7 +27,7 @@ export default async function DashboardLayout({
     return (
         <div className="flex min-h-screen bg-gray-50/50">
             {/* Sidebar */}
-            <aside className="hidden lg:block w-80 flex-shrink-0">
+            <aside className="hidden lg:block flex-shrink-0">
                 <Sidebar userProfile={{ ...profile, email: user.email }} />
             </aside>
 
