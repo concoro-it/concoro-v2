@@ -43,11 +43,16 @@ export default async function RicerchePage() {
                     {savedSearches.map((search) => {
                         const filters = search.filters || {};
                         const searchParams = new URLSearchParams();
-                        if (filters.query) searchParams.set('q', filters.query);
-                        if (filters.regioni?.length) filters.regioni.forEach(r => searchParams.append('regione', r));
-                        if (filters.settori?.length) filters.settori.forEach(s => searchParams.append('settore', s));
-                        if (filters.tipo_procedura) searchParams.set('tipo', filters.tipo_procedura);
-                        if (filters.ente_slug) searchParams.set('ente', filters.ente_slug);
+                        const query = filters.query;
+                        if (query) searchParams.set('q', query);
+                        if (filters.regioni?.length) searchParams.set('regione', filters.regioni[0]);
+                        if (filters.province?.length) searchParams.set('provincia', filters.province[0]);
+                        if (filters.settori?.length) searchParams.set('settore', filters.settori[0]);
+                        if (filters.tipo_procedura) searchParams.set('tipo_procedura', filters.tipo_procedura);
+                        if (filters.ente_slug) searchParams.set('ente_slug', filters.ente_slug);
+                        if (filters.stato) searchParams.set('stato', filters.stato);
+                        if (filters.sort) searchParams.set('sort', filters.sort);
+                        if (filters.published_from) searchParams.set('published_from', filters.published_from);
 
                         const href = `/concorsi?${searchParams.toString()}`;
 
@@ -57,12 +62,15 @@ export default async function RicerchePage() {
                                     <h3 className="font-semibold text-lg">{search.name || 'Ricerca senza nome'}</h3>
 
                                     <div className="flex flex-wrap gap-2 mt-2">
-                                        {filters.query && <span className="text-xs bg-muted px-2 py-1 rounded-md">Testo: {filters.query}</span>}
+                                        {query && <span className="text-xs bg-muted px-2 py-1 rounded-md">Testo: {query}</span>}
                                         {filters.regioni?.map(r => <span key={r} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-md">{r}</span>)}
+                                        {filters.province?.map(p => <span key={p} className="text-xs bg-muted px-2 py-1 rounded-md">{p}</span>)}
                                         {filters.settori?.map(s => <span key={s} className="text-xs bg-secondary px-2 py-1 rounded-md text-secondary-foreground">{s}</span>)}
                                         {filters.tipo_procedura && <span className="text-xs border border-border px-2 py-1 rounded-md">{filters.tipo_procedura}</span>}
                                         {filters.ente_slug && <span className="text-xs border border-border px-2 py-1 rounded-md">Ente: {filters.ente_slug}</span>}
-                                        {Object.keys(filters).length === 0 && <span className="text-xs text-muted-foreground">Tutti i concorsi</span>}
+                                        {filters.stato && <span className="text-xs border border-border px-2 py-1 rounded-md">Stato: {filters.stato}</span>}
+                                        {filters.sort && <span className="text-xs border border-border px-2 py-1 rounded-md">Ordina: {filters.sort}</span>}
+                                        {Object.keys(filters).length === 0 && !query && <span className="text-xs text-muted-foreground">Tutti i concorsi</span>}
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-3">Salvata il {new Date(search.created_at).toLocaleDateString('it-IT')}</p>
                                 </div>

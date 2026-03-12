@@ -21,10 +21,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'query o filters richiesti' }, { status: 400 });
     }
 
+    const normalizedFilters = {
+        ...(filters && typeof filters === 'object' ? filters : {}),
+        ...(query ? { query } : {}),
+    };
+
     const { data, error } = await supabase.from('saved_searches').insert({
         user_id: user.id,
-        query: query ?? null,
-        filters: filters ?? null,
+        filters: Object.keys(normalizedFilters).length > 0 ? normalizedFilters : null,
         name: name ?? query ?? 'Ricerca salvata',
     }).select().single();
 

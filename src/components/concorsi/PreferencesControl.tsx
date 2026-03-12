@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UpgradeModal } from '@/components/paywall/UpgradeModal';
+import { UpgradeProModal } from '@/components/paywall/UpgradeProModal';
 
 type Option = { label: string; value: string };
 type SectionKey = 'basic' | 'compensation' | 'areas' | 'company';
@@ -141,6 +142,7 @@ export function PreferencesControl({
     const [open, setOpen] = useState(false);
     const [isSavingDefaults, setIsSavingDefaults] = useState(false);
     const [isSavingPreset, setIsSavingPreset] = useState(false);
+    const [showUpgradeProModal, setShowUpgradeProModal] = useState(false);
     const [section, setSection] = useState<SectionKey>('basic');
     const [enteQuery, setEnteQuery] = useState('');
     const [enteResults, setEnteResults] = useState<Option[]>([]);
@@ -328,6 +330,11 @@ export function PreferencesControl({
     };
 
     const savePreset = async () => {
+        if (!userId) {
+            toast.error("Per salvare un preset devi effettuare l'accesso.");
+            return;
+        }
+
         if (!canSavePreset) {
             toast.error('Il salvataggio preset è disponibile solo su Pro.');
             return;
@@ -338,8 +345,10 @@ export function PreferencesControl({
             const presetNameParts = [state.regione, state.provincia, state.settore].filter(Boolean);
             const name = presetNameParts.length > 0 ? `Preset ${presetNameParts.join(' • ')}` : 'Preset preferenze';
             const publishedFrom = datePresetToIso(state.date_posted);
+            const query = searchParams.get('q') ?? '';
 
             const filters = {
+                query: query || undefined,
                 regioni: state.regione ? [state.regione] : [],
                 province: state.provincia ? [state.provincia] : [],
                 settori: state.settore ? [state.settore] : [],
@@ -349,8 +358,6 @@ export function PreferencesControl({
                 sort: state.sort,
                 published_from: publishedFrom || undefined,
             };
-
-            const query = searchParams.get('q') ?? '';
             const response = await fetch('/api/profile/save-search', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -369,6 +376,24 @@ export function PreferencesControl({
         } finally {
             setIsSavingPreset(false);
         }
+    };
+
+    const handleSavePresetClick = () => {
+        if (!userId) {
+            toast.error("Per salvare un preset devi effettuare l'accesso.");
+            return;
+        }
+
+        if (tier === 'free') {
+            setShowUpgradeProModal(true);
+            return;
+        }
+
+        if (!canSavePreset) {
+            toast.error('Il salvataggio preset è disponibile solo su Pro.');
+            return;
+        }
+        void savePreset();
     };
 
     if (isPaywalledPublic) {
@@ -630,13 +655,21 @@ export function PreferencesControl({
                         <Button type="button" variant="outline" onClick={saveDefaults} disabled={isSavingDefaults}>
                             {isSavingDefaults ? 'Salvataggio...' : 'Salva come predefinite'}
                         </Button>
-                        <Button type="button" variant="outline" onClick={savePreset} disabled={!canSavePreset || isSavingPreset}>
-                            {isSavingPreset ? 'Salvataggio...' : 'Salva preset'}
-                        </Button>
+                        <div className="relative inline-flex">
+                            {!canSavePreset && (
+                                <span className="absolute -top-2 -right-2 z-10 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
+                                    Pro
+                                </span>
+                            )}
+                            <Button type="button" variant="outline" onClick={handleSavePresetClick} disabled={isSavingPreset}>
+                                {isSavingPreset ? 'Salvataggio...' : 'Salva preset'}
+                            </Button>
+                        </div>
                     </div>
                     <Button type="button" onClick={applyFilters} className="rounded-xl px-6">Applica filtri</Button>
                 </div>
             </DialogContent>
+            <UpgradeProModal isOpen={showUpgradeProModal} onOpenChange={setShowUpgradeProModal} />
         </Dialog>
     );
 }

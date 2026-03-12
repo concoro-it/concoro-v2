@@ -126,6 +126,9 @@ export interface SavedSearch {
         settori?: string[];
         tipo_procedura?: string;
         ente_slug?: string;
+        stato?: 'aperti' | 'scaduti';
+        sort?: 'scadenza' | 'recenti' | 'posti';
+        published_from?: string;
         date_from?: string;
         date_to?: string;
     };
