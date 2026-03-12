@@ -17,6 +17,7 @@ const links = {
     ],
     legale: [
         { label: 'Privacy Policy', href: '/privacy' },
+        { label: 'Cookie Policy', href: '/cookie-policy' },
         { label: 'Termini di Servizio', href: '/termini' },
     ],
 };
