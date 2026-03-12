@@ -15,10 +15,12 @@ const freeFeatures = [
 
 export function PricingSection({
     userId,
+    userEmail,
     initialBilling = "yearly",
     availableBillingCycles = { monthly: true, yearly: true },
 }: {
     userId?: string;
+    userEmail?: string;
     initialBilling?: "monthly" | "yearly";
     availableBillingCycles?: { monthly: boolean; yearly: boolean };
 }) {
@@ -90,6 +92,17 @@ export function PricingSection({
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                     Con Free inizi a orientarti. Con Concoro Pro sblocchi alert mirati, ricerche senza limiti e Genio per capire piu in fretta dove conviene candidarti.
                 </p>
+                <div className="mt-5">
+                    {userId ? (
+                        <p className="inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
+                            Accesso effettuato come <span className="ml-1 font-semibold text-foreground">{userEmail ?? "utente autenticato"}</span>
+                        </p>
+                    ) : (
+                        <p className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs text-amber-800">
+                            Non hai effettuato l&apos;accesso. Ti chiederemo il login prima del checkout.
+                        </p>
+                    )}
+                </div>
 
                 {/* Toggle Switch */}
                 {canUseMonthly && canUseYearly ? (

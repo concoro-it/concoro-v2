@@ -1,10 +1,16 @@
 import Stripe from 'stripe';
 
-if (!process.env.STRIPE_SECRET_KEY) {
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
+
+if (!stripeSecretKey) {
     console.warn('[Stripe] STRIPE_SECRET_KEY not set — Stripe features will be unavailable');
 }
 
-export const stripe = process.env.STRIPE_SECRET_KEY
+if (process.env.NODE_ENV === 'production' && stripeSecretKey?.startsWith('sk_test_')) {
+    console.error('[Stripe] STRIPE_SECRET_KEY is a test key in production.');
+}
+
+export const stripe = stripeSecretKey
     // @ts-ignore - Ignore exact string literal matching for apiVersion
-    ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-01-27.acacia' })
+    ? new Stripe(stripeSecretKey, { apiVersion: '2025-01-27.acacia' })
     : null;

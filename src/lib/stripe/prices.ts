@@ -16,10 +16,12 @@ export const PLANS = {
 } as const;
 
 export function getProPriceId(cycle: BillingCycle): string {
-    const priceId =
+    const rawPriceId =
         cycle === 'yearly'
             ? process.env.STRIPE_PRO_PRICE_ID_YEARLY
             : process.env.STRIPE_PRO_PRICE_ID_MONTHLY;
+
+    const priceId = rawPriceId?.trim().replace(/^['"]|['"]$/g, '');
 
     if (!priceId) {
         throw new Error(`Stripe price ID not configured for ${cycle} cycle`);

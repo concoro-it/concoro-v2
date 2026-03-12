@@ -3,6 +3,7 @@ import { getProPriceId, type BillingCycle } from '@/lib/stripe/prices';
 import { NextResponse } from 'next/server';
 import { getServerAppUrl } from '@/lib/auth/url';
 import { createClient } from '@/lib/supabase/server';
+import Stripe from 'stripe';
 
 export async function POST(req: Request) {
     try {
@@ -50,9 +51,27 @@ export async function POST(req: Request) {
         return NextResponse.json({ url: checkoutSession.url });
     } catch (error) {
         console.error('[STRIPE_CHECKOUT]', error);
+
+        if (error instanceof Stripe.errors.StripeError) {
+            if (error.code === 'api_key_expired') {
+                return new NextResponse('Stripe API key expired. Please update STRIPE_SECRET_KEY.', { status: 500 });
+            }
+
+            if (error.type === 'StripeAuthenticationError') {
+                return new NextResponse('Stripe authentication failed. Check STRIPE_SECRET_KEY.', { status: 500 });
+            }
+
+            if (error.type === 'StripeInvalidRequestError') {
+                return new NextResponse(error.message || 'Stripe request is invalid. Check configured price IDs.', { status: 500 });
+            }
+
+            return new NextResponse(error.message || 'Stripe error', { status: 500 });
+        }
+
         if (error instanceof Error && error.message.includes('Stripe price ID not configured')) {
             return new NextResponse(error.message, { status: 500 });
         }
+
         return new NextResponse('Internal Error', { status: 500 });
     }
 }

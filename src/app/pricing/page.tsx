@@ -40,6 +40,7 @@ export default async function PricingPage({
     return (
         <PricingSection
             userId={user?.id}
+            userEmail={user?.email ?? undefined}
             initialBilling={initialBilling}
             availableBillingCycles={{
                 monthly: hasMonthly,
