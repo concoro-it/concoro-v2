@@ -11,7 +11,7 @@ import {
     Sparkles,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getFeaturedConcorsi, getProvinceWithCount, getRegioniWithCount, getSettoriWithCount } from '@/lib/supabase/queries';
+import { getActiveConcorsiCount, getFeaturedConcorsi, getProvinceWithCount, getRegioniWithCount, getSettoriWithCount } from '@/lib/supabase/queries';
 import { ConcorsoCard } from '@/components/concorsi/ConcorsoCard';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getServerAppUrl } from '@/lib/auth/url';
@@ -121,8 +121,9 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
     const supabase = await createClient();
-    const [featured, regioni, province, settori] = await Promise.all([
+    const [featured, activeConcorsiCount, regioni, province, settori] = await Promise.all([
         getFeaturedConcorsi(supabase),
+        getActiveConcorsiCount(supabase),
         getRegioniWithCount(supabase),
         getProvinceWithCount(supabase),
         getSettoriWithCount(supabase),
@@ -199,7 +200,7 @@ export default async function HomePage() {
                     <div className="space-y-6">
                         <div className="inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-white/75 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.11em] text-slate-700 backdrop-blur-sm">
                             <ShieldCheck className="h-3.5 w-3.5" />
-                            Dati ufficiali da InPA aggiornati ogni giorno
+                            Dati ufficiali aggiornati ogni giorno
                         </div>
 
                         <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] max-w-3xl text-balance text-4xl font-semibold leading-[1.04] tracking-tight text-slate-900 md:text-6xl">
@@ -238,29 +239,30 @@ export default async function HomePage() {
                         <div className="space-y-5 pl-3">
                             <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-slate-500">
                                 <Sparkles className="h-3.5 w-3.5" />
-                                Panoramica generale
+                                Aggiornato ogni giorno
                             </p>
                             <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-2xl text-slate-900">
-                                Dati nazionali Concoro
+                                Tutti i concorsi, ordinati come li cerchi
                             </h2>
                             <p className="text-sm leading-relaxed text-slate-600">
-                                Parti da una vista completa e crea la tua ricerca personale nella Hub per salvare i filtri che usi piu spesso.
+                                Dati da fonti ufficiali (InPA). Nella Hub puoi filtrare per regione, provincia, ente, settore e scadenza,
+                                salvare bandi e ricerche, e tornare sempre su cio che conta per te.
                             </p>
                             <div className="grid gap-2 sm:grid-cols-2">
                                 <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3">
-                                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Concorsi in evidenza</p>
-                                    <p className="mt-1 text-xl font-semibold text-slate-900">{featuredCount}</p>
+                                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Concorsi attivi</p>
+                                    <p className="mt-1 text-xl font-semibold text-slate-900">{activeConcorsiCount}</p>
                                 </div>
                                 <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3">
                                     <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Regioni coperte</p>
                                     <p className="mt-1 text-xl font-semibold text-slate-900">{regioniCount}</p>
                                 </div>
                                 <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3">
-                                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Province coperte</p>
+                                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Province monitorate</p>
                                     <p className="mt-1 text-xl font-semibold text-slate-900">{provinceCount}</p>
                                 </div>
                                 <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3">
-                                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Settori attivi</p>
+                                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Settori disponibili</p>
                                     <p className="mt-1 text-xl font-semibold text-slate-900">{settoriCount}</p>
                                 </div>
                             </div>
@@ -268,7 +270,7 @@ export default async function HomePage() {
                                 href="/hub"
                                 className="inline-flex items-center gap-2 text-sm font-semibold text-[#0B4B7F] hover:text-[#083861]"
                             >
-                                Registrati e apri la tua Hub
+                                Crea la tua ricerca nella Hub
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                         </div>
@@ -304,7 +306,7 @@ export default async function HomePage() {
                     </p>
                 </section>
 
-                <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <section className="grid gap-4 md:grid-cols-3">
                     {GEO_SECTIONS.map((section, index) => {
                         const Icon = section.icon;
                         return (

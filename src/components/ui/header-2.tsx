@@ -72,12 +72,21 @@ export function Header() {
                         <a href="/signup">Registrati</a>
                     </Button>
                 </div>
-                <Button size="icon" variant="outline" onClick={() => setOpen(!open)} className="md:hidden">
+                <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => setOpen(!open)}
+                    className="md:hidden"
+                    aria-label={open ? 'Menüyü kapat' : 'Menüyü aç'}
+                    aria-expanded={open}
+                    aria-controls="mobile-main-menu"
+                >
                     <MenuToggleIcon open={open} className="size-5" duration={300} />
                 </Button>
             </nav>
 
             <div
+                id="mobile-main-menu"
                 className={cn(
                     'bg-background/90 fixed top-14 right-0 bottom-0 left-0 z-50 flex flex-col overflow-hidden border-y md:hidden',
                     open ? 'block' : 'hidden',
