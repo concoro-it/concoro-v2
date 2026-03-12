@@ -21,11 +21,9 @@ export default async function ProfilePage() {
         .single();
 
     return (
-        <div className="container max-w-4xl mx-auto py-4 sm:py-6">
-            <ProfileSettings
-                user={{ id: user.id, email: user.email }}
-                profile={(profile as Profile | null) ?? null}
-            />
-        </div>
+        <ProfileSettings
+            user={{ id: user.id, email: user.email }}
+            profile={(profile as Profile | null) ?? null}
+        />
     );
 }

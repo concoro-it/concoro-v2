@@ -24,6 +24,9 @@ export interface Profile {
     sede_preferita: string | null;
     remote_preferito: boolean;
     notification_email: boolean;
+    obiettivo_concorso: string | null;
+    disponibilita_mobilita: boolean;
+    tempo_studio_settimanale: number | null;
     created_at: string;
     updated_at: string;
 }
@@ -40,6 +43,9 @@ export interface ProfileFormValues {
     sede_preferita: string;
     remote_preferito: boolean;
     notification_email: boolean;
+    obiettivo_concorso: string;
+    disponibilita_mobilita: boolean;
+    tempo_studio_settimanale: string;
 }
 
 export type ProfileUpdatePayload = Partial<
@@ -56,6 +62,9 @@ export type ProfileUpdatePayload = Partial<
         | 'sede_preferita'
         | 'remote_preferito'
         | 'notification_email'
+        | 'obiettivo_concorso'
+        | 'disponibilita_mobilita'
+        | 'tempo_studio_settimanale'
     >
 >;
 
@@ -85,12 +94,17 @@ export function mapProfileToFormValues(profile: Partial<Profile> | null): Profil
         sede_preferita: profile?.sede_preferita ?? '',
         remote_preferito: profile?.remote_preferito ?? false,
         notification_email: profile?.notification_email ?? true,
+        obiettivo_concorso: profile?.obiettivo_concorso ?? '',
+        disponibilita_mobilita: profile?.disponibilita_mobilita ?? false,
+        tempo_studio_settimanale: profile?.tempo_studio_settimanale != null ? String(profile.tempo_studio_settimanale) : '',
     };
 }
 
 export function mapFormValuesToProfileUpdate(values: ProfileFormValues): ProfileUpdatePayload {
     const years = values.anni_esperienza.trim();
     const parsedYears = years === '' ? null : Number.parseInt(years, 10);
+    const weeklyHours = values.tempo_studio_settimanale.trim();
+    const parsedWeeklyHours = weeklyHours === '' ? null : Number.parseInt(weeklyHours, 10);
 
     return {
         first_name: nullIfEmpty(values.first_name),
@@ -104,6 +118,12 @@ export function mapFormValuesToProfileUpdate(values: ProfileFormValues): Profile
         sede_preferita: nullIfEmpty(values.sede_preferita),
         remote_preferito: values.remote_preferito,
         notification_email: values.notification_email,
+        obiettivo_concorso: nullIfEmpty(values.obiettivo_concorso),
+        disponibilita_mobilita: values.disponibilita_mobilita,
+        tempo_studio_settimanale:
+            parsedWeeklyHours == null || Number.isNaN(parsedWeeklyHours)
+                ? null
+                : Math.max(parsedWeeklyHours, 0),
     };
 }
 
