@@ -3,22 +3,19 @@ import Link from 'next/link';
 import {
     ArrowRight,
     Building2,
-    CalendarDays,
     Clock3,
     Compass,
     MapPinned,
-    Newspaper,
     Search,
     ShieldCheck,
     Sparkles,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getFeaturedConcorsi, getLatestArticoli, getProvinceWithCount, getRegioniWithCount, getSettoriWithCount } from '@/lib/supabase/queries';
+import { getFeaturedConcorsi, getProvinceWithCount, getRegioniWithCount, getSettoriWithCount } from '@/lib/supabase/queries';
 import { ConcorsoCard } from '@/components/concorsi/ConcorsoCard';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getServerAppUrl } from '@/lib/auth/url';
 import { toUrlSlug } from '@/lib/utils/regioni';
-import { formatDateIT } from '@/lib/utils/date';
 
 const REGION_FLAG_BY_SLUG: Record<string, string> = {
     abruzzo: '/Regions/Flag_of_Abruzzo.svg',
@@ -65,13 +62,6 @@ const GEO_SECTIONS = [
         href: '/ente',
         icon: Building2,
         accent: 'from-amber-200 via-amber-300 to-orange-300',
-    },
-    {
-        title: 'Guide e approfondimenti',
-        description: 'Contenuti editoriali su requisiti, prove e preparazione ai concorsi.',
-        href: '/blog',
-        icon: Newspaper,
-        accent: 'from-indigo-200 via-violet-200 to-fuchsia-200',
     },
 ];
 
@@ -131,12 +121,11 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
     const supabase = await createClient();
-    const [featured, regioni, province, settori, articoli] = await Promise.all([
+    const [featured, regioni, province, settori] = await Promise.all([
         getFeaturedConcorsi(supabase),
         getRegioniWithCount(supabase),
         getProvinceWithCount(supabase),
         getSettoriWithCount(supabase),
-        getLatestArticoli(supabase, 3),
     ]);
 
     const featuredCount = featured.length;
@@ -413,51 +402,6 @@ export default async function HomePage() {
                                 >
                                     {settore}
                                     <span className="rounded-full bg-white px-1.5 py-0.5 text-xs font-semibold text-slate-600">{count}</span>
-                                </Link>
-                            ))}
-                        </div>
-                    </section>
-                )}
-
-                {articoli.length > 0 && (
-                    <section>
-                        <div className="mb-6 flex items-center justify-between gap-4">
-                            <div>
-                                <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-600">
-                                    <Sparkles className="h-3.5 w-3.5" />
-                                    SEO e orientamento GEO
-                                </p>
-                                <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl tracking-tight text-slate-900">Guide per capire meglio i bandi</h2>
-                            </div>
-                            <Link href="/blog" className="inline-flex items-center gap-1 text-sm font-semibold text-[#0B4B7F] hover:text-[#083861]">
-                                Tutti gli articoli
-                                <ArrowRight className="h-4 w-4" />
-                            </Link>
-                        </div>
-
-                        <div className="grid gap-4 md:grid-cols-3">
-                            {articoli.map((articolo) => (
-                                <Link
-                                    key={articolo.id}
-                                    href={`/blog/${articolo.slug}`}
-                                    className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-slate-300"
-                                >
-                                    {articolo.cover_image ? (
-                                        <img
-                                            src={articolo.cover_image}
-                                            alt={articolo.title}
-                                            className="h-40 w-full object-cover transition duration-500 group-hover:scale-105"
-                                        />
-                                    ) : (
-                                        <div className="flex h-40 w-full items-center justify-center bg-[linear-gradient(130deg,#eaf4ff,#f9fbff)] text-slate-500">
-                                            <CalendarDays className="h-8 w-8" />
-                                        </div>
-                                    )}
-                                    <div className="space-y-2 p-4">
-                                        <p className="text-xs font-medium text-slate-500">{formatDateIT(articolo.published_at)}</p>
-                                        <h3 className="line-clamp-2 text-sm font-semibold text-slate-900">{articolo.title}</h3>
-                                        {articolo.excerpt && <p className="line-clamp-2 text-xs text-slate-600">{articolo.excerpt}</p>}
-                                    </div>
                                 </Link>
                             ))}
                         </div>

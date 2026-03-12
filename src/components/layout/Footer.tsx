@@ -12,7 +12,6 @@ const links = {
     ],
     azienda: [
         { label: 'Chi Siamo', href: '/chi-siamo' },
-        { label: 'Blog', href: '/blog' },
         { label: 'Contatti', href: '/contatti' },
         { label: 'Prezzi', href: '/pricing' },
     ],

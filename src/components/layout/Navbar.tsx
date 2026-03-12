@@ -52,7 +52,6 @@ export function Navbar({ user }: NavbarProps) {
                     <Link href="/provincia" className="hover:text-foreground transition-colors">Province</Link>
                     <Link href="/settore" className="hover:text-foreground transition-colors">Settori</Link>
                     <Link href="/scadenza" className="hover:text-foreground transition-colors">Scadenze</Link>
-                    <Link href="/blog" className="hover:text-foreground transition-colors">Blog</Link>
                     <Link href="/pricing" className="hover:text-foreground transition-colors">Prezzi</Link>
                 </div>
 
@@ -94,7 +93,6 @@ export function Navbar({ user }: NavbarProps) {
                     <Link href="/provincia" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Province</Link>
                     <Link href="/settore" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Settori</Link>
                     <Link href="/scadenza" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Scadenze</Link>
-                    <Link href="/blog" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Blog</Link>
                     <Link href="/pricing" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Prezzi</Link>
                     <div className="pt-2 border-t border-border flex flex-col gap-2">
                         <Link href="/dashboard" className="block py-2 text-sm font-medium text-center border border-border rounded-lg" onClick={() => setMobileOpen(false)}>
