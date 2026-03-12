@@ -50,6 +50,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ url: checkoutSession.url });
     } catch (error) {
         console.error('[STRIPE_CHECKOUT]', error);
+        if (error instanceof Error && error.message.includes('Stripe price ID not configured')) {
+            return new NextResponse(error.message, { status: 500 });
+        }
         return new NextResponse('Internal Error', { status: 500 });
     }
 }

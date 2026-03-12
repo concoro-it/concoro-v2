@@ -2,7 +2,11 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 
 const PROTECTED_PATH_PREFIXES = ['/hub', '/dashboard', '/salvati', '/ricerche', '/impostazioni', '/abbonamento'];
-const AUTHENTICATED_ALLOWED_PUBLIC_PATH_PREFIXES = ['/pricing'];
+const AUTHENTICATED_ALLOWED_PUBLIC_PATH_PREFIXES = [
+    '/pricing',
+    '/manifest',
+    '/manifest.webmanifest',
+];
 
 function hasSupabaseAuthCookie(request: NextRequest) {
     return request.cookies.getAll().some(({ name }) => name.includes('-auth-token'));

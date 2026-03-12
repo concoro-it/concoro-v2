@@ -16,11 +16,15 @@ const freeFeatures = [
 export function PricingSection({
     userId,
     initialBilling = "yearly",
+    availableBillingCycles = { monthly: true, yearly: true },
 }: {
     userId?: string;
     initialBilling?: "monthly" | "yearly";
+    availableBillingCycles?: { monthly: boolean; yearly: boolean };
 }) {
-    const [isYearly, setIsYearly] = useState(initialBilling === "yearly");
+    const canUseMonthly = availableBillingCycles.monthly;
+    const canUseYearly = availableBillingCycles.yearly;
+    const [isYearly, setIsYearly] = useState(initialBilling === "yearly" && canUseYearly);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const yearlyEquivalent = PLANS.pro.price_yearly / 12;
@@ -37,6 +41,10 @@ export function PricingSection({
         setError(null);
 
         try {
+            if (!canUseMonthly && !canUseYearly) {
+                throw new Error("Piano non configurato al momento.");
+            }
+
             const response = await fetch("/api/stripe/checkout", {
                 method: "POST",
                 headers: {
@@ -48,14 +56,26 @@ export function PricingSection({
             });
 
             if (!response.ok) {
-                throw new Error("Errore durante la creazione del checkout");
+                let message = "Errore durante la creazione del checkout";
+                try {
+                    message = await response.text();
+                } catch {
+                    // no-op: keep fallback message
+                }
+
+                if (response.status === 401) {
+                    window.location.href = "/login?redirectTo=/pricing";
+                    return;
+                }
+
+                throw new Error(message || "Errore durante la creazione del checkout");
             }
 
             const { url } = await response.json();
             window.location.href = url;
         } catch (err: any) {
             console.error("Subscription Error:", err);
-            setError("Impossibile procedere al pagamento. Riprova più tardi.");
+            setError(err?.message || "Impossibile procedere al pagamento. Riprova più tardi.");
             setIsLoading(false);
         }
     };
@@ -72,24 +92,32 @@ export function PricingSection({
                 </p>
 
                 {/* Toggle Switch */}
-                <div className="mt-8 flex items-center justify-center gap-3">
-                    <span className={`text-sm font-medium ${!isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>Mensile</span>
-                    <button
-                        onClick={() => setIsYearly(!isYearly)}
-                        className="relative inline-flex h-6 w-11 items-center rounded-full bg-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                        role="switch"
-                        aria-checked={isYearly}
-                    >
-                        <span className="sr-only">Passa alla fatturazione {isYearly ? 'mensile' : 'annuale'}</span>
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isYearly ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
-                    <span className={`text-sm font-medium ${isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
-                        Annuale <span className="ml-1.5 text-xs font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">Risparmi {yearlySavings}%</span>
-                    </span>
-                </div>
-                <p className="mt-3 text-sm text-muted-foreground">
-                    L&apos;annuale e il piano consigliato per chi segue concorsi durante tutto l&apos;anno.
-                </p>
+                {canUseMonthly && canUseYearly ? (
+                    <>
+                        <div className="mt-8 flex items-center justify-center gap-3">
+                            <span className={`text-sm font-medium ${!isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>Mensile</span>
+                            <button
+                                onClick={() => setIsYearly(!isYearly)}
+                                className="relative inline-flex h-6 w-11 items-center rounded-full bg-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                role="switch"
+                                aria-checked={isYearly}
+                            >
+                                <span className="sr-only">Passa alla fatturazione {isYearly ? 'mensile' : 'annuale'}</span>
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isYearly ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
+                            <span className={`text-sm font-medium ${isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                Annuale <span className="ml-1.5 text-xs font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">Risparmi {yearlySavings}%</span>
+                            </span>
+                        </div>
+                        <p className="mt-3 text-sm text-muted-foreground">
+                            L&apos;annuale e il piano consigliato per chi segue concorsi durante tutto l&apos;anno.
+                        </p>
+                    </>
+                ) : (
+                    <p className="mt-6 text-sm text-muted-foreground">
+                        {canUseMonthly ? "Al momento e disponibile solo la fatturazione mensile." : canUseYearly ? "Al momento e disponibile solo la fatturazione annuale." : "Il checkout e in configurazione, riprova a breve."}
+                    </p>
+                )}
             </div>
 
             {error && (

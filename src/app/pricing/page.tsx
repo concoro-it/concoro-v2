@@ -28,7 +28,23 @@ export default async function PricingPage({
 
     const { data: { user } } = await supabase.auth.getUser();
     const resolvedSearchParams = await searchParams;
-    const initialBilling = resolvedSearchParams?.billing === 'monthly' ? 'monthly' : 'yearly';
+    const hasMonthly = Boolean(process.env.STRIPE_PRO_PRICE_ID_MONTHLY);
+    const hasYearly = Boolean(process.env.STRIPE_PRO_PRICE_ID_YEARLY);
 
-    return <PricingSection userId={user?.id} initialBilling={initialBilling} />;
+    const requestedBilling = resolvedSearchParams?.billing === 'monthly' ? 'monthly' : 'yearly';
+    const initialBilling =
+        requestedBilling === 'yearly'
+            ? (hasYearly ? 'yearly' : 'monthly')
+            : (hasMonthly ? 'monthly' : 'yearly');
+
+    return (
+        <PricingSection
+            userId={user?.id}
+            initialBilling={initialBilling}
+            availableBillingCycles={{
+                monthly: hasMonthly,
+                yearly: hasYearly,
+            }}
+        />
+    );
 }
