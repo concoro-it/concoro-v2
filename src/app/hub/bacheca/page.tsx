@@ -205,7 +205,7 @@ export default async function DashboardPage() {
                     </Link>
 
                     <Link
-                        href="/hub/ricerche"
+                        href="/hub/salvati?tab=ricerche"
                         className="group rounded-2xl border border-slate-200 bg-white/90 p-4 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
                     >
                         <span className="inline-flex rounded-xl bg-emerald-600/10 p-2 text-emerald-700"><Search className="h-4 w-4" /></span>

@@ -18,4 +18,5 @@ export async function deleteSearchAction(searchId: string, formData?: FormData):
     }
 
     revalidatePath('/hub/ricerche');
+    revalidatePath('/hub/salvati');
 }

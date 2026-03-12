@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { UpgradeModal } from '@/components/paywall/UpgradeModal';
+import { UpgradeProModal } from '@/components/paywall/UpgradeProModal';
 
 interface SaveButtonProps {
     concorsoId: string;
@@ -24,6 +25,7 @@ export function SaveButton({
     const [isSaved, setIsSaved] = useState(initialSaved);
     const [isLoading, setIsLoading] = useState(false);
     const [showRegisterModal, setShowRegisterModal] = useState(false);
+    const [showUpgradeProModal, setShowUpgradeProModal] = useState(false);
     const supabase = createClient();
 
     useEffect(() => {
@@ -73,6 +75,26 @@ export function SaveButton({
                 setIsSaved(false);
                 toast.success('Concorso rimosso dai salvati');
             } else {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('tier')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if ((profile?.tier ?? 'free') === 'free') {
+                    const { count } = await supabase
+                        .from('saved_concorsi')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('user_id', session.user.id);
+
+                    if ((count ?? 0) >= 1) {
+                        setShowUpgradeProModal(true);
+                        toast.error('Con il piano Free puoi salvare un solo concorso.');
+                        setIsLoading(false);
+                        return;
+                    }
+                }
+
                 const { error } = await supabase
                     .from('saved_concorsi')
                     .insert({
@@ -116,6 +138,7 @@ export function SaveButton({
                 {!iconOnly && (isSaved ? 'Salvato' : 'Salva')}
             </Button>
             <UpgradeModal isOpen={showRegisterModal} onOpenChange={setShowRegisterModal} />
+            <UpgradeProModal isOpen={showUpgradeProModal} onOpenChange={setShowUpgradeProModal} />
         </>
     );
 }
