@@ -20,9 +20,10 @@ export default async function HubProvinciaIndexPage() {
     ]);
 
     return (
-        <div className="relative overflow-hidden bg-[hsl(210,55%,98%)] text-slate-900 [font-family:'Avenir_Next',Avenir,'Segoe_UI',-apple-system,BlinkMacSystemFont,'Helvetica_Neue',sans-serif]">
-            <div className="container mx-auto max-w-[78rem] px-4 py-10">
-                <div className="mb-8">
+        <div className="dashboard-shell">
+            <div className="dashboard-shell-overlay" />
+            <div className="relative container mx-auto max-w-[78rem] px-4 py-8 sm:px-6 sm:py-10">
+                <div className="mb-6">
                     <nav className="mb-4 text-sm text-slate-500">
                         <Link href="/hub/bacheca" className="hover:text-slate-900">Dashboard</Link>
                         {' › '}
@@ -30,17 +31,19 @@ export default async function HubProvinciaIndexPage() {
                     </nav>
                 </div>
 
-                <section className="mb-6 flex items-center justify-between gap-4">
-                    <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl tracking-tight text-slate-900">
-                        Mappa provinciale dei bandi
-                    </h1>
-                    <Link href="/hub/concorsi" className="inline-flex items-center gap-1 text-sm font-semibold text-[#0B4B7F] hover:text-[#083861]">
-                        Tutti i concorsi
-                        <ArrowRight className="h-4 w-4" />
-                    </Link>
-                </section>
+                <section className="dashboard-section-frame mb-6 p-5 sm:p-6 lg:p-7">
+                    <div className="mb-6 flex items-center justify-between gap-4">
+                        <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl tracking-tight text-slate-900">
+                            Mappa provinciale dei bandi
+                        </h1>
+                        <Link href="/hub/concorsi" className="inline-flex items-center gap-1 text-sm font-semibold text-[#0B4B7F] hover:text-[#083861]">
+                            Tutti i concorsi
+                            <ArrowRight className="h-4 w-4" />
+                        </Link>
+                    </div>
 
-                <ProvinciaMapExplorer regionCounts={regioni} provinces={province} />
+                    <ProvinciaMapExplorer regionCounts={regioni} provinces={province} />
+                </section>
             </div>
         </div>
     );

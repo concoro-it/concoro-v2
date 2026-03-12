@@ -232,8 +232,9 @@ export default async function HubEnteIndexPage({ searchParams }: Props) {
     const paginationItems = getPaginationItems(currentPage, totalPages);
 
     return (
-        <div className="relative overflow-hidden bg-[hsl(210,55%,98%)] text-slate-900 [font-family:'Avenir_Next',Avenir,'Segoe_UI',-apple-system,BlinkMacSystemFont,'Helvetica_Neue',sans-serif]">
-            <div className="container mx-auto max-w-[78rem] px-4 py-10">
+        <div className="dashboard-shell">
+            <div className="dashboard-shell-overlay" />
+            <div className="relative container mx-auto max-w-[78rem] px-4 py-8 sm:px-6 sm:py-10">
                 <div className="mb-6">
                     <nav className="mb-4 text-sm text-slate-500">
                         <Link href="/hub/bacheca" className="hover:text-slate-900">Dashboard</Link>
@@ -261,7 +262,7 @@ export default async function HubEnteIndexPage({ searchParams }: Props) {
                     </div>
                 </div>
 
-                <section className="mb-10">
+                <section className="dashboard-section-frame mb-6 p-5 sm:p-6 lg:p-7">
                     <div className="mb-5 flex items-center justify-between">
                         <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-2xl text-slate-900">
                             Enti in evidenza
@@ -310,7 +311,7 @@ export default async function HubEnteIndexPage({ searchParams }: Props) {
                     </div>
                 </section>
 
-                <section className="rounded-3xl border border-slate-200 bg-white/85 p-5 shadow-[0_24px_52px_-44px_rgba(15,23,42,0.7)] md:p-6">
+                <section className="dashboard-section-frame p-5 md:p-6">
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-2xl text-slate-900">Esplora tutti gli enti</h2>

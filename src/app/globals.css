@@ -194,6 +194,34 @@
   .modern-mobile-menu .menu__text.active {
     opacity: 1;
   }
+
+  .dashboard-shell {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgb(226 232 240 / 0.7);
+    border-radius: 2rem;
+    background: hsl(210 55% 98%);
+    color: rgb(15 23 42);
+    box-shadow: 0 32px 70px -46px rgba(15, 23, 42, 0.65);
+    font-family: 'Avenir Next', Avenir, 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  }
+
+  .dashboard-shell-overlay {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 8% 8%, rgba(14, 78, 136, 0.16), transparent 35%),
+      radial-gradient(circle at 92% 10%, rgba(244, 63, 94, 0.1), transparent 31%),
+      repeating-linear-gradient(90deg, rgba(12, 56, 97, 0.035) 0 1px, transparent 1px 84px);
+  }
+
+  .dashboard-section-frame {
+    border: 1px solid rgb(226 232 240 / 0.85);
+    border-radius: 1.55rem;
+    background: rgb(255 255 255 / 0.88);
+    box-shadow: 0 24px 42px -34px rgba(2, 6, 23, 0.45);
+  }
 }
 
 @layer utilities {

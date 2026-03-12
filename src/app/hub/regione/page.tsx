@@ -46,9 +46,10 @@ export default async function HubRegioneIndexPage() {
     const regioni = await getRegioniWithCount(supabase);
 
     return (
-        <div className="relative overflow-hidden bg-[hsl(210,55%,98%)] text-slate-900 [font-family:'Avenir_Next',Avenir,'Segoe_UI',-apple-system,BlinkMacSystemFont,'Helvetica_Neue',sans-serif]">
-            <div className="container mx-auto max-w-[78rem] px-4 py-10">
-                <div className="mb-8">
+        <div className="dashboard-shell">
+            <div className="dashboard-shell-overlay" />
+            <div className="relative container mx-auto max-w-[78rem] px-4 py-8 sm:px-6 sm:py-10">
+                <div className="mb-6">
                     <nav className="mb-4 text-sm text-slate-500">
                         <Link href="/hub/bacheca" className="hover:text-slate-900">Dashboard</Link>
                         {' › '}
@@ -56,7 +57,7 @@ export default async function HubRegioneIndexPage() {
                     </nav>
                 </div>
 
-                <section>
+                <section className="dashboard-section-frame p-5 sm:p-6 lg:p-7">
                     <div className="mb-6 flex items-center justify-between gap-4">
                         <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl tracking-tight text-slate-900">
                             Mappa regionale dei bandi

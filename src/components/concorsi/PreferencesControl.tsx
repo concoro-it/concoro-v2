@@ -437,7 +437,7 @@ export function PreferencesControl({
 
                     <div className="space-y-5 overflow-y-auto bg-white p-4 md:p-6">
                         {section === 'basic' && (
-                            <>
+                            <section className="dashboard-section-frame space-y-5 p-4 sm:p-5">
                                 <h3 className="text-2xl font-semibold tracking-tight text-slate-900">Criteri Base</h3>
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
@@ -530,11 +530,11 @@ export function PreferencesControl({
                                         </Select>
                                     </div>
                                 </div>
-                            </>
+                            </section>
                         )}
 
                         {section === 'compensation' && (
-                            <>
+                            <section className="dashboard-section-frame space-y-5 p-4 sm:p-5">
                                 <h3 className="text-2xl font-semibold tracking-tight text-slate-900">Compensi e Requisiti</h3>
                                 <p className="text-sm text-slate-500">
                                     Questi campi sono salvati nel profilo ma non filtrano i risultati in v1.
@@ -553,11 +553,11 @@ export function PreferencesControl({
                                     <Checkbox id="remote_preferito_modal" checked={state.remote_preferito} onCheckedChange={(checked) => setField('remote_preferito', checked === true)} />
                                     <Label htmlFor="remote_preferito_modal" className="cursor-pointer">Preferisco posizioni remote</Label>
                                 </div>
-                            </>
+                            </section>
                         )}
 
                         {section === 'areas' && (
-                            <>
+                            <section className="dashboard-section-frame space-y-5 p-4 sm:p-5">
                                 <h3 className="text-2xl font-semibold tracking-tight text-slate-900">Aree di Interesse</h3>
                                 <p className="text-sm text-slate-500">
                                     Settori preferiti del profilo. Separali con virgola.
@@ -566,11 +566,11 @@ export function PreferencesControl({
                                     <Label htmlFor="settori_interesse">Settori di interesse</Label>
                                     <Input id="settori_interesse" value={state.settori_interesse} onChange={(event) => setField('settori_interesse', event.target.value)} placeholder="Es. Amministrativo, Sanitario, IT" />
                                 </div>
-                            </>
+                            </section>
                         )}
 
                         {section === 'company' && (
-                            <>
+                            <section className="dashboard-section-frame space-y-5 p-4 sm:p-5">
                                 <h3 className="text-2xl font-semibold tracking-tight text-slate-900">Ente</h3>
                                 <p className="text-sm text-slate-500">
                                     In v1 è attivo solo il filtro ente.
@@ -619,7 +619,7 @@ export function PreferencesControl({
                                         )}
                                     </div>
                                 </div>
-                            </>
+                            </section>
                         )}
                     </div>
                 </div>
