@@ -1,7 +1,14 @@
-import { type NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
 export async function middleware(request: NextRequest) {
+    const hostname = request.nextUrl.hostname.toLowerCase();
+    if (hostname === 'www.concoro.it') {
+        const canonicalUrl = request.nextUrl.clone();
+        canonicalUrl.hostname = 'concoro.it';
+        return NextResponse.redirect(canonicalUrl, 301);
+    }
+
     return await updateSession(request);
 }
 

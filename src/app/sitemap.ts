@@ -8,14 +8,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = getCanonicalSiteUrl();
     const supabase = createStaticClient();
 
-    // 1. Static Routes
+    // Keep the sitemap focused on canonical, index-worthy public pages.
     const staticRoutes = [
         '',
         '/concorsi',
-        '/salvati',
         '/pricing',
-        '/login',
-        '/signup',
         '/privacy',
         '/cookie-policy',
         '/termini',

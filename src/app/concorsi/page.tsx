@@ -43,6 +43,50 @@ export const metadata: Metadata = {
     },
 };
 
+interface SearchParams {
+    page?: string;
+    q?: string;
+    regione?: string;
+    provincia?: string;
+    settore?: string;
+    ente_slug?: string;
+    tipo_procedura?: string;
+    published_from?: string;
+    published_to?: string;
+    sort?: string;
+    stato?: string;
+}
+
+export async function generateMetadata({
+    searchParams,
+}: {
+    searchParams: Promise<SearchParams>;
+}): Promise<Metadata> {
+    const params = await searchParams;
+    const hasSearchVariant = Object.entries(params).some(([key, value]) => {
+        if (!value) return false;
+        if (key === 'page') return value !== '1';
+        if (key === 'sort') return value !== 'scadenza';
+        if (key === 'stato') return value !== 'aperti';
+        return true;
+    });
+
+    if (!hasSearchVariant) {
+        return metadata;
+    }
+
+    return {
+        ...metadata,
+        robots: {
+            index: false,
+            follow: true,
+        },
+        alternates: {
+            canonical: '/concorsi',
+        },
+    };
+}
+
 const FREE_VISIBLE = 5;
 const LIMIT = 20;
 
@@ -64,20 +108,6 @@ const FAQ_ITEMS = [
         a: 'Concoro ti aiuta a trovare e organizzare i bandi piu velocemente, ma prima di candidarti conviene sempre controllare il testo completo del bando e i dettagli pubblicati sui canali ufficiali dell&apos;ente.',
     },
 ];
-
-interface SearchParams {
-    page?: string;
-    q?: string;
-    regione?: string;
-    provincia?: string;
-    settore?: string;
-    ente_slug?: string;
-    tipo_procedura?: string;
-    published_from?: string;
-    published_to?: string;
-    sort?: string;
-    stato?: string;
-}
 
 export default async function ConcorsiPage({
     searchParams,

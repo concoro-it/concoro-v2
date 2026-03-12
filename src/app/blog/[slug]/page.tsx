@@ -19,6 +19,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
         title: articolo.title,
         description: articolo.excerpt || `Leggi l'articolo ${articolo.title} su Concoro.`,
+        alternates: {
+            canonical: `/blog/${slug}`,
+        },
+        robots: {
+            index: false,
+            follow: true,
+        },
         openGraph: articolo.cover_image ? {
             images: [{ url: articolo.cover_image }]
         } : undefined
