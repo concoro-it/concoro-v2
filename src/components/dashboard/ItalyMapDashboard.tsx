@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useMemo, useLayoutEffect } from "react";
+import React, { useEffect, useState, useRef, useMemo, useLayoutEffect } from "react";
+import Link from "next/link";
 import styles from "./ItalyMapDashboard.module.css";
 import { MAP_PATHS } from "./mapPaths";
 import { REGION_META, type RegionInfo, getRegionColor, COLOR_SCALE } from "./mapData";
 import { toUrlSlug } from "@/lib/utils/regioni";
 import {
+    ArrowLeft,
     ChevronRight,
     Plus,
     Minus,
@@ -17,9 +19,19 @@ interface RegionCountRow {
     count: number;
 }
 
+interface ProvinceResultRow {
+    provincia: string;
+    sigla?: string | null;
+    regione: string;
+    regioneSlug?: string;
+    count: number;
+}
+
 interface ItalyMapDashboardProps {
     regionCounts: RegionCountRow[];
     activeTotalCount?: number;
+    onRegionSelect?: (regionName: string | null) => void;
+    provinceResults?: ProvinceResultRow[];
 }
 
 const MAP_VIEWBOX_WIDTH = 1480;
@@ -34,7 +46,7 @@ const normalizeRegionName = (value: string): string =>
         .replace(/[\s-]+/g, " ")
         .trim();
 
-const ItalyMapDashboard = ({ regionCounts, activeTotalCount }: ItalyMapDashboardProps) => {
+const ItalyMapDashboard = ({ regionCounts, activeTotalCount, onRegionSelect, provinceResults }: ItalyMapDashboardProps) => {
     // Map State
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -52,6 +64,7 @@ const ItalyMapDashboard = ({ regionCounts, activeTotalCount }: ItalyMapDashboard
 
     const mapGroupRef = useRef<SVGGElement>(null);
     const mapCanvasRef = useRef<HTMLDivElement>(null);
+    const pathRefs = useRef<Record<string, SVGPathElement | null>>({});
     const regionData = useMemo<Record<string, RegionInfo>>(() => {
         const dbCountsByName = new Map<string, number>();
         for (const row of regionCounts) {
@@ -211,52 +224,157 @@ const ItalyMapDashboard = ({ regionCounts, activeTotalCount }: ItalyMapDashboard
     const selectedRegionRank = selectedRegion
         ? sortedRegions.findIndex((region) => region.id === selectedRegion) + 1
         : 0;
+    const selectedRegionName = selectedRegion ? (regionData[selectedRegion]?.name ?? null) : null;
+    const selectedRegionSlug = selectedRegionName ? toUrlSlug(selectedRegionName) : null;
+
+    const selectedRegionProvinces = useMemo(() => {
+        if (!selectedRegionName || !provinceResults?.length) return [];
+        const selectedKey = normalizeRegionName(selectedRegionName);
+
+        return provinceResults
+            .filter((item) => {
+                if (selectedRegionSlug && item.regioneSlug) return item.regioneSlug === selectedRegionSlug;
+                return normalizeRegionName(item.regione) === selectedKey;
+            })
+            .sort((a, b) => b.count - a.count || a.provincia.localeCompare(b.provincia));
+    }, [provinceResults, selectedRegionName, selectedRegionSlug]);
+
+    useEffect(() => {
+        if (!onRegionSelect) return;
+        onRegionSelect(selectedRegionName);
+    }, [onRegionSelect, selectedRegionName]);
+
+    useEffect(() => {
+        if (!canvasSize.width || !canvasSize.height) return;
+        if (!fitScales.contain) return;
+        if (!svgViewportScale) return;
+
+        if (!selectedRegion) {
+            setZoom(1);
+            setOffset({ x: 0, y: 0 });
+            return;
+        }
+
+        const pathNode = pathRefs.current[selectedRegion];
+        if (!pathNode) return;
+
+        const bbox = pathNode.getBBox();
+        if (!bbox.width || !bbox.height) return;
+
+        // Fit selected region into viewport with breathing room.
+        const paddingFactor = 1.9;
+        const desiredEffectiveScale = Math.min(
+            canvasSize.width / (bbox.width * paddingFactor),
+            canvasSize.height / (bbox.height * paddingFactor)
+        );
+
+        const nextZoom = Math.min(
+            Math.max((desiredEffectiveScale * svgViewportScale) / fitScales.contain, 1.25),
+            3.4
+        );
+
+        const nextScale = fitScales.contain * nextZoom;
+        const nextEffectiveScale = nextScale / svgViewportScale;
+        const scaledWidth = mapBounds.width * nextScale;
+        const scaledHeight = mapBounds.height * nextScale;
+        const nextBaseTranslateX = (canvasSize.width - scaledWidth) / 2 - mapBounds.x * nextScale;
+        const nextBaseTranslateY = (canvasSize.height - scaledHeight) / 2 - mapBounds.y * nextScale;
+
+        const centerX = bbox.x + bbox.width / 2;
+        const centerY = bbox.y + bbox.height / 2;
+
+        setZoom(nextZoom);
+        setOffset({
+            x: canvasSize.width / 2 - nextBaseTranslateX - centerX * nextEffectiveScale,
+            y: canvasSize.height / 2 - nextBaseTranslateY - centerY * nextEffectiveScale,
+        });
+    }, [selectedRegion, canvasSize, fitScales.contain, mapBounds, svgViewportScale]);
 
     return (
         <div className={styles.italyMapDashboard}>
             <div className={styles.layoutContainer}>
                 {/* Sidebar */}
                 <aside className={styles.sidebar}>
-                    <div className={styles.sectionHeader}>
-                        <h2 className={styles.sectionTitle}>Ranking Regioni</h2>
-                        <span className={styles.sectionCount}>Aggiornato a oggi</span>
-                    </div>
-
-                    <div className={styles.regionList}>
-                        {sortedRegions.map((region, index) => (
-                            <div
-                                key={region.id}
-                                className={`${styles.regionItem} ${selectedRegion === region.id ? styles.active : ""}`}
-                                onMouseEnter={() => setHoveredRegion(region.id)}
-                                onMouseLeave={() => setHoveredRegion(null)}
-                                onClick={() => onRegionClick(region.id)}
+                    {selectedRegionName && provinceResults ? (
+                        <>
+                            <button
+                                type="button"
+                                className={styles.sidebarBack}
+                                onClick={() => setSelectedRegion(null)}
                             >
-                                <span className={styles.regionRank}>{index + 1}</span>
-                                <span
-                                    className={styles.regionColorDot}
-                                    style={{ backgroundColor: getRegionColor(region.count) }}
-                                />
-                                <span className={styles.regionNameText}>{region.name}</span>
-                                <span className={styles.regionNum}>{region.count}</span>
-                                <div className={styles.regionBarWrap}>
-                                    <div
-                                        className={styles.regionBarFill}
-                                        style={{ width: `${sortedRegions[0]?.count ? (region.count / sortedRegions[0].count) * 100 : 0}%` }}
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                                <ArrowLeft size={14} />
+                                Torna a Ranking Regioni
+                            </button>
 
-                    <button
-                        type="button"
-                        className={styles.seeAll}
-                        onClick={() => {
-                            window.location.href = "/hub/concorsi";
-                        }}
-                    >
-                        Vedi tutti i concorsi <Plus size={14} />
-                    </button>
+                            <div className={styles.sectionHeader}>
+                                <h2 className={styles.sectionTitle}>{selectedRegionName}</h2>
+                                <span className={styles.sectionCount}>{selectedRegionProvinces.length} province</span>
+                            </div>
+
+                            <div className={styles.provinceList}>
+                                {selectedRegionProvinces.map((item, index) => (
+                                    <Link
+                                        key={item.provincia}
+                                        href={`/hub/provincia/${toUrlSlug(item.provincia)}`}
+                                        className={styles.provinceItem}
+                                    >
+                                        <span className={styles.regionRank}>{index + 1}</span>
+                                        <span className={styles.provinceNameText}>
+                                            {item.provincia} {item.sigla ? `(${item.sigla})` : ""}
+                                        </span>
+                                        <span className={styles.regionNum}>{item.count}</span>
+                                    </Link>
+                                ))}
+                            </div>
+
+                            <Link href={`/hub/regione/${toUrlSlug(selectedRegionName)}`} className={styles.seeAll}>
+                                Vedi pagina regione <ChevronRight size={14} />
+                            </Link>
+                        </>
+                    ) : (
+                        <>
+                            <div className={styles.sectionHeader}>
+                                <h2 className={styles.sectionTitle}>Ranking Regioni</h2>
+                                <span className={styles.sectionCount}>Aggiornato a oggi</span>
+                            </div>
+
+                            <div className={styles.regionList}>
+                                {sortedRegions.map((region, index) => (
+                                    <div
+                                        key={region.id}
+                                        className={`${styles.regionItem} ${selectedRegion === region.id ? styles.active : ""}`}
+                                        onMouseEnter={() => setHoveredRegion(region.id)}
+                                        onMouseLeave={() => setHoveredRegion(null)}
+                                        onClick={() => onRegionClick(region.id)}
+                                    >
+                                        <span className={styles.regionRank}>{index + 1}</span>
+                                        <span
+                                            className={styles.regionColorDot}
+                                            style={{ backgroundColor: getRegionColor(region.count) }}
+                                        />
+                                        <span className={styles.regionNameText}>{region.name}</span>
+                                        <span className={styles.regionNum}>{region.count}</span>
+                                        <div className={styles.regionBarWrap}>
+                                            <div
+                                                className={styles.regionBarFill}
+                                                style={{ width: `${sortedRegions[0]?.count ? (region.count / sortedRegions[0].count) * 100 : 0}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <button
+                                type="button"
+                                className={styles.seeAll}
+                                onClick={() => {
+                                    window.location.href = "/hub/concorsi";
+                                }}
+                            >
+                                Vedi tutti i concorsi <Plus size={14} />
+                            </button>
+                        </>
+                    )}
                 </aside>
 
                 {/* Map Area */}
@@ -310,7 +428,7 @@ const ItalyMapDashboard = ({ regionCounts, activeTotalCount }: ItalyMapDashboard
                                 className={styles.mapGroup}
                                 style={{
                                     transform: `translate(${baseTranslate.x + offset.x}px, ${baseTranslate.y + offset.y}px) scale(${effectiveScale})`,
-                                    transition: isDragging ? "none" : "transform 0.1s ease-out"
+                                    transition: isDragging ? "none" : "transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)"
                                 }}
                             >
                                 {Object.entries(MAP_PATHS).map(([id, path]) => {
@@ -322,6 +440,9 @@ const ItalyMapDashboard = ({ regionCounts, activeTotalCount }: ItalyMapDashboard
                                     return (
                                         <path
                                             key={id}
+                                            ref={(node) => {
+                                                pathRefs.current[id] = node;
+                                            }}
                                             d={path}
                                             fill={getRegionColor(data.count)}
                                             className={`${styles.regionPath} ${isDimmed ? styles.dimmed : ""} ${isSelected ? styles.highlighted : ""}`}

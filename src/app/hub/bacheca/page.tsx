@@ -3,19 +3,18 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getUserTier } from '@/lib/auth/getUserTier';
-import { getActiveConcorsiCount, getRegioniWithCount, getSavedConcorsi } from '@/lib/supabase/queries';
+import { getActiveConcorsiCount, getProvinceWithCount, getRegioniWithCount, getSavedConcorsi } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import {
     ArrowRight,
     Bookmark,
     BrainCircuit,
     Check,
-    MapPinned,
     Search,
     Settings2,
     Sparkles,
 } from 'lucide-react';
-import ItalyMapDashboard from '@/components/dashboard/ItalyMapDashboard';
+import ProvinciaMapExplorer from '@/components/dashboard/ProvinciaMapExplorer';
 
 export const metadata: Metadata = { title: 'Bacheca | Dashboard' };
 
@@ -24,11 +23,12 @@ export default async function DashboardPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect('/login');
 
-    const [tier, savedConcorsi, profile, regionCounts, activeConcorsiCount] = await Promise.all([
+    const [tier, savedConcorsi, profile, regionCounts, provinceCounts, activeConcorsiCount] = await Promise.all([
         getUserTier(supabase),
         getSavedConcorsi(supabase, user.id),
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         getRegioniWithCount(supabase),
+        getProvinceWithCount(supabase),
         getActiveConcorsiCount(supabase),
     ]);
 
@@ -189,15 +189,8 @@ export default async function DashboardPage() {
                             <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Radar geografico</h2>
                             <p className="text-sm text-slate-600">Controlla subito dove si concentra il maggior numero di opportunita.</p>
                         </div>
-                        <Link
-                            href="/hub/regione"
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-                        >
-                            Apri vista regioni
-                            <MapPinned className="h-4 w-4" />
-                        </Link>
                     </div>
-                    <ItalyMapDashboard regionCounts={regionCounts} activeTotalCount={activeConcorsiCount} />
+                    <ProvinciaMapExplorer regionCounts={regionCounts} provinces={provinceCounts} />
                 </section>
 
                 <section className="grid gap-4 lg:grid-cols-3">

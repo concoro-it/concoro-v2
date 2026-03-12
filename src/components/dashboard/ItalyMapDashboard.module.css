@@ -106,6 +106,7 @@
 }
 
 .regionList { display: flex; flex-direction: column; gap: 2px; }
+.provinceList { display: flex; flex-direction: column; gap: 4px; }
 
 .regionItem {
   display: flex;
@@ -116,6 +117,23 @@
   cursor: pointer;
   transition: background .15s;
   border: 1.5px solid transparent;
+}
+
+.provinceItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  text-decoration: none;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+
+.provinceItem:hover {
+  background: var(--bg);
+  border-color: var(--blue-2);
+  transform: translateX(1px);
 }
 
 .regionItem:hover { background: var(--bg); }
@@ -143,6 +161,16 @@
   flex: 1;
   font-size: .83rem;
   font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.provinceNameText {
+  flex: 1;
+  font-size: .84rem;
+  font-weight: 600;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -184,6 +212,28 @@
   transition: color .2s;
 }
 .seeAll:hover { color: var(--navy); }
+
+.sidebarBack {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.sidebarBack:hover {
+  border-color: var(--blue-3);
+  background: #eef4fc;
+}
 
 .mapArea {
   background: var(--bg);

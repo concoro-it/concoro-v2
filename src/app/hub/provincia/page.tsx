@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { MapPin } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getProvinceWithCount } from '@/lib/supabase/queries';
-import { toUrlSlug } from '@/lib/utils/regioni';
+import { getProvinceWithCount, getRegioniWithCount } from '@/lib/supabase/queries';
+import ProvinciaMapExplorer from '@/components/dashboard/ProvinciaMapExplorer';
 
 export const metadata: Metadata = {
     title: 'Province | Dashboard',
@@ -14,29 +14,33 @@ export const revalidate = 3600;
 
 export default async function HubProvinciaIndexPage() {
     const supabase = await createClient();
-    const province = await getProvinceWithCount(supabase);
+    const [regioni, province] = await Promise.all([
+        getRegioniWithCount(supabase),
+        getProvinceWithCount(supabase),
+    ]);
 
     return (
-        <div className="container max-w-container mx-auto px-4 py-8">
-            <div className="mb-8">
-                <nav className="text-sm text-muted-foreground mb-4">
-                    <Link href="/hub/bacheca" className="hover:text-foreground">Dashboard</Link>
-                    {' › '}
-                    <span className="text-foreground">Province</span>
-                </nav>
-                <h1 className="text-3xl font-bold tracking-tight">Concorsi per Provincia</h1>
-                <p className="text-muted-foreground mt-1">Trova i concorsi pubblici nella tua provincia italiana</p>
-            </div>
+        <div className="relative overflow-hidden bg-[hsl(210,55%,98%)] text-slate-900 [font-family:'Avenir_Next',Avenir,'Segoe_UI',-apple-system,BlinkMacSystemFont,'Helvetica_Neue',sans-serif]">
+            <div className="container mx-auto max-w-[78rem] px-4 py-10">
+                <div className="mb-8">
+                    <nav className="mb-4 text-sm text-slate-500">
+                        <Link href="/hub/bacheca" className="hover:text-slate-900">Dashboard</Link>
+                        {' › '}
+                        <span className="text-slate-900">Province</span>
+                    </nav>
+                </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {province.map(({ provincia, sigla, count }) => (
-                    <Link key={provincia} href={`/hub/provincia/${toUrlSlug(provincia)}`}
-                        className="flex flex-col items-center justify-center p-5 rounded-xl border border-border bg-white hover:shadow-md hover:border-primary/20 transition-all text-center group">
-                        <MapPin className="w-6 h-6 text-primary mb-2 group-hover:scale-110 transition-transform" />
-                        <span className="text-sm font-semibold leading-tight">{provincia} {sigla ? `(${sigla})` : ''}</span>
-                        <span className="text-xs text-muted-foreground mt-1">{count} aperti</span>
+                <section className="mb-6 flex items-center justify-between gap-4">
+                    <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl tracking-tight text-slate-900">
+                        Mappa provinciale dei bandi
+                    </h1>
+                    <Link href="/hub/concorsi" className="inline-flex items-center gap-1 text-sm font-semibold text-[#0B4B7F] hover:text-[#083861]">
+                        Tutti i concorsi
+                        <ArrowRight className="h-4 w-4" />
                     </Link>
-                ))}
+                </section>
+
+                <ProvinciaMapExplorer regionCounts={regioni} provinces={province} />
             </div>
         </div>
     );
