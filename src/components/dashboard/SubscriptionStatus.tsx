@@ -35,7 +35,7 @@ export function SubscriptionStatus({ subscription }: SubscriptionStatusProps) {
         setIsLoading(true);
         try {
             // Call the customer portal endpoint to manage billing
-            const response = await fetch('/api/stripe/create-portal', {
+            const response = await fetch('/api/stripe/create-portal-session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
             });

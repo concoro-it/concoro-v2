@@ -1,7 +1,8 @@
 import { stripe } from '@/lib/stripe/client';
-import { PLANS } from '@/lib/stripe/prices';
+import { getProPriceId, type BillingCycle } from '@/lib/stripe/prices';
 import { NextResponse } from 'next/server';
 import { getServerAppUrl } from '@/lib/auth/url';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: Request) {
     try {
@@ -10,23 +11,28 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { priceId, userId } = body;
+        const { billingCycle } = body as { billingCycle?: BillingCycle };
 
-        if (!priceId || !userId) {
-            return new NextResponse('Missing priceId or userId', { status: 400 });
+        if (billingCycle !== 'monthly' && billingCycle !== 'yearly') {
+            return new NextResponse('Missing or invalid billingCycle', { status: 400 });
         }
 
-        // Make sure priceId matches one of our plans
-        if (priceId !== PLANS.pro.price_id_monthly && priceId !== PLANS.pro.price_id_yearly) {
-            return new NextResponse('Invalid priceId', { status: 400 });
+        const supabase = await createClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+            return new NextResponse('Unauthorized', { status: 401 });
         }
 
-        const host = req.headers.get('origin') || getServerAppUrl();
+        const host = getServerAppUrl();
+        const priceId = getProPriceId(billingCycle);
 
         const checkoutSession = await stripe.checkout.sessions.create({
             mode: 'subscription',
             payment_method_types: ['card'],
-            client_reference_id: userId,
+            client_reference_id: user.id,
             line_items: [
                 {
                     price: priceId,

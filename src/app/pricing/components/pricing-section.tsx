@@ -37,16 +37,13 @@ export function PricingSection({
         setError(null);
 
         try {
-            const priceId = isYearly ? PLANS.pro.price_id_yearly : PLANS.pro.price_id_monthly;
-
             const response = await fetch("/api/stripe/checkout", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    priceId,
-                    userId,
+                    billingCycle: isYearly ? "yearly" : "monthly",
                 }),
             });
 
