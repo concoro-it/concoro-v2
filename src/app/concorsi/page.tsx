@@ -22,7 +22,7 @@ import { BlurredResultsSection } from '@/components/paywall/PaywallBanner';
 import { PreferencesControl } from '@/components/concorsi/PreferencesControl';
 import { ActiveFiltersBar } from '@/components/concorsi/ActiveFiltersBar';
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
     title: 'Tutti i Concorsi Pubblici in Italia | Archivio filtrabile | Concoro',
     description: 'Consulta tutti i concorsi pubblici in Italia e filtra per regione, provincia, ente, settore e scadenza. Una vista unica per partire da una ricerca ampia e poi restringerla bene.',
     alternates: { canonical: '/concorsi' },
@@ -72,11 +72,11 @@ export async function generateMetadata({
     });
 
     if (!hasSearchVariant) {
-        return metadata;
+        return baseMetadata;
     }
 
     return {
-        ...metadata,
+        ...baseMetadata,
         robots: {
             index: false,
             follow: true,
