@@ -72,6 +72,120 @@ function normalisePhone(phone: string | null): string | null {
     return phone.replace(/\s+/g, '');
 }
 
+interface ContactField {
+    label: string;
+    value: string;
+}
+
+function parseContactFields(rawContacts: string | null | undefined): ContactField[] {
+    if (!rawContacts) return [];
+    const raw = rawContacts.trim();
+    if (!raw) return [];
+
+    const toFields = (obj: Record<string, unknown>): ContactField[] => (
+        Object.entries(obj)
+            .map(([label, value]) => ({
+                label: label.trim(),
+                value: typeof value === 'string' ? value.trim() : String(value ?? '').trim(),
+            }))
+            .filter((field) => field.label.length > 0 && field.value.length > 0)
+    );
+
+    let candidate: unknown = raw;
+    for (let i = 0; i < 2; i += 1) {
+        if (typeof candidate !== 'string') break;
+        try {
+            candidate = JSON.parse(candidate);
+            if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
+                return toFields(candidate as Record<string, unknown>);
+            }
+        } catch {
+            break;
+        }
+    }
+    if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
+        return toFields(candidate as Record<string, unknown>);
+    }
+
+    const regexPairs = (source: string): ContactField[] => {
+        const pairs: ContactField[] = [];
+        const matcher = /"([^"]+)"\s*:\s*"([^"]*)"/g;
+        let match = matcher.exec(source);
+        while (match) {
+            const [, key, value] = match;
+            const label = key.trim();
+            const cleanedValue = value.trim();
+            if (label && cleanedValue) {
+                pairs.push({ label, value: cleanedValue });
+            }
+            match = matcher.exec(source);
+        }
+        return pairs;
+    };
+
+    const regexParsed = regexPairs(raw);
+    if (regexParsed.length > 0) {
+        return regexParsed;
+    }
+    const regexParsedEscaped = regexPairs(raw.replace(/\\"/g, '"'));
+    if (regexParsedEscaped.length > 0) {
+        return regexParsedEscaped;
+    }
+
+    const fallbackEntries = raw
+        .replace(/^\{+|\}+$/g, '')
+        .split(/\n|;|\|/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    if (fallbackEntries.length === 0) return [];
+
+    const parsedEntries = fallbackEntries
+        .map((entry) => {
+            const [labelPart, ...rest] = entry.split(':');
+            const value = rest.join(':').trim();
+            const label = labelPart?.trim() || 'Contatti';
+            if (!value) return null;
+            return { label, value };
+        })
+        .filter((entry): entry is ContactField => Boolean(entry));
+
+    if (parsedEntries.length > 0) return parsedEntries;
+
+    return [{ label: 'Contatti', value: raw }];
+}
+
+function getContactFieldHref(label: string, value: string): string | null {
+    const cleanedValue = value.trim();
+    const normalizedLabel = label.toLowerCase();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (emailPattern.test(cleanedValue)) {
+        return `mailto:${cleanedValue}`;
+    }
+
+    if (
+        normalizedLabel.includes('telefono')
+        || normalizedLabel.includes('cellulare')
+        || normalizedLabel.includes('fax')
+        || normalizedLabel.includes('supporto')
+    ) {
+        const phoneCandidate = cleanedValue.replace(/[^\d+]/g, '');
+        if (phoneCandidate.length >= 6) {
+            return `tel:${phoneCandidate}`;
+        }
+    }
+
+    if (/^https?:\/\//i.test(cleanedValue)) {
+        return cleanedValue;
+    }
+    if (/^www\./i.test(cleanedValue)) {
+        return `https://${cleanedValue}`;
+    }
+
+    return null;
+}
+
 function formatTimeIT(value: string | null | undefined): string | null {
     if (!value) return null;
     const date = new Date(value);
@@ -253,6 +367,8 @@ export default async function ConcorsoDetailPage({ params }: Props) {
     const heroTitle = useShortHeroTitle ? shortTitle! : fullTitle;
     const primaryPlace = province[0] ?? regioni[0] ?? 'Italia';
     const enteHeroImage = ente?.cover_image_url ?? ente?.logo_url ?? null;
+    const contactFields = parseContactFields(concorso.contatti);
+    const hasContactFields = contactFields.length > 0;
     const hasDescriptionContent = Boolean(
         concorso.descrizione && stripHtmlStyling(concorso.descrizione).trim().length > 0
     );
@@ -262,7 +378,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
         || concorso.programma_di_esame
         || capacita.length > 0
         || conoscenze.length > 0
-        || concorso.contatti
+        || hasContactFields
         || linkAllegati.length > 0
         || concorso.annuncio_enrichment
     );
@@ -563,13 +679,36 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                     </section>
                                 )}
 
-                                {concorso.contatti && (
+                                {hasContactFields && (
                                     <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                                         <h2 className="text-lg font-semibold text-slate-900">Contatti</h2>
-                                        <p className="mt-3 flex items-center gap-2 text-sm text-slate-700">
-                                            <Phone className="h-4 w-4" />
-                                            {concorso.contatti}
-                                        </p>
+                                        <dl className="mt-3 space-y-2.5 text-sm text-slate-700">
+                                            {contactFields.map((field) => {
+                                                const href = getContactFieldHref(field.label, field.value);
+                                                const external = href ? /^https?:\/\//i.test(href) : false;
+
+                                                return (
+                                                    <div key={`${field.label}-${field.value}`} className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-white p-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                                                        <dt className="flex items-center gap-2 text-slate-500">
+                                                            <Phone className="h-4 w-4 flex-shrink-0" />
+                                                            <span>{field.label}</span>
+                                                        </dt>
+                                                        <dd className="min-w-0 break-words text-left font-medium text-slate-800 sm:max-w-[65%] sm:text-right">
+                                                            {href ? (
+                                                                <a
+                                                                    href={href}
+                                                                    target={external ? '_blank' : undefined}
+                                                                    rel={external ? 'noopener noreferrer' : undefined}
+                                                                    className="underline decoration-slate-300 underline-offset-2 transition hover:text-[#0A4E88]"
+                                                                >
+                                                                    {field.value}
+                                                                </a>
+                                                            ) : field.value}
+                                                        </dd>
+                                                    </div>
+                                                );
+                                            })}
+                                        </dl>
                                     </section>
                                 )}
 

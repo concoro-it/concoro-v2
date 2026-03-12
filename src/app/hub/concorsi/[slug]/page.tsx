@@ -29,5 +29,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function HubConcorsoDetailPage({ params }: Props) {
-    return <PublicConcorsoDetailPage params={params} />;
+    return (
+        <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/70 shadow-[0_32px_70px_-46px_rgba(15,23,42,0.65)]">
+            <PublicConcorsoDetailPage params={params} />
+        </div>
+    );
 }
