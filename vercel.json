@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/brevo/deadline-reminders",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/brevo/contact-sync",
+      "schedule": "30 7 * * *"
+    },
+    {
+      "path": "/api/cron/brevo/weekly-digest",
+      "schedule": "0 8 * * 1"
+    }
+  ]
+}

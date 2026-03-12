@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createStaticAdminClient } from '@/lib/supabase/server';
 import { getRequestBaseUrl } from '@/lib/auth/url';
+import {
+    dispatchBrevoEventOnce,
+    getProfileWithCounts,
+    toBrevoContactAttributes,
+    upsertContact,
+} from '@/lib/brevo';
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
@@ -13,6 +19,42 @@ export async function GET(request: NextRequest) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (!error) {
+            try {
+                const {
+                    data: { user },
+                } = await supabase.auth.getUser();
+
+                if (user?.email) {
+                    const supabaseAdmin = createStaticAdminClient();
+                    const profileWithCounts = await getProfileWithCounts(supabaseAdmin, user.id);
+
+                    if (profileWithCounts) {
+                        const attributes = toBrevoContactAttributes(profileWithCounts);
+
+                        await upsertContact(user.email, attributes, user.id);
+                        await dispatchBrevoEventOnce({
+                            supabase: supabaseAdmin,
+                            eventName: 'user_signed_up',
+                            eventKey: user.id,
+                            email: user.email,
+                            userId: user.id,
+                            source: 'auth_callback',
+                            identifiers: {
+                                email_id: user.email,
+                                ext_id: user.id,
+                            },
+                            contactProperties: attributes,
+                            eventProperties: {
+                                created_at: user.created_at,
+                                provider: user.app_metadata?.provider,
+                            },
+                        });
+                    }
+                }
+            } catch (syncError) {
+                console.error('[auth-callback] Brevo sync failed', syncError);
+            }
+
             return NextResponse.redirect(`${baseUrl}${next}`);
         }
     }
