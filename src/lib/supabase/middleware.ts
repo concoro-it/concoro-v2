@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 
 const PROTECTED_PATH_PREFIXES = ['/hub', '/dashboard', '/salvati', '/ricerche', '/impostazioni', '/abbonamento'];
+const AUTHENTICATED_ALLOWED_PUBLIC_PATH_PREFIXES = ['/pricing'];
 
 function hasSupabaseAuthCookie(request: NextRequest) {
     return request.cookies.getAll().some(({ name }) => name.includes('-auth-token'));
@@ -9,6 +10,8 @@ function hasSupabaseAuthCookie(request: NextRequest) {
 
 export async function updateSession(request: NextRequest) {
     const isProtected = PROTECTED_PATH_PREFIXES.some((path) => request.nextUrl.pathname.startsWith(path));
+    const isAllowedPublicForAuthenticatedUser = AUTHENTICATED_ALLOWED_PUBLIC_PATH_PREFIXES
+        .some((path) => request.nextUrl.pathname.startsWith(path));
     const mayHaveSession = hasSupabaseAuthCookie(request);
 
     // Fast-path anonymous traffic on public pages to keep public responses cache-friendly.
@@ -39,7 +42,7 @@ export async function updateSession(request: NextRequest) {
     }
 
     // Logged-in users should stay in the private app area instead of public pages.
-    if (!isProtected && user) {
+    if (!isProtected && !isAllowedPublicForAuthenticatedUser && user) {
         const url = request.nextUrl.clone();
         url.pathname = '/hub';
         url.search = '';
