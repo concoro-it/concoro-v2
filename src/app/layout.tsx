@@ -6,7 +6,6 @@ import { Suspense } from 'react';
 import { ConditionalHeader } from '@/components/layout/ConditionalHeader';
 import { ConditionalFooter } from '@/components/layout/ConditionalFooter';
 import { ConsentBanner } from '@/components/analytics/ConsentBanner';
-import { createClient } from '@/lib/supabase/server';
 import { getServerAppUrl } from '@/lib/auth/url';
 import { CONSENT_STORAGE_KEY } from '@/lib/analytics/consent';
 
@@ -34,9 +33,6 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
     return (
         <html lang="it" className={`${inter.variable}`}>
             <head>
@@ -72,7 +68,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </head>
             <body className="bg-background text-foreground antialiased">
                 <Suspense fallback={null}>
-                    <ConditionalHeader user={user} />
+                    <ConditionalHeader />
                 </Suspense>
                 <main>{children}</main>
                 <ConsentBanner />
