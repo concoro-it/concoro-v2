@@ -10,7 +10,9 @@ export async function getBillingDataAction() {
         }
 
         const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user) {
             throw new Error('Unauthorized');
@@ -23,40 +25,22 @@ export async function getBillingDataAction() {
             .single();
 
         if (!profile?.stripe_customer_id) {
-            return null;
-        }
-
-        const customer = (await stripe.customers.retrieve(profile.stripe_customer_id, {
-            expand: ['invoice_settings.default_payment_method'],
-        })) as any;
-
-        if (customer.deleted) {
-            return null;
+            return { invoices: [] };
         }
 
         const invoices = await stripe.invoices.list({
             customer: profile.stripe_customer_id,
-            limit: 5,
+            limit: 12,
         });
 
-        const paymentMethod = customer.invoice_settings?.default_payment_method;
-
         return {
-            email: customer.email,
-            address: customer.address,
-            paymentMethod: paymentMethod ? {
-                brand: paymentMethod.card?.brand,
-                last4: paymentMethod.card?.last4,
-                exp_month: paymentMethod.card?.exp_month,
-                exp_year: paymentMethod.card?.exp_year,
-            } : null,
-            invoices: invoices.data.map(invoice => ({
+            invoices: invoices.data.map((invoice) => ({
                 id: invoice.id,
                 amount_paid: invoice.amount_paid,
                 currency: invoice.currency,
-                status: invoice.status,
+                status: invoice.status ?? 'unknown',
                 created: invoice.created,
-                pdf_url: invoice.invoice_pdf,
+                pdf_url: invoice.invoice_pdf ?? null,
             })),
         };
     } catch (error) {
