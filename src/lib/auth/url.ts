@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server';
 
+const PRODUCTION_CANONICAL_URL = 'https://concoro.it';
+
 function stripTrailingSlash(url: string) {
     return url.replace(/\/+$/, '');
 }
@@ -15,6 +17,16 @@ function isLocalhostUrl(url: string) {
 
 function getConfiguredSiteUrl() {
     return process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+}
+
+export function getCanonicalSiteUrl() {
+    const configuredSiteUrl = getConfiguredSiteUrl();
+
+    if (configuredSiteUrl && !isLocalhostUrl(configuredSiteUrl)) {
+        return stripTrailingSlash(configuredSiteUrl);
+    }
+
+    return PRODUCTION_CANONICAL_URL;
 }
 
 export function getClientOAuthRedirectUrl() {
@@ -59,8 +71,8 @@ export function getServerAppUrl() {
         return stripTrailingSlash(configuredSiteUrl);
     }
 
-    if (process.env.NODE_ENV === 'production' && process.env.VERCEL_URL) {
-        return `https://${process.env.VERCEL_URL}`;
+    if (process.env.NODE_ENV === 'production') {
+        return getCanonicalSiteUrl();
     }
 
     if (configuredSiteUrl) {
