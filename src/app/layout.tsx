@@ -11,6 +11,7 @@ import { CONSENT_STORAGE_KEY } from '@/lib/analytics/consent';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans', weight: ['400', '500', '600', '700', '800'] });
 const GA_MEASUREMENT_ID = 'G-KRQJ1WJJ8Y';
+const CLARITY_PROJECT_ID = 'vwadbyn3e9';
 
 export const metadata: Metadata = {
     title: {
@@ -63,6 +64,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                         } catch (error) {}
 
                         gtag('config', '${GA_MEASUREMENT_ID}');
+                    `}
+                </Script>
+                <Script id="microsoft-clarity" strategy="beforeInteractive">
+                    {`
+                        (function(c,l,a,r,i,t,y){
+                            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+                        })(window, document, "clarity", "script", "${CLARITY_PROJECT_ID}");
                     `}
                 </Script>
             </head>
