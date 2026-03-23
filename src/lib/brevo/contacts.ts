@@ -26,6 +26,11 @@ const REGISTERED_USER_LIST_IDS = parseBrevoListIds(
     ?? process.env.BREVO_REGISTERED_USERS_LIST_ID
     ?? process.env.BREVO_CONTACT_LIST_IDS
 );
+const DEFAULT_REGISTERED_USER_LIST_ID = 5;
+
+if (REGISTERED_USER_LIST_IDS.length === 0) {
+    console.warn('[brevo] Registered users list ids not configured; defaulting to list #5');
+}
 
 export async function upsertContact(
     email: string,
@@ -46,9 +51,9 @@ export async function upsertContact(
         payload.ext_id = extId;
     }
 
-    if (REGISTERED_USER_LIST_IDS.length > 0) {
-        payload.listIds = REGISTERED_USER_LIST_IDS;
-    }
+    payload.listIds = REGISTERED_USER_LIST_IDS.length > 0
+        ? REGISTERED_USER_LIST_IDS
+        : [DEFAULT_REGISTERED_USER_LIST_ID];
 
     const result = await brevoRequest({
         path: '/contacts',
