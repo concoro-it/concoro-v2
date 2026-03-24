@@ -19,6 +19,8 @@ interface Props {
     concorso: Concorso;
     saved?: boolean;
     detailBasePath?: string;
+    matchScore?: number | null;
+    descriptionOverride?: string | null;
 }
 
 function stripAllHtml(html: string): string {
@@ -75,6 +77,12 @@ function getUrgencyClass(level: number): string {
     return 'border-emerald-300 bg-emerald-50 text-emerald-800';
 }
 
+function getScorePalette(score: number): { ring: string; text: string; glow: string } {
+    if (score >= 85) return { ring: '#0A4E88', text: 'text-[#0A4E88]', glow: 'shadow-[0_8px_20px_-12px_rgba(10,78,136,0.55)]' };
+    if (score >= 70) return { ring: '#65A30D', text: 'text-[#4D7C0F]', glow: 'shadow-[0_8px_20px_-12px_rgba(101,163,13,0.55)]' };
+    return { ring: '#CA8A04', text: 'text-[#A16207]', glow: 'shadow-[0_8px_20px_-12px_rgba(202,138,4,0.58)]' };
+}
+
 function getDaysUntil(dateValue: string | Date | null | undefined): number | null {
     if (!dateValue) return null;
     const target = new Date(dateValue);
@@ -84,7 +92,7 @@ function getDaysUntil(dateValue: string | Date | null | undefined): number | nul
     return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export function ConcorsoCard({ concorso, saved, detailBasePath }: Props) {
+export function ConcorsoCard({ concorso, saved, detailBasePath, matchScore, descriptionOverride }: Props) {
     const pathname = usePathname();
 
     const regione = getFirstRegione(concorso);
@@ -98,7 +106,7 @@ export function ConcorsoCard({ concorso, saved, detailBasePath }: Props) {
     const numPosti = concorso.num_posti ?? 1;
     const title = formatConcorsoTitle(concorso.titolo_breve ?? concorso.titolo);
 
-    const rawDescription = concorso.riassunto ?? concorso.descrizione ?? null;
+    const rawDescription = descriptionOverride ?? concorso.riassunto ?? concorso.descrizione ?? null;
     const description = rawDescription ? stripAllHtml(rawDescription) : null;
 
     const urgencyLevel = getUrgencyLevel(concorso.data_scadenza, concorso.status);
@@ -121,6 +129,15 @@ export function ConcorsoCard({ concorso, saved, detailBasePath }: Props) {
     const ctaHref = concorso.slug
         ? `${detailHrefBase}/${concorso.slug}`
         : normaliseLink(concorso.link_reindirizzamento ?? concorso.link_sito_pa);
+    const roundedScore = typeof matchScore === 'number' && Number.isFinite(matchScore)
+        ? Math.max(0, Math.min(100, Math.round(matchScore)))
+        : null;
+    const scorePalette = roundedScore != null ? getScorePalette(roundedScore) : null;
+    const scoreRingStyle = roundedScore != null && scorePalette
+        ? {
+            background: `conic-gradient(${scorePalette.ring} ${roundedScore * 3.6}deg, rgba(148,163,184,0.28) 0deg)`,
+        }
+        : null;
 
     return (
         <article
@@ -138,61 +155,38 @@ export function ConcorsoCard({ concorso, saved, detailBasePath }: Props) {
                 }}
             />
             <div className="relative">
-            <div className="flex items-start justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                    {urgencyBadgeLabel && (
-                        <span className={cn(
-                            'inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold',
-                            getUrgencyClass(urgencyLevel)
-                        )}>
-                            {urgencyBadgeLabel}
-                        </span>
+            <div className="relative flex items-start gap-4">
+                <div className="flex min-w-0 flex-1 items-start gap-4">
+                    {roundedScore != null && scorePalette && scoreRingStyle && (
+                        <div
+                            className={cn(
+                                'relative mt-0.5 h-16 w-16 shrink-0 rounded-full p-[4px] transition-transform duration-300',
+                                scorePalette.glow
+                            )}
+                            style={scoreRingStyle}
+                            aria-label={`Compatibilita ${roundedScore}%`}
+                        >
+                            <div className="flex h-full w-full items-center justify-center rounded-full bg-white ring-1 ring-slate-200/70">
+                                <span className={cn('text-[1.6rem] font-bold leading-none', scorePalette.text)}>{roundedScore}</span>
+                            </div>
+                            <span className="pointer-events-none absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500 ring-1 ring-slate-200">
+                                Fit
+                            </span>
+                        </div>
                     )}
-                </div>
 
-                <div className="flex items-center gap-1">
-                    <button
-                        onClick={(e) => {
-                            e.preventDefault();
-                            const shareUrl = window.location.origin + ctaHref;
-                            if (navigator.share) {
-                                navigator.share({ title, url: shareUrl });
-                            } else {
-                                navigator.clipboard.writeText(shareUrl);
-                            }
-                        }}
-                        className="rounded-full p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-                        title="Condividi"
-                        aria-label="Condividi concorso"
-                    >
-                        <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-                            <circle cx="12" cy="4" r="1.5" stroke="currentColor" strokeWidth="1" />
-                            <circle cx="4" cy="8" r="1.5" stroke="currentColor" strokeWidth="1" />
-                            <circle cx="12" cy="12" r="1.5" stroke="currentColor" strokeWidth="1" />
-                            <line x1="5.3" y1="7.3" x2="10.7" y2="4.7" stroke="currentColor" strokeWidth="1" />
-                            <line x1="5.3" y1="8.7" x2="10.7" y2="11.3" stroke="currentColor" strokeWidth="1" />
-                        </svg>
-                    </button>
-                    <SaveButton
-                        concorsoId={concorso.concorso_id}
-                        initialSaved={Boolean(saved)}
-                        iconOnly
-                        className="opacity-70 hover:opacity-100"
-                    />
-                </div>
-            </div>
+                    <div className="min-w-0 flex-1">
+                    <Link href={ctaHref} className="group/title block pr-[8.6rem] sm:pr-[9.4rem]">
+                        <h2 className={cn(
+                            'line-clamp-2 text-[20px] font-semibold leading-tight text-slate-900 transition-colors sm:text-[22px]',
+                            !isExpired && 'group-hover/title:text-slate-700'
+                        )}>
+                            {title}
+                        </h2>
+                    </Link>
 
-            <Link href={ctaHref} className="group/title mt-3 block">
-                <h2 className={cn(
-                    'line-clamp-2 text-[20px] font-semibold leading-tight text-slate-900 transition-colors sm:text-[22px]',
-                    !isExpired && 'group-hover/title:text-slate-700'
-                )}>
-                    {title}
-                </h2>
-            </Link>
-
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5">
-                <div className="min-w-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-slate-600 sm:text-[13px]">
+                    <div className="mt-3">
+                        <div className="min-w-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-slate-600 sm:text-[13px]">
                     <span className="inline-flex items-center gap-1.5">
                         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="text-slate-500">
                             <path d="M2.5 8C2.5 5.24 4.74 3 7.5 3H8.5C11.26 3 13.5 5.24 13.5 8V13H2.5V8Z" stroke="currentColor" strokeWidth="1.2" />
@@ -249,30 +243,72 @@ export function ConcorsoCard({ concorso, saved, detailBasePath }: Props) {
                         </svg>
                         <span className="font-medium text-slate-700">{numPosti} {numPosti === 1 ? 'posto' : 'posti'}</span>
                     </span>
-                </div>
+                        {urgencyBadgeLabel && (
+                            <span className={cn(
+                                'inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ml-1.5',
+                                getUrgencyClass(urgencyLevel)
+                            )}>
+                                {urgencyBadgeLabel}
+                            </span>
+                        )}
+                    </div>
+                    </div>
 
-                <Link
-                    href={ctaHref}
-                    className={cn(
-                        'inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold transition-colors',
-                        isExpired
-                            ? 'bg-slate-300 text-slate-600'
-                            : 'bg-primary text-primary-foreground hover:opacity-90'
+                    {description && (
+                        <PlainTextWithLinks
+                            text={description}
+                            className="mt-3 line-clamp-3 text-[13px] leading-relaxed text-slate-600"
+                        />
                     )}
-                >
-                    Vai al bando
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <path d="M2.5 2.5H9.5V9.5M9.5 2.5L2.5 9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                </Link>
+                    </div>
+                </div>
+                <div className="absolute right-0 top-0 flex items-center gap-1.5">
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            const shareUrl = window.location.origin + ctaHref;
+                            if (navigator.share) {
+                                navigator.share({ title, url: shareUrl });
+                            } else {
+                                navigator.clipboard.writeText(shareUrl);
+                            }
+                        }}
+                        className="rounded-full p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                        title="Condividi"
+                        aria-label="Condividi concorso"
+                    >
+                        <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                            <circle cx="12" cy="4" r="1.5" stroke="currentColor" strokeWidth="1" />
+                            <circle cx="4" cy="8" r="1.5" stroke="currentColor" strokeWidth="1" />
+                            <circle cx="12" cy="12" r="1.5" stroke="currentColor" strokeWidth="1" />
+                            <line x1="5.3" y1="7.3" x2="10.7" y2="4.7" stroke="currentColor" strokeWidth="1" />
+                            <line x1="5.3" y1="8.7" x2="10.7" y2="11.3" stroke="currentColor" strokeWidth="1" />
+                        </svg>
+                    </button>
+                    <SaveButton
+                        concorsoId={concorso.concorso_id}
+                        initialSaved={Boolean(saved)}
+                        iconOnly
+                        className="opacity-70 hover:opacity-100"
+                    />
+                    <Link
+                        href={ctaHref}
+                        className={cn(
+                            'inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors',
+                            isExpired
+                                ? 'bg-slate-300 text-slate-600'
+                                : 'bg-[#0A4E88] text-white hover:bg-[#0E2F50]'
+                        )}
+                        aria-label="Vai al bando"
+                        title="Vai al bando"
+                    >
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M3 11L11 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M5 3H11V9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </Link>
+                </div>
             </div>
-
-            {description && (
-                <PlainTextWithLinks
-                    text={description}
-                    className="mt-3 line-clamp-2 text-[13px] leading-relaxed text-slate-600"
-                />
-            )}
             </div>
         </article>
     );

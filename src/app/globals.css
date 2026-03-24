@@ -258,6 +258,17 @@
   }
 }
 
+@keyframes ripple {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 6px 10px rgba(10, 78, 136, 0.16);
+  }
+  50% {
+    transform: scale(1.3);
+    box-shadow: 0 14px 16px rgba(10, 78, 136, 0.2);
+  }
+}
+
 @keyframes iconBounce {
   0%,
   100% {
