@@ -12,7 +12,6 @@ import {
     Mail,
     MapPin,
     Sparkles,
-    Target,
     User,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -42,14 +41,6 @@ const SUGGESTED_SETTORI = [
     'Tecnico',
     'Giuridico',
     'Finanza e Contabilita',
-] as const;
-
-const OBIETTIVI_CONCORSO = [
-    'Entrare nella PA entro 6 mesi',
-    'Preparare il prossimo concorso compatibile',
-    'Cambio settore professionale',
-    'Migliorare inquadramento e stabilita',
-    'Valutare opportunita locali',
 ] as const;
 
 function parseSettoriInput(raw: string): string[] {
@@ -83,19 +74,16 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
         () => [
             { label: 'Nome e cognome', done: Boolean(formData.first_name.trim() && formData.last_name.trim()) },
             { label: 'Regione di interesse', done: Boolean(formData.regione_interesse.trim()) },
-            { label: 'Provincia o sede preferita', done: Boolean(formData.provincia_interesse.trim() || formData.sede_preferita.trim()) },
+            { label: 'Provincia prioritaria', done: Boolean(formData.provincia_interesse.trim()) },
             { label: 'Profilo professionale', done: Boolean(formData.profilo_professionale.trim()) },
             { label: 'Settori prioritari', done: selectedSettori.length > 0 },
-            { label: 'Obiettivo concorso', done: Boolean(formData.obiettivo_concorso.trim()) },
         ],
         [
             formData.first_name,
             formData.last_name,
             formData.regione_interesse,
             formData.provincia_interesse,
-            formData.sede_preferita,
             formData.profilo_professionale,
-            formData.obiettivo_concorso,
             selectedSettori.length,
         ]
     );
@@ -354,26 +342,8 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
                                     <p className="text-[0.68rem] font-semibold uppercase tracking-[0.11em] text-slate-500">Sezione 2</p>
                                     <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-900">Target concorso e posizionamento</h3>
                                 </div>
-                                <Target className="h-5 w-5 text-[#0A4E88]" />
+                                <User className="h-5 w-5 text-[#0A4E88]" />
                             </div>
-
-                            <label className="space-y-1.5 text-sm">
-                                <span className="font-medium text-slate-700">Obiettivo principale</span>
-                                <select
-                                    id="obiettivo_concorso"
-                                    name="obiettivo_concorso"
-                                    value={formData.obiettivo_concorso}
-                                    onChange={handleChange}
-                                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#0A4E88] focus:ring-2 focus:ring-[#0A4E88]/20"
-                                >
-                                    <option value="">Seleziona obiettivo</option>
-                                    {OBIETTIVI_CONCORSO.map((item) => (
-                                        <option key={item} value={item}>
-                                            {item}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
 
                             <label className="mt-4 block space-y-1.5 text-sm">
                                 <span className="font-medium text-slate-700">Profilo professionale</span>
@@ -388,33 +358,6 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
                                 />
                             </label>
 
-                            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                                <label className="space-y-1.5 text-sm">
-                                    <span className="font-medium text-slate-700">Tempo studio settimanale (ore)</span>
-                                    <input
-                                        id="tempo_studio_settimanale"
-                                        name="tempo_studio_settimanale"
-                                        type="number"
-                                        min={0}
-                                        value={formData.tempo_studio_settimanale}
-                                        onChange={handleChange}
-                                        placeholder="Es. 8"
-                                        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#0A4E88] focus:ring-2 focus:ring-[#0A4E88]/20"
-                                    />
-                                </label>
-
-                                <label className="space-y-1.5 text-sm">
-                                    <span className="font-medium text-slate-700">Sede preferita</span>
-                                    <input
-                                        id="sede_preferita"
-                                        name="sede_preferita"
-                                        value={formData.sede_preferita}
-                                        onChange={handleChange}
-                                        placeholder="Es. Milano, Roma o remoto"
-                                        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#0A4E88] focus:ring-2 focus:ring-[#0A4E88]/20"
-                                    />
-                                </label>
-                            </div>
                         </section>
 
                         <section className="dashboard-section-frame p-5 sm:p-6">
@@ -558,7 +501,7 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
                             <p className="text-[0.7rem] font-semibold uppercase tracking-[0.11em] text-[#0A4E88]">Consiglio operativo</p>
                             <h3 className="mt-2 text-lg font-semibold tracking-tight text-slate-900">Massimizza il matching</h3>
                             <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                                Aggiorna almeno regione, obiettivo e profilo professionale: sono i segnali piu utili per ranking e suggerimenti nell\'hub.
+                                Aggiorna almeno regione, settore e profilo professionale: sono i segnali piu utili per ranking e suggerimenti nell\'hub.
                             </p>
                             <div className="mt-4 space-y-2 text-sm text-slate-700">
                                 <p className="flex items-center gap-2"><Clock3 className="h-4 w-4 text-[#0A4E88]" /> Tempo medio aggiornamento: 2 minuti</p>

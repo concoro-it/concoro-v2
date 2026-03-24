@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { SlidersHorizontal, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import type { Profile, UserTier } from '@/types/profile';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -23,7 +23,7 @@ import { UpgradeModal } from '@/components/paywall/UpgradeModal';
 import { UpgradeProModal } from '@/components/paywall/UpgradeProModal';
 
 type Option = { label: string; value: string };
-type SectionKey = 'basic' | 'compensation' | 'areas' | 'company';
+type SectionKey = 'basic' | 'company';
 type DatePostedPreset = 'any' | '24h' | '3d' | '7d' | '30d';
 
 interface PreferencesControlProps {
@@ -44,10 +44,6 @@ interface PreferencesState {
     sort: 'scadenza' | 'recenti' | 'posti';
     ente_slug: string;
     date_posted: DatePostedPreset;
-    titolo_studio: string;
-    anni_esperienza: string;
-    remote_preferito: boolean;
-    settori_interesse: string;
 }
 
 const SENTINEL = '__any__';
@@ -58,25 +54,13 @@ const SECTION_ITEMS: Array<{ key: SectionKey; short: string; title: string; desc
         key: 'basic',
         short: 'Base',
         title: 'Criteri Base',
-        description: 'Regione, provincia, settore, tipo, date',
-    },
-    {
-        key: 'compensation',
-        short: 'Compensi',
-        title: 'Compensi e Requisiti',
-        description: 'Dati profilo (v1 non filtra i risultati)',
-    },
-    {
-        key: 'areas',
-        short: 'Interessi',
-        title: 'Aree di Interesse',
-        description: 'Settori preferiti nel profilo',
+        description: 'Territorio, settore, tipologia e ordinamento',
     },
     {
         key: 'company',
         short: 'Ente',
         title: 'Ente',
-        description: 'Filtro ente e metadati',
+        description: 'Ricerca diretta ente (senza passaggi intermedi)',
     },
 ];
 
@@ -113,16 +97,12 @@ function buildInitialState(searchParams: URLSearchParams, defaults?: Partial<Pro
     return {
         regione: searchParams.get('regione') ?? defaults?.regione_interesse ?? '',
         provincia: searchParams.get('provincia') ?? defaults?.provincia_interesse ?? '',
-        settore: searchParams.get('settore') ?? defaults?.settori_interesse?.[0] ?? '',
+        settore: searchParams.get('settore') ?? '',
         tipo_procedura: searchParams.get('tipo_procedura') ?? '',
         stato: (searchParams.get('stato') as PreferencesState['stato']) ?? 'aperti',
         sort: (searchParams.get('sort') as PreferencesState['sort']) ?? 'scadenza',
         ente_slug: searchParams.get('ente_slug') ?? '',
         date_posted: inferDatePreset(searchParams.get('published_from')),
-        titolo_studio: defaults?.titolo_studio ?? '',
-        anni_esperienza: defaults?.anni_esperienza != null ? String(defaults.anni_esperienza) : '',
-        remote_preferito: defaults?.remote_preferito ?? false,
-        settori_interesse: defaults?.settori_interesse?.join(', ') ?? '',
     };
 }
 
@@ -194,8 +174,17 @@ export function PreferencesControl({
 
     useEffect(() => {
         if (!open || section !== 'company') return;
+        const trimmedQuery = enteQuery.trim();
         const timeout = setTimeout(() => {
-            void loadEnti(enteQuery.trim(), 0, false);
+            if (trimmedQuery.length >= 3) {
+                void loadEnti(trimmedQuery, 0, false);
+                return;
+            }
+
+            // Avoid hitting the API for short/empty input and reset stale results.
+            setEnteResults([]);
+            setEnteOffset(0);
+            setEnteHasMore(false);
         }, 250);
 
         return () => clearTimeout(timeout);
@@ -240,6 +229,7 @@ export function PreferencesControl({
 
     const isPaywalledPublic = isPublicPage && (tier === 'anon' || tier === 'free');
     const canSavePreset = PRO_TIERS.includes(tier);
+    const genioHref = isPublicPage ? '/chat' : '/hub/genio';
 
     const setField = <K extends keyof PreferencesState>(key: K, value: PreferencesState[K]) => {
         setState((prev) => ({ ...prev, [key]: value }));
@@ -265,15 +255,28 @@ export function PreferencesControl({
             }
         };
 
-        setOrDelete('regione', state.regione);
-        if (state.regione) {
-            setOrDelete('provincia', state.provincia);
-        } else {
+        // If a specific ente is selected, keep the flow deterministic by avoiding location conflicts.
+        const hasEnteFilter = state.ente_slug.trim().length > 0;
+
+        if (hasEnteFilter) {
+            params.delete('regione');
             params.delete('provincia');
+        } else {
+            setOrDelete('regione', state.regione);
+            if (state.regione) {
+                setOrDelete('provincia', state.provincia);
+            } else {
+                params.delete('provincia');
+            }
         }
+
         setOrDelete('settore', state.settore);
         setOrDelete('tipo_procedura', state.tipo_procedura);
         setOrDelete('ente_slug', state.ente_slug);
+        params.delete('titolo_studio');
+        params.delete('anni_esperienza');
+        params.delete('settori_interesse');
+        params.delete('remote');
         params.set('stato', state.stato);
         params.set('sort', state.sort);
 
@@ -294,22 +297,10 @@ export function PreferencesControl({
 
         setIsSavingDefaults(true);
         try {
-            const rawSettori = state.settori_interesse
-                .split(',')
-                .map((item) => item.trim())
-                .filter(Boolean);
-
-            const years = state.anni_esperienza.trim();
-            const parsedYears = years ? Number.parseInt(years, 10) : null;
-            const finalYears = parsedYears == null || Number.isNaN(parsedYears) ? null : Math.max(parsedYears, 0);
-
             const payload = {
                 regione_interesse: state.regione || null,
                 provincia_interesse: state.provincia || null,
-                settori_interesse: rawSettori.length > 0 ? rawSettori : (state.settore ? [state.settore] : null),
-                titolo_studio: state.titolo_studio || null,
-                anni_esperienza: finalYears,
-                remote_preferito: state.remote_preferito,
+                settori_interesse: state.settore ? [state.settore] : null,
                 updated_at: new Date().toISOString(),
             };
 
@@ -421,7 +412,7 @@ export function PreferencesControl({
                     <div className="relative">
                         <DialogTitle className="text-2xl font-semibold tracking-tight text-slate-900">Preferenze</DialogTitle>
                         <DialogDescription className="mt-1 text-slate-600">
-                        Imposta i criteri base per filtrare meglio i concorsi.
+                        Imposta i filtri che contano davvero per trovare i concorsi in modo più rapido.
                         </DialogDescription>
                     </div>
                 </DialogHeader>
@@ -441,6 +432,23 @@ export function PreferencesControl({
                             </button>
                         ))}
                     </div>
+                    <div className="mt-3 rounded-2xl border border-sky-200/80 bg-[linear-gradient(128deg,#eff7ff_0%,#f8fbff_55%,#fff7ed_100%)] p-3 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.6)]">
+                        <div className="flex items-start gap-2">
+                            <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-sky-700 shadow-sm ring-1 ring-sky-100">
+                                <Sparkles className="h-4 w-4" />
+                            </span>
+                            <div className="min-w-0">
+                                <p className="text-sm font-semibold leading-tight text-slate-900">Fai fatica a trovare il concorso giusto?</p>
+                                <p className="mt-0.5 text-xs leading-relaxed text-slate-600">Genio e un assistente AI: gli dici cosa cerchi e, quando serve, ti aiuta a trovare i concorsi piu adatti.</p>
+                            </div>
+                        </div>
+                        <Link
+                            href={genioHref}
+                            className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                        >
+                            Cerca con Genio
+                        </Link>
+                    </div>
                 </div>
 
                 <div className="grid md:grid-cols-[260px_1fr] min-h-[560px] max-h-[calc(90vh-180px)]">
@@ -458,6 +466,21 @@ export function PreferencesControl({
                                 <p className="text-sm text-slate-500">{item.description}</p>
                             </button>
                         ))}
+                        <div className="mt-4 rounded-2xl border border-sky-200/80 bg-[linear-gradient(135deg,#ecf6ff_0%,#f7fbff_52%,#fff6ea_100%)] p-4 shadow-[0_18px_30px_-26px_rgba(15,23,42,0.65)]">
+                            <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-sky-700 shadow-sm ring-1 ring-sky-100">
+                                <Sparkles className="h-4 w-4" />
+                            </div>
+                            <p className="mt-3 text-sm font-semibold leading-tight text-slate-900">Fai fatica a trovare il concorso giusto?</p>
+                            <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                                Genio e un assistente AI: descrivi il tuo obiettivo e, quando serve, ti aiuta a trovare i concorsi piu pertinenti.
+                            </p>
+                            <Link
+                                href={genioHref}
+                                className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                            >
+                                Cerca con Genio
+                            </Link>
+                        </div>
                     </aside>
 
                     <div className="space-y-5 overflow-y-auto bg-white p-4 md:p-6">
@@ -558,47 +581,14 @@ export function PreferencesControl({
                             </section>
                         )}
 
-                        {section === 'compensation' && (
-                            <section className="dashboard-section-frame space-y-5 p-4 sm:p-5">
-                                <h3 className="text-2xl font-semibold tracking-tight text-slate-900">Compensi e Requisiti</h3>
-                                <p className="text-sm text-slate-500">
-                                    Questi campi sono salvati nel profilo ma non filtrano i risultati in v1.
-                                </p>
-                                <div className="grid md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="titolo_studio">Titolo di studio</Label>
-                                        <Input id="titolo_studio" value={state.titolo_studio} onChange={(event) => setField('titolo_studio', event.target.value)} placeholder="Es. Laurea magistrale" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="anni_esperienza">Anni di esperienza</Label>
-                                        <Input id="anni_esperienza" type="number" min={0} value={state.anni_esperienza} onChange={(event) => setField('anni_esperienza', event.target.value)} placeholder="Es. 5" />
-                                    </div>
-                                </div>
-                                <div className="flex items-center space-x-2 rounded-md border p-3">
-                                    <Checkbox id="remote_preferito_modal" checked={state.remote_preferito} onCheckedChange={(checked) => setField('remote_preferito', checked === true)} />
-                                    <Label htmlFor="remote_preferito_modal" className="cursor-pointer">Preferisco posizioni remote</Label>
-                                </div>
-                            </section>
-                        )}
-
-                        {section === 'areas' && (
-                            <section className="dashboard-section-frame space-y-5 p-4 sm:p-5">
-                                <h3 className="text-2xl font-semibold tracking-tight text-slate-900">Aree di Interesse</h3>
-                                <p className="text-sm text-slate-500">
-                                    Settori preferiti del profilo. Separali con virgola.
-                                </p>
-                                <div className="space-y-2">
-                                    <Label htmlFor="settori_interesse">Settori di interesse</Label>
-                                    <Input id="settori_interesse" value={state.settori_interesse} onChange={(event) => setField('settori_interesse', event.target.value)} placeholder="Es. Amministrativo, Sanitario, IT" />
-                                </div>
-                            </section>
-                        )}
-
                         {section === 'company' && (
                             <section className="dashboard-section-frame space-y-5 p-4 sm:p-5">
                                 <h3 className="text-2xl font-semibold tracking-tight text-slate-900">Ente</h3>
                                 <p className="text-sm text-slate-500">
-                                    In v1 è attivo solo il filtro ente.
+                                    Cerca direttamente l&apos;ente: non è necessario selezionare prima regione o provincia.
+                                </p>
+                                <p className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-700">
+                                    Se scegli un ente specifico, i filtri regione/provincia vengono rimossi automaticamente per evitare risultati vuoti.
                                 </p>
                                 <div className="space-y-2 max-w-md">
                                     <Label htmlFor="ente_ricerca">Cerca ente</Label>
@@ -606,7 +596,7 @@ export function PreferencesControl({
                                         id="ente_ricerca"
                                         value={enteQuery}
                                         onChange={(event) => setEnteQuery(event.target.value)}
-                                        placeholder="Scrivi almeno 2 caratteri"
+                                        placeholder="Digita almeno 3 caratteri (es. Comune di Roma)"
                                     />
                                     <div className="rounded-md border bg-background">
                                         <button
@@ -621,7 +611,12 @@ export function PreferencesControl({
                                                 key={option.value}
                                                 type="button"
                                                 className={`w-full px-3 py-2 text-left text-sm hover:bg-muted ${state.ente_slug === option.value ? 'bg-muted/40 font-medium' : ''}`}
-                                                onClick={() => setField('ente_slug', option.value)}
+                                                onClick={() => setState((prev) => ({
+                                                    ...prev,
+                                                    ente_slug: option.value,
+                                                    regione: '',
+                                                    provincia: '',
+                                                }))}
                                                 title={option.label}
                                             >
                                                 <span className="block truncate">{option.label}</span>
@@ -630,7 +625,10 @@ export function PreferencesControl({
                                         {isLoadingEnti && (
                                             <p className="px-3 py-2 text-sm text-muted-foreground">Caricamento enti...</p>
                                         )}
-                                        {!isLoadingEnti && enteResults.length === 0 && (
+                                        {!isLoadingEnti && enteQuery.trim().length < 3 && (
+                                            <p className="px-3 py-2 text-sm text-muted-foreground">Scrivi almeno 3 caratteri per cercare un ente.</p>
+                                        )}
+                                        {!isLoadingEnti && enteQuery.trim().length >= 3 && enteResults.length === 0 && (
                                             <p className="px-3 py-2 text-sm text-muted-foreground">Nessun ente trovato.</p>
                                         )}
                                         {enteHasMore && (

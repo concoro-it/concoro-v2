@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, FormEvent } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Search } from 'lucide-react';
+import React, { useEffect, useState, FormEvent } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,25 +11,48 @@ interface SearchBarProps {
     className?: string;
     placeholder?: string;
     autoFocus?: boolean;
+    basePath?: string;
 }
 
 export function SearchBar({
     className,
     placeholder = 'Cerca concorsi (es. "Comune di Roma", "Ingegnere", "Infermiere")...',
     autoFocus = false,
+    basePath,
 }: SearchBarProps) {
     const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
+    const currentQuery = searchParams.get('q') || '';
+    const [query, setQuery] = useState(currentQuery);
 
-    const [query, setQuery] = useState(searchParams.get('q') || '');
+    useEffect(() => {
+        setQuery(currentQuery);
+    }, [currentQuery]);
 
     const handleSearch = (e: FormEvent) => {
         e.preventDefault();
-        if (query.trim()) {
-            router.push(`/concorsi?q=${encodeURIComponent(query.trim())}`);
-        } else {
-            router.push('/concorsi');
-        }
+        const params = new URLSearchParams(searchParams.toString());
+        const nextPath = basePath ?? pathname;
+        const trimmed = query.trim();
+
+        if (trimmed) params.set('q', trimmed);
+        else params.delete('q');
+
+        params.delete('page');
+        const nextQuery = params.toString();
+        router.push(nextQuery ? `${nextPath}?${nextQuery}` : nextPath);
+    };
+
+    const clearQuery = () => {
+        setQuery('');
+        const params = new URLSearchParams(searchParams.toString());
+        const nextPath = basePath ?? pathname;
+
+        params.delete('q');
+        params.delete('page');
+        const nextQuery = params.toString();
+        router.push(nextQuery ? `${nextPath}?${nextQuery}` : nextPath);
     };
 
     return (
@@ -48,12 +71,24 @@ export function SearchBar({
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder={placeholder}
-                    className="pl-10 pr-24 h-12 w-full rounded-full border-border bg-card shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none focus:border-border transition-all hover:bg-muted/30"
+                    className="pl-10 pr-32 h-12 w-full rounded-full border-border bg-card shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none focus:border-border transition-all hover:bg-muted/30"
                     autoFocus={autoFocus}
                     autoComplete="off"
                 />
 
-                <div className="absolute inset-y-1 right-1">
+                <div className="absolute inset-y-1 right-1 flex items-center gap-1">
+                    {query.trim().length > 0 && (
+                        <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            aria-label="Pulisci ricerca"
+                            onClick={clearQuery}
+                            className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground"
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    )}
                     <Button
                         type="submit"
                         size="sm"

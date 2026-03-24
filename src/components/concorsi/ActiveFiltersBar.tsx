@@ -28,6 +28,7 @@ export function ActiveFiltersBar() {
     const params = new URLSearchParams(searchParams.toString());
 
     const chips: FilterChip[] = [
+        { key: 'q', label: 'Ricerca', value: params.get('q') ?? '' },
         { key: 'regione', label: 'Regione', value: params.get('regione') ?? '' },
         { key: 'provincia', label: 'Provincia', value: params.get('provincia') ?? '' },
         { key: 'settore', label: 'Settore', value: params.get('settore') ?? '' },
@@ -53,7 +54,7 @@ export function ActiveFiltersBar() {
 
     const clearAll = () => {
         const next = new URLSearchParams(params.toString());
-        ['regione', 'provincia', 'settore', 'tipo_procedura', 'ente_slug', 'stato', 'sort', 'published_from', 'published_to']
+        ['q', 'regione', 'provincia', 'settore', 'tipo_procedura', 'ente_slug', 'stato', 'sort', 'published_from', 'published_to']
             .forEach((key) => next.delete(key));
         next.delete('page');
         router.push(next.toString() ? `${pathname}?${next.toString()}` : pathname);

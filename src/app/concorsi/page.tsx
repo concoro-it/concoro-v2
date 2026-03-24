@@ -118,6 +118,7 @@ export default async function ConcorsiPage({
     const page = parseInt(params.page ?? '1', 10);
 
     const filters: ConcorsoFilters = {
+        query: params.q,
         regione: params.regione,
         provincia: params.provincia,
         settore: params.settore,
@@ -153,6 +154,7 @@ export default async function ConcorsiPage({
             ...(params.regione && { regione: params.regione }),
             ...(params.provincia && { provincia: params.provincia }),
             ...(params.settore && { settore: params.settore }),
+            ...(params.q && { q: params.q }),
             ...(params.ente_slug && { ente_slug: params.ente_slug }),
             ...(params.tipo_procedura && { tipo_procedura: params.tipo_procedura }),
             ...(params.published_from && { published_from: params.published_from }),

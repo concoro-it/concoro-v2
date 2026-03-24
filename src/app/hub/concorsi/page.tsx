@@ -9,6 +9,7 @@ import { getUserTier } from '@/lib/auth/getUserTier';
 import { redirect } from 'next/navigation';
 import { PreferencesControl } from '@/components/concorsi/PreferencesControl';
 import { ActiveFiltersBar } from '@/components/concorsi/ActiveFiltersBar';
+import { SearchBar } from '@/components/concorsi/SearchBar';
 
 export const metadata: Metadata = {
     title: 'Concorsi | Dashboard',
@@ -20,6 +21,7 @@ const PAGE_LIMIT = 20;
 
 interface SearchParams {
     page?: string;
+    q?: string;
     regione?: string;
     provincia?: string;
     settore?: string;
@@ -40,6 +42,7 @@ export default async function DashboardConcorsiPage({
     const requestedPage = parseInt(params.page ?? '1', 10);
 
     const filters: ConcorsoFilters = {
+        query: params.q,
         regione: params.regione,
         provincia: params.provincia,
         settore: params.settore,
@@ -82,6 +85,7 @@ export default async function DashboardConcorsiPage({
             ...(params.regione && { regione: params.regione }),
             ...(params.provincia && { provincia: params.provincia }),
             ...(params.settore && { settore: params.settore }),
+            ...(params.q && { q: params.q }),
             ...(params.ente_slug && { ente_slug: params.ente_slug }),
             ...(params.tipo_procedura && { tipo_procedura: params.tipo_procedura }),
             ...(params.published_from && { published_from: params.published_from }),
@@ -95,12 +99,20 @@ export default async function DashboardConcorsiPage({
 
     return (
         <div className="container max-w-container mx-auto px-4 py-8">
-            <div className="mb-6 flex items-start justify-between gap-3">
+            <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight">Concorsi</h1>
                     <p className="text-muted-foreground mt-1">{shownCount} risultati visibili</p>
                 </div>
-                <div className="ml-3 flex-shrink-0 self-start">
+            </div>
+
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
+                <SearchBar
+                    basePath="/hub/concorsi"
+                    className="flex-1"
+                    placeholder='Cerca per ente, profilo o titolo (es. "Comune di Milano", "Istruttore", "Infermiere")'
+                />
+                <div className="self-start md:self-auto">
                     <PreferencesControl
                         tier={tier}
                         userId={user.id}

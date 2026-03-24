@@ -35,6 +35,7 @@ export async function getConcorsi(
 ): Promise<{ data: Concorso[]; count: number }> {
     let query = supabase.from('concorsi_view').select(CONCORSI_COLS, { count: 'exact' });
     const now = new Date().toISOString();
+    const freeTextQuery = filters.query?.trim().replace(/[,%()]/g, ' ').replace(/\s+/g, ' ');
 
     // Handle 'stato' (aperti, scaduti, tutti)
     // Default to 'aperti' if not specified, unless explicit filters contradict it
@@ -76,6 +77,17 @@ export async function getConcorsi(
     }
     if (filters.published_to) {
         query = query.lte('data_pubblicazione', filters.published_to);
+    }
+    if (freeTextQuery) {
+        const pattern = `%${freeTextQuery}%`;
+        query = query.or(
+            [
+                `titolo.ilike.${pattern}`,
+                `titolo_breve.ilike.${pattern}`,
+                `ente_nome.ilike.${pattern}`,
+                `tipo_procedura.ilike.${pattern}`,
+            ].join(',')
+        );
     }
 
     // Sort
