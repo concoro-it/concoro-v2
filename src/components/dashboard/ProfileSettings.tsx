@@ -16,10 +16,9 @@ import {
     User,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
 import { getAllRegioni } from '@/lib/utils/regioni';
 import type { Profile, ProfileFormValues } from '@/types/profile';
-import { mapFormValuesToProfileUpdate, mapProfileToFormValues } from '@/types/profile';
+import { mapProfileToFormValues } from '@/types/profile';
 
 interface ProfileSettingsProps {
     user: {
@@ -66,7 +65,6 @@ function toSettoriInput(settori: string[]): string {
 
 export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
     const router = useRouter();
-    const supabase = createClient();
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingProvince, setIsLoadingProvince] = useState(false);
     const [provinceOptions, setProvinceOptions] = useState<Option[]>([]);
@@ -195,25 +193,25 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
         setIsLoading(true);
 
         try {
-            const updatePayload = mapFormValuesToProfileUpdate(formData);
-            const fullName = [formData.first_name.trim(), formData.last_name.trim()].filter(Boolean).join(' ').trim();
+            const response = await fetch('/api/profile/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ formData }),
+            });
+            const payload = (await response.json()) as { error?: string; details?: string | null };
 
-            const { error } = await supabase
-                .from('profiles')
-                .update({
-                    ...updatePayload,
-                    full_name: fullName.length > 0 ? fullName : null,
-                    updated_at: new Date().toISOString(),
-                })
-                .eq('id', user.id);
-
-            if (error) throw error;
+            if (!response.ok) {
+                throw new Error(payload.details || payload.error || 'Errore durante il salvataggio');
+            }
 
             toast.success('Profilo aggiornato con successo');
             router.refresh();
         } catch (error) {
             console.error('Error updating profile:', error);
-            toast.error('Si e verificato un errore durante il salvataggio del profilo');
+            const message = error instanceof Error
+                ? error.message
+                : 'Si e verificato un errore durante il salvataggio del profilo';
+            toast.error(message);
         } finally {
             setIsLoading(false);
         }
@@ -533,16 +531,6 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
                                         className="mt-0.5 h-4 w-4 rounded border-slate-400 text-[#0A4E88] focus:ring-[#0A4E88]/25"
                                     />
                                     Preferisco posizioni remote quando disponibili
-                                </label>
-
-                                <label className="flex items-start gap-2.5">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.disponibilita_mobilita}
-                                        onChange={(event) => handleToggleChange('disponibilita_mobilita', event.target.checked)}
-                                        className="mt-0.5 h-4 w-4 rounded border-slate-400 text-[#0A4E88] focus:ring-[#0A4E88]/25"
-                                    />
-                                    Sono disponibile a spostamenti per prove e incarichi
                                 </label>
 
                                 <label className="flex items-start gap-2.5">
