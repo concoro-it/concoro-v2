@@ -54,6 +54,13 @@ function normaliseWebsite(url: string | null): string | null {
     return `https://${url}`;
 }
 
+function toAbsoluteUrl(url: string | null | undefined, baseUrl: string): string | undefined {
+    if (!url) return undefined;
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('//')) return `https:${url}`;
+    return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
 function toScoreLabel(score: string | number | null | undefined): string {
     if (score === null || score === undefined || score === '') return 'N/D';
     return `${score}/10`;
@@ -302,6 +309,10 @@ export default async function ConcorsoDetailPage({ params }: Props) {
     // JSON-LD
     const appUrl = getServerAppUrl();
     const canonicalUrl = `${appUrl}/concorsi/${slug}`;
+    const hiringOrgLogoUrl = toAbsoluteUrl(
+        ente?.logo_url ?? concorso.favicon_url ?? null,
+        appUrl
+    );
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'JobPosting',
@@ -313,6 +324,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
             '@type': 'Organization',
             name: concorso.ente_nome ?? '',
             sameAs: normaliseLink(concorso.link_sito_pa),
+            logo: hiringOrgLogoUrl,
         },
         jobLocation: {
             '@type': 'Place',

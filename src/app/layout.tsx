@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
@@ -13,7 +14,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans', weight: ['400
 const GA_MEASUREMENT_ID = 'G-KRQJ1WJJ8Y';
 const CLARITY_PROJECT_ID = 'vwadbyn3e9';
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
     title: {
         default: 'Concoro — Concorsi Pubblici in Italia',
         template: '%s | Concoro',
@@ -32,6 +33,16 @@ export const metadata: Metadata = {
         apple: '/fav.png',
     },
 };
+
+export function generateMetadata(): Metadata {
+    return {
+        ...baseMetadata,
+        other: {
+            ...(baseMetadata.other ?? {}),
+            ...Sentry.getTraceData(),
+        },
+    };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
     return (
