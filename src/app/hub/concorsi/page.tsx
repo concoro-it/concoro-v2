@@ -104,6 +104,15 @@ export default async function DashboardConcorsiPage({
                     <h1 className="text-3xl font-semibold tracking-tight">Concorsi</h1>
                     <p className="text-muted-foreground mt-1">{shownCount} risultati visibili</p>
                 </div>
+                <div className="shrink-0 md:hidden">
+                    <PreferencesControl
+                        tier={tier}
+                        userId={user.id}
+                        profileDefaults={profile}
+                        regioni={regioniWithCount.map((item) => ({ value: item.regione, label: `${item.regione} (${item.count})` }))}
+                        settori={settoriWithCount.map((item) => ({ value: item.settore, label: `${item.settore} (${item.count})` }))}
+                    />
+                </div>
             </div>
 
             <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
@@ -112,7 +121,7 @@ export default async function DashboardConcorsiPage({
                     className="flex-1"
                     placeholder='Cerca per ente, profilo o titolo (es. "Comune di Milano", "Istruttore", "Infermiere")'
                 />
-                <div className="self-start md:self-auto">
+                <div className="hidden self-start md:block md:self-auto">
                     <PreferencesControl
                         tier={tier}
                         userId={user.id}

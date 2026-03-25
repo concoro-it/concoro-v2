@@ -418,26 +418,28 @@ export default async function ConcorsiPage({
                 </section>
 
                 <section className="rounded-3xl border border-slate-200 bg-white p-5 md:p-7">
-                    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Filtri attivi</p>
-                            <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-1 text-3xl tracking-tight text-slate-900">
-                                Selezione concorsi nazionali
-                            </h2>
+                    <div className="mb-4 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Filtri attivi</p>
+                                <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-1 text-2xl tracking-tight text-slate-900 md:text-3xl">
+                                    Selezione concorsi nazionali
+                                </h2>
+                            </div>
+                            <div className="shrink-0">
+                                <PreferencesControl
+                                    tier={tier}
+                                    userId={user?.id}
+                                    isPublicPage
+                                    profileDefaults={profile}
+                                    regioni={regioniWithCount.map((item) => ({ value: item.regione, label: `${item.regione} (${item.count})` }))}
+                                    settori={settoriWithCount.map((item) => ({ value: item.settore, label: `${item.settore} (${item.count})` }))}
+                                />
+                            </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <p className="text-sm text-slate-600">
-                                {normalizedCount} risultati disponibili
-                            </p>
-                            <PreferencesControl
-                                tier={tier}
-                                userId={user?.id}
-                                isPublicPage
-                                profileDefaults={profile}
-                                regioni={regioniWithCount.map((item) => ({ value: item.regione, label: `${item.regione} (${item.count})` }))}
-                                settori={settoriWithCount.map((item) => ({ value: item.settore, label: `${item.settore} (${item.count})` }))}
-                            />
-                        </div>
+                        <p className="text-sm text-slate-600">
+                            {normalizedCount} risultati disponibili
+                        </p>
                     </div>
 
                     <ActiveFiltersBar />

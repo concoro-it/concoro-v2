@@ -406,11 +406,11 @@ export function PreferencesControl({
                     Preferenze
                 </Button>
             </DialogTrigger>
-            <DialogContent className="w-[96vw] max-w-5xl overflow-hidden border border-slate-200/80 bg-white p-0 max-h-[90vh]">
-                <DialogHeader className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-sky-50/50 px-6 py-5">
+            <DialogContent className="left-0 top-0 h-[100dvh] max-h-[100dvh] w-screen max-w-none translate-x-0 translate-y-0 overflow-hidden border-0 bg-white p-0 sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[90vh] sm:w-[96vw] sm:max-w-5xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl sm:border sm:border-slate-200/80">
+                <DialogHeader className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-sky-50/50 px-4 py-4 pr-12 sm:px-6 sm:py-5 sm:pr-14">
                     <div className="pointer-events-none absolute -right-14 -top-14 h-40 w-40 rounded-full bg-sky-100/50 blur-3xl" />
                     <div className="relative">
-                        <DialogTitle className="text-2xl font-semibold tracking-tight text-slate-900">Preferenze</DialogTitle>
+                        <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Preferenze</DialogTitle>
                         <DialogDescription className="mt-1 text-slate-600">
                         Imposta i filtri che contano davvero per trovare i concorsi in modo più rapido.
                         </DialogDescription>
@@ -418,7 +418,7 @@ export function PreferencesControl({
                 </DialogHeader>
 
                 <div className="md:hidden border-b border-slate-100 bg-slate-50/70 px-3 py-2.5">
-                    <div className="flex gap-2 overflow-x-auto">
+                    <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {SECTION_ITEMS.map((item) => (
                             <button
                                 key={item.key}
@@ -432,26 +432,9 @@ export function PreferencesControl({
                             </button>
                         ))}
                     </div>
-                    <div className="mt-3 rounded-2xl border border-sky-200/80 bg-[linear-gradient(128deg,#eff7ff_0%,#f8fbff_55%,#fff7ed_100%)] p-3 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.6)]">
-                        <div className="flex items-start gap-2">
-                            <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-sky-700 shadow-sm ring-1 ring-sky-100">
-                                <Sparkles className="h-4 w-4" />
-                            </span>
-                            <div className="min-w-0">
-                                <p className="text-sm font-semibold leading-tight text-slate-900">Fai fatica a trovare il concorso giusto?</p>
-                                <p className="mt-0.5 text-xs leading-relaxed text-slate-600">Genio e un assistente AI: gli dici cosa cerchi e, quando serve, ti aiuta a trovare i concorsi piu adatti.</p>
-                            </div>
-                        </div>
-                        <Link
-                            href={genioHref}
-                            className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
-                        >
-                            Cerca con Genio
-                        </Link>
-                    </div>
                 </div>
 
-                <div className="grid md:grid-cols-[260px_1fr] min-h-[560px] max-h-[calc(90vh-180px)]">
+                <div className="grid min-h-0 md:grid-cols-[260px_1fr] md:min-h-[560px] md:max-h-[calc(90vh-180px)]">
                     <aside className="hidden border-r border-slate-100 bg-slate-50/60 p-4 md:block space-y-2">
                         {SECTION_ITEMS.map((item) => (
                             <button
@@ -483,7 +466,7 @@ export function PreferencesControl({
                         </div>
                     </aside>
 
-                    <div className="space-y-5 overflow-y-auto bg-white p-4 md:p-6">
+                    <div className="space-y-5 overflow-y-auto bg-white p-3 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:p-4 sm:pb-24 md:p-6 md:pb-6">
                         {section === 'basic' && (
                             <section className="dashboard-section-frame space-y-5 p-4 sm:p-5">
                                 <h3 className="text-2xl font-semibold tracking-tight text-slate-900">Criteri Base</h3>
@@ -644,27 +627,47 @@ export function PreferencesControl({
                                 </div>
                             </section>
                         )}
+
+                        <div className="md:hidden rounded-2xl border border-sky-200/80 bg-[linear-gradient(128deg,#eff7ff_0%,#f8fbff_55%,#fff7ed_100%)] p-3 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.6)]">
+                            <div className="flex items-start gap-2">
+                                <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-sky-700 shadow-sm ring-1 ring-sky-100">
+                                    <Sparkles className="h-4 w-4" />
+                                </span>
+                                <div className="min-w-0">
+                                    <p className="text-sm font-semibold leading-tight text-slate-900">Fai fatica a trovare il concorso giusto?</p>
+                                    <p className="mt-0.5 text-xs leading-relaxed text-slate-600">Genio e un assistente AI: gli dici cosa cerchi e, quando serve, ti aiuta a trovare i concorsi piu adatti.</p>
+                                </div>
+                            </div>
+                            <Link
+                                href={genioHref}
+                                className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                            >
+                                Cerca con Genio
+                            </Link>
+                        </div>
                     </div>
                 </div>
 
-                <div className="border-t border-slate-100 bg-slate-50/70 px-6 py-4 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                        <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="rounded-xl">Annulla</Button>
-                        <Button type="button" variant="outline" onClick={saveDefaults} disabled={isSavingDefaults}>
+                <div className="sticky bottom-0 border-t border-slate-100 bg-slate-50/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-slate-50/80 sm:px-6 sm:py-4 md:static md:bg-slate-50/70 md:backdrop-blur-0">
+                    <div className="flex flex-col-reverse gap-3 md:flex-row md:items-center md:justify-between">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                            <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="w-full rounded-xl sm:w-auto">Annulla</Button>
+                            <Button type="button" variant="outline" onClick={saveDefaults} disabled={isSavingDefaults} className="w-full sm:w-auto">
                             {isSavingDefaults ? 'Salvataggio...' : 'Salva come predefinite'}
                         </Button>
-                        <div className="relative inline-flex">
-                            {!canSavePreset && (
-                                <span className="absolute -top-2 -right-2 z-10 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
-                                    Pro
-                                </span>
-                            )}
-                            <Button type="button" variant="outline" onClick={handleSavePresetClick} disabled={isSavingPreset}>
-                                {isSavingPreset ? 'Salvataggio...' : 'Salva preset'}
-                            </Button>
+                            <div className="relative inline-flex w-full sm:w-auto">
+                                {!canSavePreset && (
+                                    <span className="absolute -top-2 -right-2 z-10 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
+                                        Pro
+                                    </span>
+                                )}
+                                <Button type="button" variant="outline" onClick={handleSavePresetClick} disabled={isSavingPreset} className="w-full sm:w-auto">
+                                    {isSavingPreset ? 'Salvataggio...' : 'Salva preset'}
+                                </Button>
+                            </div>
                         </div>
+                        <Button type="button" onClick={applyFilters} className="w-full rounded-xl px-6 md:w-auto">Applica filtri</Button>
                     </div>
-                    <Button type="button" onClick={applyFilters} className="rounded-xl px-6">Applica filtri</Button>
                 </div>
             </DialogContent>
             <UpgradeProModal isOpen={showUpgradeProModal} onOpenChange={setShowUpgradeProModal} />

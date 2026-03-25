@@ -244,6 +244,9 @@ export default async function ConcorsoDetailPage({ params }: Props) {
     const urgencyLevel = getUrgencyLevel(concorso.data_scadenza, concorso.status);
     const urgencyLabel = getUrgencyLabel(concorso.data_scadenza, concorso.status);
     const urgencyColor = getUrgencyColor(concorso.data_scadenza, concorso.status);
+    const compactUrgencyLabel = urgencyLabel
+        ? urgencyLabel.replace(/^Scade (tra|in)\s+/i, '')
+        : null;
 
     const uxHighlights = parseJson<{ the_hook?: unknown; critical_alert?: unknown }>(concorso.ux_highlights, {});
     const hookItems = Array.isArray(uxHighlights.the_hook) ? uxHighlights.the_hook : [];
@@ -365,6 +368,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
     const shortTitle = concorso.titolo_breve ? formatConcorsoTitle(concorso.titolo_breve) : null;
     const useShortHeroTitle = Boolean(shortTitle && fullTitle.length > 110 && shortTitle.length >= 18);
     const heroTitle = useShortHeroTitle ? shortTitle! : fullTitle;
+    const breadcrumbTailLabel = concorso.ente_nome ?? formatConcorsoTitle(concorso.titolo_breve ?? concorso.titolo);
     const primaryPlace = province[0] ?? regioni[0] ?? 'Italia';
     const enteHeroImage = ente?.cover_image_url ?? ente?.logo_url ?? null;
     const contactFields = parseContactFields(concorso.contatti);
@@ -401,12 +405,12 @@ export default async function ConcorsoDetailPage({ params }: Props) {
 
                 <div className="relative border-b border-slate-200 bg-white/85">
                     <div className="container mx-auto max-w-[78rem] px-4 py-3 text-sm text-slate-500">
-                        <nav className="flex flex-wrap items-center gap-2">
-                            <Link href="/" className="hover:text-slate-900">Home</Link>
-                            <ChevronRight className="h-4 w-4" />
-                            <Link href="/concorsi" className="hover:text-slate-900">Concorsi</Link>
-                            <ChevronRight className="h-4 w-4" />
-                            <span className="line-clamp-1 font-medium text-slate-900">{formatConcorsoTitle(concorso.titolo_breve ?? concorso.titolo)}</span>
+                        <nav className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
+                            <Link href="/" className="shrink-0 hover:text-slate-900">Home</Link>
+                            <ChevronRight className="h-4 w-4 shrink-0" />
+                            <Link href="/concorsi" className="shrink-0 hover:text-slate-900">Concorsi</Link>
+                            <ChevronRight className="h-4 w-4 shrink-0" />
+                            <span className="min-w-0 truncate font-medium text-slate-900">{breadcrumbTailLabel}</span>
                         </nav>
                     </div>
                 </div>
@@ -414,25 +418,25 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                 <header className="relative px-4 pb-12 pt-10 md:pb-16">
                     <div className="container mx-auto grid max-w-[78rem] gap-8 lg:grid-cols-[1.15fr_0.85fr]">
                         <div className="space-y-6">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <div className="inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-white/75 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.11em] text-slate-700 backdrop-blur-sm">
+                            <div className="flex items-center gap-2">
+                                <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-300/80 bg-white/75 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.11em] text-slate-700 backdrop-blur-sm">
                                     <ShieldCheck className="h-3.5 w-3.5" />
-                                    Scheda concorso ufficiale
+                                    Scheda ufficiale
                                 </div>
                                 {urgencyLabel && (
                                     <span className={cn(
-                                        'ml-auto inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.1em]',
+                                        'ml-auto inline-flex min-w-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.1em]',
                                         urgencyColor
                                     )}>
                                         <span className={cn(
-                                            'h-2 w-2 rounded-full animate-pulse',
+                                            'h-2 w-2 shrink-0 rounded-full animate-pulse',
                                             urgencyLevel === 0 ? 'bg-gray-400' :
                                                 urgencyLevel === 1 ? 'bg-red-500' :
                                                     urgencyLevel === 2 ? 'bg-orange-500' :
                                                         urgencyLevel === 3 ? 'bg-yellow-500' :
                                                             'bg-emerald-500'
                                         )} />
-                                        {urgencyLabel}
+                                        <span className="truncate">{compactUrgencyLabel ?? urgencyLabel}</span>
                                     </span>
                                 )}
                             </div>
@@ -450,7 +454,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                 }
                             </div>
 
-                            <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] max-w-3xl text-balance text-4xl font-semibold leading-[1.08] tracking-tight text-slate-900 md:text-5xl">
+                            <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] max-w-3xl break-words text-balance text-[clamp(1.9rem,8vw,2.75rem)] font-semibold leading-[1.08] tracking-tight text-slate-900 [overflow-wrap:anywhere] md:text-5xl">
                                 {heroTitle}
                             </h1>
 
