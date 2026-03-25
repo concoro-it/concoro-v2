@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
+import { createCachedPublicClient } from '@/lib/supabase/server';
 import { getProvinceWithCount } from '@/lib/supabase/queries';
 import { toUrlSlug } from '@/lib/utils/regioni';
 import { provinceToRegionSlug } from '@/lib/utils/province-region-map';
@@ -63,7 +63,7 @@ function getRegionLabel(regione: string | null | undefined, provincia: string): 
 }
 
 export default async function ProvinciaIndexPage() {
-    const supabase = await createClient();
+    const supabase = createCachedPublicClient({ revalidate, tags: ['public:provincia-index'] });
     const province = await getProvinceWithCount(supabase);
 
     return (

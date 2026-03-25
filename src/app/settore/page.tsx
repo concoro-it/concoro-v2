@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getSettoriWithCount } from '@/lib/supabase/queries';
-import { createClient } from '@/lib/supabase/server';
+import { createCachedPublicClient } from '@/lib/supabase/server';
 import { toUrlSlug } from '@/lib/utils/regioni';
 import { Briefcase } from 'lucide-react';
 
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function SettoreIndexPage() {
-    const supabase = await createClient();
+    const supabase = createCachedPublicClient({ revalidate, tags: ['public:settore-index'] });
     const settori = await getSettoriWithCount(supabase);
 
     return (

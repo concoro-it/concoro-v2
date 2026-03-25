@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { createClient, createStaticClient } from '@/lib/supabase/server';
+import { createCachedPublicClient, createStaticClient } from '@/lib/supabase/server';
 import { getConcorsoBySlug, getRelatedConcorsi, getAllConcorsiSlugs, getEnteBySlug, getEnteByName } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import {
@@ -206,7 +206,7 @@ function formatTimeIT(value: string | null | undefined): string | null {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
-    const supabase = await createClient();
+    const supabase = createStaticClient();
     const concorso = await getConcorsoBySlug(supabase, slug);
     if (!concorso) return { title: 'Concorso non trovato' };
 
@@ -233,11 +233,10 @@ export const revalidate = 3600;
 
 export default async function ConcorsoDetailPage({ params }: Props) {
     const { slug } = await params;
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const supabase = createCachedPublicClient({ revalidate, tags: ['public:concorso-detail'] });
     const concorso = await getConcorsoBySlug(supabase, slug);
     if (!concorso) notFound();
-    const isGuestUser = !user;
+    const isGuestUser = true;
 
     const expired = isExpired(concorso.data_scadenza) || concorso.status === 'CLOSED';
     const regioni = parseRegioni(concorso);

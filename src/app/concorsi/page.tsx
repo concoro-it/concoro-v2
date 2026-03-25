@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createCachedPublicClient } from '@/lib/supabase/server';
 import { getConcorsi, getProvinceWithCount, getRegioniWithCount, getSettoriWithCount, getUserProfile } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import {
@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import type { ConcorsoFilters } from '@/types/concorso';
-import { getUserTier } from '@/lib/auth/getUserTier';
 import { getServerAppUrl } from '@/lib/auth/url';
 import { toUrlSlug } from '@/lib/utils/regioni';
 import { BlurredResultsSection } from '@/components/paywall/PaywallBanner';
@@ -89,6 +88,7 @@ export async function generateMetadata({
 
 const FREE_VISIBLE = 5;
 const LIMIT = 20;
+export const revalidate = 3600;
 
 const FAQ_ITEMS = [
     {
@@ -131,22 +131,20 @@ export default async function ConcorsiPage({
         solo_attivi: true,
     };
 
-    const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-    const tier = await getUserTier(supabase);
-    const resultsLimit = tier === 'anon' ? FREE_VISIBLE : LIMIT;
+    const supabase = createCachedPublicClient({ revalidate: 3600, tags: ['public:concorsi-index'] });
+    const userId: string | undefined = undefined;
+    const tier = 'anon' as const;
+    const resultsLimit = FREE_VISIBLE;
     const { data: concorsi, count } = await getConcorsi(supabase, filters, page, resultsLimit);
     const [profile, regioniWithCount, provinceWithCount, settoriWithCount] = await Promise.all([
-        user ? getUserProfile(supabase, user.id) : Promise.resolve(null),
+        Promise.resolve(null),
         getRegioniWithCount(supabase),
         getProvinceWithCount(supabase),
         getSettoriWithCount(supabase),
     ]);
     const totalPages = Math.ceil((count ?? 0) / LIMIT);
 
-    const isLocked = tier !== 'pro' && tier !== 'admin';
+    const isLocked = true;
     const showPaywall = isLocked && (page > 1 || (count ?? 0) > FREE_VISIBLE);
 
     function buildPageUrl(p: number): string {
@@ -429,7 +427,7 @@ export default async function ConcorsiPage({
                             <div className="shrink-0">
                                 <PreferencesControl
                                     tier={tier}
-                                    userId={user?.id}
+                                    userId={userId}
                                     isPublicPage
                                     profileDefaults={profile}
                                     regioni={regioniWithCount.map((item) => ({ value: item.regione, label: `${item.regione} (${item.count})` }))}

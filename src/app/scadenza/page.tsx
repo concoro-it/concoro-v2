@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, BellRing, ChevronRight } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
+import { createCachedPublicClient } from '@/lib/supabase/server';
 import { getNuoviConcorsi, getScadenzaOggi, getScadenzaQuestaSettimana, getScadenzaQuestoMese } from '@/lib/supabase/queries';
 import { formatDateShort } from '@/lib/utils/date';
 import { SCADENZA_BUCKETS } from '@/components/scadenza/config';
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function ScadenzePage() {
-    const supabase = await createClient();
+    const supabase = createCachedPublicClient({ revalidate, tags: ['public:scadenza-index'] });
     const [oggi, settimana, mese, nuovi] = await Promise.all([
         getScadenzaOggi(supabase, 1, 1),
         getScadenzaQuestaSettimana(supabase, 1, 6),

@@ -10,7 +10,7 @@ import {
     ShieldCheck,
     Sparkles,
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
+import { createCachedPublicClient } from '@/lib/supabase/server';
 import { getActiveConcorsiCount, getFeaturedConcorsi, getProvinceWithCount, getRegioniWithCount, getSettoriWithCount } from '@/lib/supabase/queries';
 import { ConcorsoCard } from '@/components/concorsi/ConcorsoCard';
 import { JsonLd } from '@/components/seo/JsonLd';
@@ -119,8 +119,10 @@ export const metadata: Metadata = {
     ],
 };
 
+export const revalidate = 3600;
+
 export default async function HomePage() {
-    const supabase = await createClient();
+    const supabase = createCachedPublicClient({ revalidate: 3600, tags: ['public:home'] });
     const [featured, activeConcorsiCount, regioni, province, settori] = await Promise.all([
         getFeaturedConcorsi(supabase),
         getActiveConcorsiCount(supabase),

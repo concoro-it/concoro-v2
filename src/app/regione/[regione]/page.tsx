@@ -12,9 +12,8 @@ import {
     ShieldCheck,
     Sparkles,
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
+import { createCachedPublicClient } from '@/lib/supabase/server';
 import { getConcorsi } from '@/lib/supabase/queries';
-import { getUserTier } from '@/lib/auth/getUserTier';
 import { getServerAppUrl } from '@/lib/auth/url';
 import { BlurredResultsSection } from '@/components/paywall/PaywallBanner';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
@@ -155,7 +154,7 @@ export default async function RegionePage({ params, searchParams }: Props) {
     const enteSlug = paramsObj.ente_slug || '';
     const page = clampPage(paramsObj.page);
 
-    const supabase = await createClient();
+    const supabase = createCachedPublicClient({ revalidate, tags: ['public:regione-detail'] });
 
     const baseRegionalFilters: ConcorsoFilters = {
         regione: regioneName,
@@ -170,8 +169,8 @@ export default async function RegionePage({ params, searchParams }: Props) {
         ente_slug: enteSlug || undefined,
     };
 
-    const tier = await getUserTier(supabase);
-    const resultsLimit = tier === 'anon' ? FREE_VISIBLE : LIMIT;
+    const tier = 'anon' as const;
+    const resultsLimit = FREE_VISIBLE;
 
     const [regionalData, baseRegionalData, openSnapshot, closedSnapshot, entiData] = await Promise.all([
         getConcorsi(supabase, selectedFilters, page, resultsLimit),
@@ -190,7 +189,7 @@ export default async function RegionePage({ params, searchParams }: Props) {
     const concorsi = regionalData.data ?? [];
     const count = regionalData.count ?? 0;
     const totalPages = Math.max(1, Math.ceil(count / LIMIT));
-    const isLocked = tier !== 'pro' && tier !== 'admin';
+    const isLocked = true;
     const showPaywall = isLocked && (page > 1 || count > FREE_VISIBLE);
     const visibleResults = showPaywall && page === 1 ? concorsi.slice(0, FREE_VISIBLE) : (showPaywall ? [] : concorsi);
     const lockedResults = showPaywall && page === 1 ? concorsi.slice(FREE_VISIBLE) : [];

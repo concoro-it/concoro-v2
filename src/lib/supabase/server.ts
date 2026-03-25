@@ -2,6 +2,18 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
+type NextFetchInit = RequestInit & {
+    next?: {
+        revalidate?: number;
+        tags?: string[];
+    };
+};
+
+interface PublicCacheOptions {
+    revalidate?: number;
+    tags?: string[];
+}
+
 export function createStaticClient() {
     return createSupabaseClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,10 +21,70 @@ export function createStaticClient() {
     );
 }
 
+export function createCachedPublicClient(options: PublicCacheOptions = {}) {
+    const revalidate = options.revalidate ?? 3600;
+    const defaultTags = options.tags ?? ['supabase-public'];
+
+    const cacheAwareFetch: typeof fetch = async (input, init) => {
+        const nextInit = (init ?? {}) as NextFetchInit;
+        const existingTags = nextInit.next?.tags ?? [];
+        const tags = Array.from(new Set([...existingTags, ...defaultTags]));
+
+        return fetch(input, {
+            ...nextInit,
+            next: {
+                ...nextInit.next,
+                revalidate,
+                tags,
+            },
+        });
+    };
+
+    return createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            global: {
+                fetch: cacheAwareFetch,
+            },
+        }
+    );
+}
+
 export function createStaticAdminClient() {
     return createSupabaseClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+}
+
+export function createCachedServiceClient(options: PublicCacheOptions = {}) {
+    const revalidate = options.revalidate ?? 3600;
+    const defaultTags = options.tags ?? ['supabase-service'];
+
+    const cacheAwareFetch: typeof fetch = async (input, init) => {
+        const nextInit = (init ?? {}) as NextFetchInit;
+        const existingTags = nextInit.next?.tags ?? [];
+        const tags = Array.from(new Set([...existingTags, ...defaultTags]));
+
+        return fetch(input, {
+            ...nextInit,
+            next: {
+                ...nextInit.next,
+                revalidate,
+                tags,
+            },
+        });
+    };
+
+    return createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+            global: {
+                fetch: cacheAwareFetch,
+            },
+        }
     );
 }
 

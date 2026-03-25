@@ -13,7 +13,7 @@ import {
     ShieldCheck,
     Train,
 } from 'lucide-react';
-import { createStaticAdminClient } from '@/lib/supabase/server';
+import { createCachedServiceClient } from '@/lib/supabase/server';
 import { getAllEnti, getConcorsiByEnte, getEnteBySlug } from '@/lib/supabase/queries';
 import { formatDateIT } from '@/lib/utils/date';
 import { toUrlSlug } from '@/lib/utils/regioni';
@@ -87,7 +87,7 @@ function normalisePhone(phone: string | null): string | null {
 }
 
 export async function generateStaticParams() {
-    const supabase = createStaticAdminClient();
+    const supabase = createCachedServiceClient({ revalidate, tags: ['public:ente-detail'] });
     const { data: enti, error } = await supabase
         .from('enti')
         .select('ente_slug')
@@ -99,7 +99,7 @@ export async function generateStaticParams() {
 }
 
 async function getEntePageData(slug: string) {
-    const supabase = createStaticAdminClient();
+    const supabase = createCachedServiceClient({ revalidate, tags: ['public:ente-detail'] });
     let ente = await getEnteBySlug(supabase, slug);
 
     if (!ente) {
@@ -169,7 +169,7 @@ export const revalidate = 86400;
 
 export default async function EntePage({ params }: Props) {
     const { 'ente-slug': slug } = await params;
-    const supabase = createStaticAdminClient();
+    const supabase = createCachedServiceClient({ revalidate, tags: ['public:ente-detail'] });
 
     let ente = await getEnteBySlug(supabase, slug);
 

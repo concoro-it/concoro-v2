@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Building2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
+import { createCachedPublicClient } from '@/lib/supabase/server';
 import { getEntiWithCount } from '@/lib/supabase/queries';
 
 export const metadata: Metadata = {
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function EnteIndexPage() {
-    const supabase = await createClient();
+    const supabase = createCachedPublicClient({ revalidate, tags: ['public:ente-index'] });
     const enti = await getEntiWithCount(supabase);
 
     return (

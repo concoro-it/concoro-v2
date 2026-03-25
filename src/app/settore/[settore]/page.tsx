@@ -12,9 +12,8 @@ import {
     ShieldCheck,
     Sparkles,
 } from 'lucide-react';
-import { createClient, createStaticClient } from '@/lib/supabase/server';
+import { createCachedPublicClient, createStaticClient } from '@/lib/supabase/server';
 import { getConcorsi, getSettoriWithCount } from '@/lib/supabase/queries';
-import { getUserTier } from '@/lib/auth/getUserTier';
 import { getServerAppUrl } from '@/lib/auth/url';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import { BlurredResultsSection } from '@/components/paywall/PaywallBanner';
@@ -149,7 +148,7 @@ export const revalidate = 3600;
 export default async function SettorePage({ params, searchParams }: Props) {
     const { settore: slug } = await params;
 
-    const supabase = await createClient();
+    const supabase = createCachedPublicClient({ revalidate, tags: ['public:settore-detail'] });
     const settori = await getSettoriWithCount(supabase);
     const originalSettore = settori.find((item) => toUrlSlug(item.settore) === slug)?.settore;
 
@@ -184,8 +183,8 @@ export default async function SettorePage({ params, searchParams }: Props) {
         ente_slug: enteSlug || undefined,
     };
 
-    const tier = await getUserTier(supabase);
-    const resultsLimit = tier === 'anon' ? FREE_VISIBLE : LIMIT;
+    const tier = 'anon' as const;
+    const resultsLimit = FREE_VISIBLE;
 
     const [sectorData, baseSectorData, openSnapshot, closedSnapshot] = await Promise.all([
         getConcorsi(supabase, selectedFilters, page, resultsLimit),
@@ -198,7 +197,7 @@ export default async function SettorePage({ params, searchParams }: Props) {
     const count = sectorData.count ?? 0;
     const totalPages = Math.max(1, Math.ceil(count / LIMIT));
 
-    const isLocked = tier !== 'pro' && tier !== 'admin';
+    const isLocked = true;
     const showPaywall = isLocked && (page > 1 || count > FREE_VISIBLE);
     const visibleResults = showPaywall && page === 1 ? concorsi.slice(0, FREE_VISIBLE) : (showPaywall ? [] : concorsi);
     const lockedResults = showPaywall && page === 1 ? concorsi.slice(FREE_VISIBLE) : [];

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
+import { createCachedPublicClient } from '@/lib/supabase/server';
 import { getRegioniWithCount } from '@/lib/supabase/queries';
 import { toUrlSlug } from '@/lib/utils/regioni';
 
@@ -42,7 +42,7 @@ function getRegionFlagPath(regione: string): string | null {
 }
 
 export default async function RegioneIndexPage() {
-    const supabase = await createClient();
+    const supabase = createCachedPublicClient({ revalidate, tags: ['public:regione-index'] });
     const regioni = await getRegioniWithCount(supabase);
 
     return (

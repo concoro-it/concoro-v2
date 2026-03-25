@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChevronRight, Calendar, Tag } from 'lucide-react';
-import { createClient, createStaticClient } from '@/lib/supabase/server';
+import { createCachedPublicClient, createStaticClient } from '@/lib/supabase/server';
 import { getArticoloBySlug } from '@/lib/supabase/queries';
 import { formatDateIT } from '@/lib/utils/date';
 
@@ -37,7 +37,7 @@ export const revalidate = 3600; // revalidate every hour
 export default async function BlogPage({ params }: Props) {
     const { slug } = await params;
 
-    const supabase = await createClient();
+    const supabase = createCachedPublicClient({ revalidate, tags: ['public:blog-detail'] });
     const articolo = await getArticoloBySlug(supabase, slug);
 
     if (!articolo) {
