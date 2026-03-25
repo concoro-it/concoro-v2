@@ -35,11 +35,15 @@ const baseMetadata: Metadata = {
 };
 
 export function generateMetadata(): Metadata {
+    const sentryTraceData = Object.fromEntries(
+        Object.entries(Sentry.getTraceData()).filter(([, value]) => value !== undefined)
+    ) as Record<string, string | number | Array<string | number>>;
+
     return {
         ...baseMetadata,
         other: {
             ...(baseMetadata.other ?? {}),
-            ...Sentry.getTraceData(),
+            ...sentryTraceData,
         },
     };
 }
