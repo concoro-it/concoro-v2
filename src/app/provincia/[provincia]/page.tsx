@@ -193,13 +193,50 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
             .limit(80),
     ]);
 
-    const concorsi = provinciaData.data ?? [];
+    const nowTs = Date.now();
+    const concorsiRaw = provinciaData.data ?? [];
+    const concorsi = stato === 'tutti'
+        ? [...concorsiRaw].sort((a, b) => {
+            const aTs = a.data_scadenza ? Date.parse(a.data_scadenza) : Number.NaN;
+            const bTs = b.data_scadenza ? Date.parse(b.data_scadenza) : Number.NaN;
+            const aOpen = Number.isFinite(aTs) ? aTs >= nowTs : Boolean(a.is_active);
+            const bOpen = Number.isFinite(bTs) ? bTs >= nowTs : Boolean(b.is_active);
+            if (aOpen !== bOpen) return aOpen ? -1 : 1;
+            if (sort === 'recenti') {
+                const aPub = a.data_pubblicazione ? Date.parse(a.data_pubblicazione) : Number.NaN;
+                const bPub = b.data_pubblicazione ? Date.parse(b.data_pubblicazione) : Number.NaN;
+                if (Number.isFinite(aPub) && Number.isFinite(bPub)) return bPub - aPub;
+                if (Number.isFinite(aPub)) return -1;
+                if (Number.isFinite(bPub)) return 1;
+                return 0;
+            }
+            if (sort === 'posti') return (b.num_posti ?? -1) - (a.num_posti ?? -1);
+            if (Number.isFinite(aTs) && Number.isFinite(bTs)) return aOpen ? (aTs - bTs) : (bTs - aTs);
+            if (Number.isFinite(aTs)) return -1;
+            if (Number.isFinite(bTs)) return 1;
+            return 0;
+        })
+        : concorsiRaw;
     const count = provinciaData.count ?? 0;
     const totalPages = Math.max(1, Math.ceil(count / LIMIT));
     const isLocked = true;
     const showPaywall = isLocked && (page > 1 || count > FREE_VISIBLE);
-    const visibleResults = showPaywall && page === 1 ? concorsi.slice(0, FREE_VISIBLE) : (showPaywall ? [] : concorsi);
-    const lockedResults = showPaywall && page === 1 ? concorsi.slice(FREE_VISIBLE) : [];
+    const isOpenConcorso = (item: typeof concorsi[number]) => {
+        if (!item.data_scadenza) return Boolean(item.is_active);
+        const deadline = Date.parse(item.data_scadenza);
+        if (!Number.isFinite(deadline)) return Boolean(item.is_active);
+        return deadline >= nowTs;
+    };
+    const openConcorsi = concorsi.filter(isOpenConcorso);
+    const visibleResults = showPaywall
+        ? (page === 1
+            ? (stato === 'tutti' ? openConcorsi.slice(0, FREE_VISIBLE) : concorsi.slice(0, FREE_VISIBLE))
+            : [])
+        : concorsi;
+    const visibleIds = new Set(visibleResults.map((item) => item.concorso_id).filter(Boolean));
+    const lockedResults = showPaywall && page === 1
+        ? concorsi.filter((item) => !visibleIds.has(item.concorso_id))
+        : [];
 
     const facetSource = baseProvinciaData.data ?? [];
     const settoreCounts = new Map<string, number>();
@@ -586,7 +623,7 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
                         <div className="mt-8">
                             <BlurredResultsSection
                                 concorsi={tier === 'anon' ? [] : (lockedResults.length > 0 ? lockedResults : concorsi.slice(0, 3))}
-                                lockedCount={Math.max(0, count - (page === 1 ? FREE_VISIBLE : 0))}
+                                lockedCount={page === 1 ? Math.max(0, count - visibleResults.length) : count}
                                 isLoggedIn={tier !== 'anon'}
                                 useMockResults={tier === 'anon'}
                             />

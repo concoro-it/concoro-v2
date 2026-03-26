@@ -94,6 +94,115 @@ interface ContactField {
     value: string;
 }
 
+interface SectionPaywallCardProps {
+    title: string;
+    description: string;
+    primaryCtaHref: string;
+    secondaryCtaHref: string;
+    variant?: 'list' | 'metric' | 'legal';
+    showTitle?: boolean;
+}
+
+function SectionPaywallCard({
+    title,
+    description,
+    primaryCtaHref,
+    secondaryCtaHref,
+    variant = 'list',
+    showTitle = true
+}: SectionPaywallCardProps) {
+    if (variant === 'metric') {
+        return (
+            <div className="relative mt-3 overflow-hidden rounded-xl border border-slate-300 bg-white p-4">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_10%,rgba(14,116,144,0.12),transparent_45%),radial-gradient(circle_at_20%_80%,rgba(51,65,85,0.10),transparent_40%)]" />
+                <div className="relative">
+                    {showTitle && <p className="text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-500">{title}</p>}
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                        <div className="rounded-lg border border-slate-200 bg-slate-100 p-2">
+                            <div className="h-2 w-8 rounded-full bg-slate-300 blur-[1px]" />
+                            <div className="mt-2 h-4 w-12 rounded-md bg-slate-300 blur-[1px]" />
+                        </div>
+                        <div className="rounded-lg border border-slate-200 bg-slate-100 p-2">
+                            <div className="h-2 w-7 rounded-full bg-slate-300 blur-[1px]" />
+                            <div className="mt-2 h-4 w-10 rounded-md bg-slate-300 blur-[1px]" />
+                        </div>
+                        <div className="rounded-lg border border-slate-200 bg-slate-100 p-2">
+                            <div className="h-2 w-9 rounded-full bg-slate-300 blur-[1px]" />
+                            <div className="mt-2 h-4 w-11 rounded-md bg-slate-300 blur-[1px]" />
+                        </div>
+                    </div>
+                    <p className="mt-3 text-xs text-slate-600">{description}</p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <Link
+                            href={primaryCtaHref}
+                            className="inline-flex items-center rounded-lg border border-cyan-700 bg-cyan-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-cyan-700"
+                        >
+                            Sblocca analisi gratis
+                        </Link>
+                        <Link href={secondaryCtaHref} className="text-xs font-semibold text-cyan-800 underline decoration-cyan-300 underline-offset-2">
+                            Accedi
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (variant === 'legal') {
+        return (
+            <div className="relative mt-3 overflow-hidden rounded-xl border border-slate-300 bg-white p-4">
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(248,250,252,0.96)_0%,rgba(226,232,240,0.86)_100%)]" />
+                <div className="relative">
+                    {showTitle && <p className="text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-500">{title}</p>}
+                    <div className="mt-3 space-y-2">
+                        <div className="h-6 w-40 rounded-full border border-slate-300 bg-slate-200/90 blur-[2.5px]" />
+                        <div className="h-6 w-36 rounded-full border border-slate-300 bg-slate-200/90 blur-[2.5px]" />
+                        <div className="h-6 w-28 rounded-full border border-slate-300 bg-slate-200/90 blur-[2.5px]" />
+                    </div>
+                    <p className="mt-3 text-xs text-slate-600">{description}</p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <Link
+                            href={primaryCtaHref}
+                            className="inline-flex items-center rounded-lg border border-slate-600 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800"
+                        >
+                            Vedi riferimenti completi
+                        </Link>
+                        <Link href={secondaryCtaHref} className="text-xs font-semibold text-slate-700 underline decoration-slate-300 underline-offset-2">
+                            Accedi
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="relative mt-4 overflow-hidden rounded-xl border border-slate-300/90 bg-white/85 p-4">
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,rgba(226,232,240,0.75)_0%,rgba(148,163,184,0.25)_35%,rgba(226,232,240,0.75)_65%,rgba(248,250,252,0.9)_100%)]" />
+            <div className="relative">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-500">{title}</p>
+                <div className="mt-3 space-y-2">
+                    <div className="h-3 w-11/12 rounded-full bg-slate-300/85 blur-[1px]" />
+                    <div className="h-3 w-10/12 rounded-full bg-slate-300/85 blur-[1px]" />
+                    <div className="h-3 w-8/12 rounded-full bg-slate-300/85 blur-[1px]" />
+                </div>
+                <p className="mt-3 text-xs text-slate-600">{description}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Link
+                        href={primaryCtaHref}
+                        className="inline-flex items-center rounded-lg border border-slate-500 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800"
+                    >
+                        Crea account gratis
+                    </Link>
+                    <Link href={secondaryCtaHref} className="text-xs font-semibold text-slate-700 underline decoration-slate-300 underline-offset-2">
+                        Accedi
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function parseContactFields(rawContacts: string | null | undefined): ContactField[] {
     if (!rawContacts) return [];
     const raw = rawContacts.trim();
@@ -274,25 +383,62 @@ export default async function ConcorsoDetailPage({ params }: Props) {
         || (Array.isArray(annuncioEnrichment.normativa_riferimento) && annuncioEnrichment.normativa_riferimento.length > 0);
 
     const uxHighlights = parseJson<{ the_hook?: unknown; critical_alert?: unknown }>(concorso.ux_highlights, {});
-    const hookItems = Array.isArray(uxHighlights.the_hook) ? uxHighlights.the_hook : [];
-    const alertItems = Array.isArray(uxHighlights.critical_alert) ? uxHighlights.critical_alert : [];
+    const hookItems = (Array.isArray(uxHighlights.the_hook) ? uxHighlights.the_hook : [])
+        .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        .map((item) => item.trim());
+    const alertItems = (Array.isArray(uxHighlights.critical_alert) ? uxHighlights.critical_alert : [])
+        .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        .map((item) => item.trim());
+
+    const paywallItemsLimit = 3;
+    const sintesiItemsLimit = 2;
+    const requisitiVisibleItems = isGuestUser ? requisiti.slice(0, paywallItemsLimit) : requisiti;
+    const capacitaVisibleItems = isGuestUser ? capacita.slice(0, paywallItemsLimit) : capacita;
+    const conoscenzeVisibleItems = isGuestUser ? conoscenze.slice(0, paywallItemsLimit) : conoscenze;
+    const hookVisibleItems = isGuestUser ? hookItems.slice(0, sintesiItemsLimit) : hookItems;
+    const alertVisibleItems = isGuestUser ? alertItems.slice(0, sintesiItemsLimit) : alertItems;
+    const hasHiddenHookItems = isGuestUser && hookItems.length > sintesiItemsLimit;
+    const hasHiddenAlertItems = isGuestUser && alertItems.length > sintesiItemsLimit;
+    const signupCtaHref = `/signup?source=concorso-detail-paywall&concorso=${encodeURIComponent(slug)}`;
+    const loginCtaHref = `/login?source=concorso-detail-paywall&concorso=${encodeURIComponent(slug)}`;
+
     const summaryItems: SintesiItem[] = [
-        ...hookItems
-            .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        ...hookVisibleItems
             .map((item, i) => ({
                 id: `hook-${i}`,
                 type: 'Punto di forza' as const,
-                description: item.trim(),
+                description: item,
                 colorClass: 'text-emerald-600 dark:text-emerald-400'
             })),
-        ...alertItems
-            .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        ...(hasHiddenHookItems ? [{
+            id: 'hook-paywall',
+            type: 'Punto di forza' as const,
+            description: '',
+            colorClass: 'text-slate-500',
+            locked: true,
+            primaryCtaLabel: 'Sblocca punti chiave',
+            primaryCtaHref: signupCtaHref,
+            secondaryCtaLabel: 'Accedi',
+            secondaryCtaHref: loginCtaHref
+        }] : []),
+        ...alertVisibleItems
             .map((item, i) => ({
                 id: `alert-${i}`,
                 type: 'Importante' as const,
-                description: item.trim(),
+                description: item,
                 colorClass: 'text-amber-600 dark:text-amber-400'
-            }))
+            })),
+        ...(hasHiddenAlertItems ? [{
+            id: 'alert-paywall',
+            type: 'Importante' as const,
+            description: '',
+            colorClass: 'text-slate-500',
+            locked: true,
+            primaryCtaLabel: 'Vedi avvisi completi',
+            primaryCtaHref: signupCtaHref,
+            secondaryCtaLabel: 'Accedi',
+            secondaryCtaHref: loginCtaHref
+        }] : [])
     ];
 
     const related = await getRelatedConcorsi(supabase, concorso.concorso_id, {
@@ -302,6 +448,11 @@ export default async function ConcorsoDetailPage({ params }: Props) {
         settori,
         limit: 4,
     });
+    const relatedActive = related
+        .filter(item => item.is_active !== false)
+        .filter(item => item.status !== 'CLOSED')
+        .filter(item => !isExpired(item.data_scadenza))
+        .slice(0, 4);
     let ente = concorso.ente_slug ? await getEnteBySlug(supabase, concorso.ente_slug) : null;
     if (!ente && concorso.ente_nome) {
         ente = await getEnteByName(supabase, concorso.ente_nome);
@@ -680,13 +831,22 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                     <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                                         <h2 className="text-lg font-semibold text-slate-900">Requisiti</h2>
                                         <ul className="mt-3 space-y-2">
-                                            {requisiti.map((r, i) => (
+                                            {requisitiVisibleItems.map((r, i) => (
                                                 <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
                                                     <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
                                                     <span>{r}</span>
                                                 </li>
                                             ))}
                                         </ul>
+                                        {isGuestUser && requisiti.length > paywallItemsLimit && (
+                                            <SectionPaywallCard
+                                                title="Requisiti aggiuntivi"
+                                                description="Sblocca tutti i requisiti per valutare in pochi secondi la tua idoneità reale."
+                                                primaryCtaHref={signupCtaHref}
+                                                secondaryCtaHref={loginCtaHref}
+                                                variant="list"
+                                            />
+                                        )}
                                     </section>
                                 )}
 
@@ -701,10 +861,19 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                     <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                                         <h2 className="text-lg font-semibold text-slate-900">Capacità richieste</h2>
                                         <div className="mt-3 flex flex-wrap gap-2">
-                                            {capacita.map((c, i) => (
+                                            {capacitaVisibleItems.map((c, i) => (
                                                 <span key={i} className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">{c}</span>
                                             ))}
                                         </div>
+                                        {isGuestUser && capacita.length > paywallItemsLimit && (
+                                            <SectionPaywallCard
+                                                title="Capacità aggiuntive"
+                                                description="Vedi tutte le competenze richieste e capisci subito dove hai più vantaggio."
+                                                primaryCtaHref={signupCtaHref}
+                                                secondaryCtaHref={loginCtaHref}
+                                                variant="list"
+                                            />
+                                        )}
                                     </section>
                                 )}
 
@@ -712,10 +881,19 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                     <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                                         <h2 className="text-lg font-semibold text-slate-900">Conoscenze tecnico-specialistiche</h2>
                                         <div className="mt-3 flex flex-wrap gap-2">
-                                            {conoscenze.map((c, i) => (
+                                            {conoscenzeVisibleItems.map((c, i) => (
                                                 <span key={i} className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">{c}</span>
                                             ))}
                                         </div>
+                                        {isGuestUser && conoscenze.length > paywallItemsLimit && (
+                                            <SectionPaywallCard
+                                                title="Conoscenze aggiuntive"
+                                                description="Accedi al quadro completo delle materie tecnico-specialistiche richieste dal bando."
+                                                primaryCtaHref={signupCtaHref}
+                                                secondaryCtaHref={loginCtaHref}
+                                                variant="list"
+                                            />
+                                        )}
                                     </section>
                                 )}
 
@@ -794,9 +972,20 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                             {(annuncioEnrichment.livello_concorrenza || annuncioEnrichment.smart_working_guess) && (
                                                 <div className="grid gap-4 p-4 md:grid-cols-2">
                                                     {annuncioEnrichment.livello_concorrenza && (
-                                                        <div>
+                                                        <div className={cn(isGuestUser ? 'md:col-span-2' : undefined)}>
                                                             <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Livello concorrenza</h3>
-                                                            <p className="mt-1 text-sm font-medium text-slate-900">{annuncioEnrichment.livello_concorrenza}</p>
+                                                            {isGuestUser ? (
+                                                                <SectionPaywallCard
+                                                                    title="Livello concorrenza"
+                                                                    description="Sblocca la stima di concorrenza per decidere con più precisione dove investire tempo."
+                                                                    primaryCtaHref={signupCtaHref}
+                                                                    secondaryCtaHref={loginCtaHref}
+                                                                    variant="metric"
+                                                                    showTitle={false}
+                                                                />
+                                                            ) : (
+                                                                <p className="mt-1 text-sm font-medium text-slate-900">{annuncioEnrichment.livello_concorrenza}</p>
+                                                            )}
                                                         </div>
                                                     )}
                                                     {annuncioEnrichment.smart_working_guess && (
@@ -816,13 +1005,24 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                             {annuncioEnrichment.normativa_riferimento && Array.isArray(annuncioEnrichment.normativa_riferimento) && (
                                                 <div className="p-4">
                                                     <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Riferimenti normativi</h3>
-                                                    <div className="mt-2 flex flex-wrap gap-2">
-                                                        {annuncioEnrichment.normativa_riferimento.map((item: string, i: number) => (
-                                                            <span key={i} className="rounded-full border border-slate-300 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                                                                {item}
-                                                            </span>
-                                                        ))}
-                                                    </div>
+                                                    {isGuestUser ? (
+                                                        <SectionPaywallCard
+                                                            title="Riferimenti normativi"
+                                                            description="Consulta i richiami normativi completi per prepararti con più sicurezza."
+                                                            primaryCtaHref={signupCtaHref}
+                                                            secondaryCtaHref={loginCtaHref}
+                                                            variant="legal"
+                                                            showTitle={false}
+                                                        />
+                                                    ) : (
+                                                        <div className="mt-2 flex flex-wrap gap-2">
+                                                            {annuncioEnrichment.normativa_riferimento.map((item: string, i: number) => (
+                                                                <span key={i} className="rounded-full border border-slate-300 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                                                                    {item}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -1107,11 +1307,11 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                             </section>
                         )}
 
-                        {!expired && related.length > 0 && (
+                        {relatedActive.length > 0 && (
                             <section className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
                                 <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl tracking-tight text-slate-900">Concorsi correlati</h2>
                                 <div className="mt-5">
-                                    <ConcorsoList concorsi={related} />
+                                    <ConcorsoList concorsi={relatedActive} />
                                 </div>
                             </section>
                         )}

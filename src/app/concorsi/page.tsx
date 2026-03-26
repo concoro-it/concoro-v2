@@ -116,6 +116,8 @@ export default async function ConcorsiPage({
 }) {
     const params = await searchParams;
     const page = parseInt(params.page ?? '1', 10);
+    const statoFilter = (params.stato as ConcorsoFilters['stato']) ?? 'aperti';
+    const sortFilter = (params.sort as ConcorsoFilters['sort']) ?? 'scadenza';
 
     const filters: ConcorsoFilters = {
         query: params.q,
@@ -126,16 +128,16 @@ export default async function ConcorsiPage({
         tipo_procedura: params.tipo_procedura,
         published_from: params.published_from,
         published_to: params.published_to,
-        sort: (params.sort as ConcorsoFilters['sort']) ?? 'scadenza',
-        stato: (params.stato as ConcorsoFilters['stato']) ?? 'aperti',
-        solo_attivi: true,
+        sort: sortFilter,
+        stato: statoFilter,
+        solo_attivi: statoFilter === 'aperti' ? true : undefined,
     };
 
     const supabase = createCachedPublicClient({ revalidate: 3600, tags: ['public:concorsi-index'] });
     const userId: string | undefined = undefined;
     const tier = 'anon' as const;
     const resultsLimit = FREE_VISIBLE;
-    const { data: concorsi, count } = await getConcorsi(supabase, filters, page, resultsLimit);
+    const { data: concorsiRaw, count } = await getConcorsi(supabase, filters, page, resultsLimit);
     const [profile, regioniWithCount, provinceWithCount, settoriWithCount] = await Promise.all([
         Promise.resolve(null),
         getRegioniWithCount(supabase),
@@ -146,6 +148,36 @@ export default async function ConcorsiPage({
 
     const isLocked = true;
     const showPaywall = isLocked && (page > 1 || (count ?? 0) > FREE_VISIBLE);
+    const nowTs = Date.now();
+    const concorsi = statoFilter === 'tutti'
+        ? [...(concorsiRaw ?? [])].sort((a, b) => {
+            const aTs = a.data_scadenza ? Date.parse(a.data_scadenza) : Number.NaN;
+            const bTs = b.data_scadenza ? Date.parse(b.data_scadenza) : Number.NaN;
+            const aOpen = Number.isFinite(aTs) ? aTs >= nowTs : Boolean(a.is_active);
+            const bOpen = Number.isFinite(bTs) ? bTs >= nowTs : Boolean(b.is_active);
+            if (aOpen !== bOpen) return aOpen ? -1 : 1;
+            if (sortFilter === 'recenti') {
+                const aPub = a.data_pubblicazione ? Date.parse(a.data_pubblicazione) : Number.NaN;
+                const bPub = b.data_pubblicazione ? Date.parse(b.data_pubblicazione) : Number.NaN;
+                if (Number.isFinite(aPub) && Number.isFinite(bPub)) return bPub - aPub;
+                if (Number.isFinite(aPub)) return -1;
+                if (Number.isFinite(bPub)) return 1;
+                return 0;
+            }
+            if (sortFilter === 'posti') return (b.num_posti ?? -1) - (a.num_posti ?? -1);
+            if (Number.isFinite(aTs) && Number.isFinite(bTs)) return aOpen ? (aTs - bTs) : (bTs - aTs);
+            if (Number.isFinite(aTs)) return -1;
+            if (Number.isFinite(bTs)) return 1;
+            return 0;
+        })
+        : (concorsiRaw ?? []);
+    const isOpenConcorso = (item: typeof concorsi[number]) => {
+        if (!item.data_scadenza) return Boolean(item.is_active);
+        const deadline = Date.parse(item.data_scadenza);
+        if (!Number.isFinite(deadline)) return Boolean(item.is_active);
+        return deadline >= nowTs;
+    };
+    const openConcorsi = concorsi.filter(isOpenConcorso);
 
     function buildPageUrl(p: number): string {
         const sp = new URLSearchParams({
@@ -164,12 +196,14 @@ export default async function ConcorsiPage({
         return `/concorsi?${sp.toString()}`;
     }
 
-    const visibleResults = showPaywall && page === 1
-        ? concorsi?.slice(0, FREE_VISIBLE) ?? []
-        : (showPaywall && page > 1 ? [] : concorsi ?? []);
-
+    const visibleResults = showPaywall
+        ? (page === 1
+            ? (statoFilter === 'tutti' ? openConcorsi.slice(0, FREE_VISIBLE) : concorsi.slice(0, FREE_VISIBLE))
+            : [])
+        : concorsi;
+    const visibleIds = new Set(visibleResults.map((item) => item.concorso_id).filter(Boolean));
     const lockedResults = showPaywall && page === 1
-        ? concorsi?.slice(FREE_VISIBLE) ?? []
+        ? concorsi.filter((item) => !visibleIds.has(item.concorso_id))
         : [];
 
     const topRegioni = [...regioniWithCount]
@@ -450,8 +484,8 @@ export default async function ConcorsiPage({
                 {showPaywall && (
                     <section className="rounded-3xl border border-slate-200 bg-white p-4 md:p-6">
                         <BlurredResultsSection
-                            concorsi={tier === 'anon' ? [] : (lockedResults.length > 0 ? lockedResults : (concorsi?.slice(0, 3) ?? []))}
-                            lockedCount={Math.max(0, (count ?? 0) - (page === 1 ? FREE_VISIBLE : 0))}
+                            concorsi={tier === 'anon' ? [] : (lockedResults.length > 0 ? lockedResults : concorsi.slice(0, 3))}
+                            lockedCount={page === 1 ? Math.max(0, (count ?? 0) - visibleResults.length) : (count ?? 0)}
                             isLoggedIn={tier !== 'anon'}
                             useMockResults={tier === 'anon'}
                         />

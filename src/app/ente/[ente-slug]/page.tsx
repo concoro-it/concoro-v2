@@ -20,6 +20,7 @@ import { formatDateIT } from '@/lib/utils/date';
 import { toUrlSlug } from '@/lib/utils/regioni';
 import { getServerAppUrl } from '@/lib/auth/url';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
+import { BlurredResultsSection } from '@/components/paywall/PaywallBanner';
 import type {
     EnteAnalisiLogistica,
     EnteCuriositaStoriche,
@@ -50,6 +51,7 @@ const PAGE_STEPS = [
         description: "Segui le nuove pubblicazioni di questo ente e resta aggiornato anche su provincia e regione senza rifare la ricerca ogni giorno.",
     },
 ];
+const FREE_VISIBLE = 5;
 
 function parseJson<T>(value: JsonValue | null | undefined, fallback: T): T {
     if (value === null || value === undefined) return fallback;
@@ -182,7 +184,33 @@ export default async function EntePage({ params }: Props) {
 
     if (!ente) notFound();
 
-    const concorsi = await getConcorsiByEnte(supabase, slug, 50);
+    const concorsiRaw = await getConcorsiByEnte(supabase, slug, 50);
+    const nowTs = Date.now();
+    const concorsi = [...concorsiRaw].sort((a, b) => {
+        const aTs = a.data_scadenza ? Date.parse(a.data_scadenza) : Number.NaN;
+        const bTs = b.data_scadenza ? Date.parse(b.data_scadenza) : Number.NaN;
+        const aOpen = Number.isFinite(aTs) ? aTs >= nowTs : Boolean(a.is_active);
+        const bOpen = Number.isFinite(bTs) ? bTs >= nowTs : Boolean(b.is_active);
+        if (aOpen !== bOpen) return aOpen ? -1 : 1;
+        if (Number.isFinite(aTs) && Number.isFinite(bTs)) return aOpen ? (aTs - bTs) : (bTs - aTs);
+        if (Number.isFinite(aTs)) return -1;
+        if (Number.isFinite(bTs)) return 1;
+        return 0;
+    });
+    const isOpenConcorso = (item: typeof concorsi[number]) => {
+        if (!item.data_scadenza) return Boolean(item.is_active);
+        const deadline = Date.parse(item.data_scadenza);
+        if (!Number.isFinite(deadline)) return Boolean(item.is_active);
+        return deadline >= nowTs;
+    };
+    const openConcorsi = concorsi.filter(isOpenConcorso);
+    const closedConcorsi = concorsi.filter((item) => !isOpenConcorso(item));
+    const openConcorsiCount = openConcorsi.length;
+    const tier = 'anon' as const;
+    const isLocked = true;
+    const visibleResults = openConcorsi.slice(0, FREE_VISIBLE);
+    const lockedResults = [...openConcorsi.slice(FREE_VISIBLE), ...closedConcorsi];
+    const showPaywall = isLocked && lockedResults.length > 0;
 
     const identita = parseJson<EnteIdentitaIstituzionale>(ente?.identita_istituzionale, {});
     const logistica = parseJson<EnteAnalisiLogistica>(ente?.analisi_logistica, {});
@@ -467,7 +495,7 @@ export default async function EntePage({ params }: Props) {
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                     <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Bandi attivi</p>
-                                    <p className="mt-1 text-2xl font-semibold text-slate-900">{concorsi.length}</p>
+                                    <p className="mt-1 text-2xl font-semibold text-slate-900">{openConcorsiCount}</p>
                                 </div>
                                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                     <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Qualita vita</p>
@@ -579,8 +607,8 @@ export default async function EntePage({ params }: Props) {
                             </h2>
                             <p className="mt-2 text-sm text-slate-600">
                                 {concorsi.length > 0
-                                    ? `Al momento risultano ${concorsi.length} bandi attivi pubblicati da questo ente.`
-                                    : 'Al momento non risultano bandi attivi per questo ente.'}
+                                    ? `Al momento risultano ${concorsi.length} bandi nel dataset di questo ente.`
+                                    : 'Al momento non risultano bandi per questo ente.'}
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -603,7 +631,19 @@ export default async function EntePage({ params }: Props) {
                         </div>
                     </div>
                     {concorsi.length > 0 ? (
-                        <ConcorsoList concorsi={concorsi} />
+                        <>
+                            <ConcorsoList concorsi={visibleResults} />
+                            {showPaywall && (
+                                <div className="mt-8">
+                                    <BlurredResultsSection
+                                        concorsi={tier === 'anon' ? [] : (lockedResults.length > 0 ? lockedResults : concorsi.slice(0, 3))}
+                                        lockedCount={lockedResults.length}
+                                        isLoggedIn={tier !== 'anon'}
+                                        useMockResults={tier === 'anon'}
+                                    />
+                                </div>
+                            )}
+                        </>
                     ) : (
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-sm leading-relaxed text-slate-700">
                             Nessun bando attivo in questo momento. Per non perdere le prossime uscite, controlla anche regione e provincia oppure attiva le notifiche dedicate a questo ente.
