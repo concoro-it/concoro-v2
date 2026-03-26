@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { deleteSavedSearch } from '@/lib/supabase/queries';
 import { revalidatePath } from 'next/cache';
 
-export async function deleteSearchAction(searchId: string, formData?: FormData): Promise<void> {
+export async function deleteSearchAction(searchId: string): Promise<void> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 

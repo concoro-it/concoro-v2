@@ -5,6 +5,30 @@ import { getServerAppUrl } from '@/lib/auth/url';
 import { createClient } from '@/lib/supabase/server';
 import Stripe from 'stripe';
 
+function hasManageableSubscriptionStatus(status: Stripe.Subscription.Status): boolean {
+    return status === 'active' || status === 'trialing' || status === 'past_due' || status === 'unpaid';
+}
+
+async function recoverStripeCustomerIdByEmail(email: string): Promise<string | null> {
+    if (!stripe) return null;
+
+    const customers = await stripe.customers.list({ email, limit: 10 });
+    if (customers.data.length === 0) return null;
+
+    for (const customer of customers.data) {
+        const subscriptions = await stripe.subscriptions.list({
+            customer: customer.id,
+            status: 'all',
+            limit: 5,
+        });
+        if (subscriptions.data.some((subscription) => hasManageableSubscriptionStatus(subscription.status))) {
+            return customer.id;
+        }
+    }
+
+    return customers.data[0]?.id ?? null;
+}
+
 export async function POST(req: Request) {
     try {
         if (!stripe) {
@@ -29,11 +53,28 @@ export async function POST(req: Request) {
 
         const host = getServerAppUrl();
         const priceId = getProPriceId(billingCycle);
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('stripe_customer_id')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        let customerId = profile?.stripe_customer_id ?? null;
+        if (!customerId && user.email) {
+            customerId = await recoverStripeCustomerIdByEmail(user.email);
+            if (customerId) {
+                await supabase
+                    .from('profiles')
+                    .update({ stripe_customer_id: customerId })
+                    .eq('id', user.id);
+            }
+        }
 
         const checkoutSession = await stripe.checkout.sessions.create({
             mode: 'subscription',
             payment_method_types: ['card'],
             client_reference_id: user.id,
+            ...(customerId ? { customer: customerId } : (user.email ? { customer_email: user.email } : {})),
             line_items: [
                 {
                     price: priceId,

@@ -91,7 +91,7 @@ export default async function AssistenzaPage() {
               </li>
               <li className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
                 <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#0A4E88]" />
-                <span>Riceverai aggiornamenti e risposta direttamente all\'email indicata.</span>
+                <span>Riceverai aggiornamenti e risposta direttamente all&apos;email indicata.</span>
               </li>
             </ul>
           </div>

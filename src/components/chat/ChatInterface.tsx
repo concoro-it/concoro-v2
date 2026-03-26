@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { useChat } from 'ai/react';
+import type { Message } from 'ai';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, CornerDownLeft, MessageSquare, Loader2 } from 'lucide-react';
+import { Send, MessageSquare, Loader2 } from 'lucide-react';
 import { ChatMessage } from './ChatMessage';
 import { cn } from '@/lib/utils/cn';
 
@@ -63,7 +64,7 @@ export function ChatInterface({ className, concorsoId }: ChatInterfaceProps) {
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-8 scroll-smooth">
-                {messages.map((message: any) => (
+                {messages.map((message: Message) => (
                     <ChatMessage
                         key={message.id}
                         role={message.role as 'user' | 'assistant'}

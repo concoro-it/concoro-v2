@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { ArrowRight, BriefcaseBusiness, CalendarClock, CheckCircle2, Crown, Flame, Lock, MapPin, Sparkles, Zap } from 'lucide-react';
 import { PLANS } from '@/lib/stripe/prices';
+import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
+import type { Concorso } from '@/types/concorso';
 
 interface Props {
     lockedCount: number;
@@ -108,7 +110,7 @@ export function PaywallBanner({ lockedCount, isLoggedIn }: Props) {
 }
 
 export function BlurredResultsSection({ concorsi, lockedCount, isLoggedIn, useMockResults }: {
-    concorsi: any[]; // Using any to avoid complex circular dependencies for now, or import properly
+    concorsi: Concorso[];
     lockedCount: number;
     isLoggedIn: boolean;
     useMockResults?: boolean;
@@ -128,10 +130,6 @@ export function BlurredResultsSection({ concorsi, lockedCount, isLoggedIn, useMo
         },
     ];
     const shouldUseMockResults = Boolean(useMockResults) || concorsi.length === 0;
-    let ConcorsoList: ((props: { concorsi: any[] }) => JSX.Element) | null = null;
-    if (!shouldUseMockResults) {
-        ConcorsoList = require('@/components/concorsi/ConcorsoList').ConcorsoList;
-    }
 
     return (
         <div className="relative mt-8 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-sky-50 via-white to-primary/10 p-4 sm:p-7">
@@ -171,7 +169,7 @@ export function BlurredResultsSection({ concorsi, lockedCount, isLoggedIn, useMo
                     </div>
                 ) : (
                     <div className="-mx-4 -mb-4 p-4 pt-0 sm:-mx-7 sm:-mb-7 sm:p-7 sm:pt-1">
-                        {ConcorsoList ? <ConcorsoList concorsi={concorsi.slice(0, 3)} /> : null}
+                        <ConcorsoList concorsi={concorsi.slice(0, 3)} />
                     </div>
                 )}
             </div>

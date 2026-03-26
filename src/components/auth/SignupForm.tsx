@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, Loader2, Check } from 'lucide-react';
 import { getClientOAuthRedirectUrl } from '@/lib/auth/url';
@@ -15,7 +14,6 @@ export function SignupForm() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
-    const router = useRouter();
     const supabase = createClient();
 
     async function handleSubmit(e: React.FormEvent) {

@@ -8,7 +8,8 @@ export const metadata: Metadata = {
     description: 'Tutti i concorsi pubblici che scadono oggi. Non perdere le ultime opportunità.',
 };
 const FREE_VISIBLE = 5;
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function ScadenzaOggiPage() {
     const supabase = createCachedPublicClient({ revalidate, tags: ['public:scadenza-oggi'] });

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Image from 'next/image';
 import { createCachedPublicClient, createStaticClient } from '@/lib/supabase/server';
 import { getConcorsoBySlug, getRelatedConcorsi, getAllConcorsiSlugs, getEnteBySlug, getEnteByName } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
@@ -12,7 +13,7 @@ import {
 } from '@/lib/utils/concorso';
 import { formatDateIT, isExpired } from '@/lib/utils/date';
 import {
-    MapPin, CalendarDays, Users, Building2, FileText, ExternalLink,
+    MapPin, CalendarDays, Building2, FileText, ExternalLink,
     AlertTriangle, CheckCircle, ChevronRight, Download, Globe, Phone, Landmark, Train, BriefcaseBusiness, ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
@@ -34,6 +35,15 @@ import { getServerAppUrl } from '@/lib/auth/url';
 
 interface Props {
     params: Promise<{ slug: string }>;
+}
+
+interface AnnuncioEnrichment {
+    ccnl_focus?: string;
+    graduatoria_insight?: string;
+    livello_concorrenza?: string;
+    smart_working_guess?: string;
+    normativa_summary?: string;
+    normativa_riferimento?: string[];
 }
 
 function parseJson<T>(value: JsonValue | null | undefined, fallback: T): T {
@@ -254,6 +264,15 @@ export default async function ConcorsoDetailPage({ params }: Props) {
         ? urgencyLabel.replace(/^Scade (tra|in)\s+/i, '')
         : null;
 
+    const annuncioEnrichment = parseJson<AnnuncioEnrichment>(concorso.annuncio_enrichment, {});
+    const hasAnnuncioEnrichment =
+        Boolean(annuncioEnrichment.ccnl_focus)
+        || Boolean(annuncioEnrichment.graduatoria_insight)
+        || Boolean(annuncioEnrichment.livello_concorrenza)
+        || Boolean(annuncioEnrichment.smart_working_guess)
+        || Boolean(annuncioEnrichment.normativa_summary)
+        || (Array.isArray(annuncioEnrichment.normativa_riferimento) && annuncioEnrichment.normativa_riferimento.length > 0);
+
     const uxHighlights = parseJson<{ the_hook?: unknown; critical_alert?: unknown }>(concorso.ux_highlights, {});
     const hookItems = Array.isArray(uxHighlights.the_hook) ? uxHighlights.the_hook : [];
     const alertItems = Array.isArray(uxHighlights.critical_alert) ? uxHighlights.critical_alert : [];
@@ -395,7 +414,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
         || conoscenze.length > 0
         || hasContactFields
         || linkAllegati.length > 0
-        || concorso.annuncio_enrichment
+        || hasAnnuncioEnrichment
     );
 
     return (
@@ -454,7 +473,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
 
                             <div className="flex flex-wrap items-center gap-2">
                                 {concorso.favicon_url
-                                    ? <img src={concorso.favicon_url} alt="" className="h-7 w-7 rounded object-contain" />
+                                    ? <Image src={concorso.favicon_url} alt="" width={28} height={28} unoptimized className="h-7 w-7 rounded object-contain" />
                                     : <Building2 className="h-5 w-5 text-slate-500" />
                                 }
                             {concorso.ente_slug
@@ -572,9 +591,12 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                             className="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 transition hover:border-slate-300 hover:bg-slate-100"
                                         >
                                             {enteHeroImage ? (
-                                                <img
+                                                <Image
                                                     src={enteHeroImage}
                                                     alt={`${concorso.ente_nome ?? 'Ente'} immagine`}
+                                                    width={80}
+                                                    height={56}
+                                                    unoptimized
                                                     className="h-14 w-20 rounded-lg object-cover"
                                                 />
                                             ) : (
@@ -594,9 +616,12 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                     ) : (
                                         <div className="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
                                             {enteHeroImage ? (
-                                                <img
+                                                <Image
                                                     src={enteHeroImage}
                                                     alt={`${concorso.ente_nome ?? 'Ente'} immagine`}
+                                                    width={80}
+                                                    height={56}
+                                                    unoptimized
                                                     className="h-14 w-20 rounded-lg object-cover"
                                                 />
                                             ) : (
@@ -750,49 +775,49 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                     </section>
                                 )}
 
-                                {concorso.annuncio_enrichment && (
+                                {hasAnnuncioEnrichment && (
                                     <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                                         <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-2xl tracking-tight text-slate-900">Analisi approfondita</h2>
                                         <div className="mt-4 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white">
-                                            {concorso.annuncio_enrichment.ccnl_focus && (
+                                            {annuncioEnrichment.ccnl_focus && (
                                                 <div className="p-4">
                                                     <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Inquadramento contrattuale</h3>
-                                                    <p className="mt-1 text-sm leading-relaxed text-slate-700">{concorso.annuncio_enrichment.ccnl_focus}</p>
+                                                    <p className="mt-1 text-sm leading-relaxed text-slate-700">{annuncioEnrichment.ccnl_focus}</p>
                                                 </div>
                                             )}
-                                            {concorso.annuncio_enrichment.graduatoria_insight && (
+                                            {annuncioEnrichment.graduatoria_insight && (
                                                 <div className="p-4">
                                                     <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Suggerimenti sulla graduatoria</h3>
-                                                    <p className="mt-1 text-sm leading-relaxed text-slate-700">{concorso.annuncio_enrichment.graduatoria_insight}</p>
+                                                    <p className="mt-1 text-sm leading-relaxed text-slate-700">{annuncioEnrichment.graduatoria_insight}</p>
                                                 </div>
                                             )}
-                                            {(concorso.annuncio_enrichment.livello_concorrenza || concorso.annuncio_enrichment.smart_working_guess) && (
+                                            {(annuncioEnrichment.livello_concorrenza || annuncioEnrichment.smart_working_guess) && (
                                                 <div className="grid gap-4 p-4 md:grid-cols-2">
-                                                    {concorso.annuncio_enrichment.livello_concorrenza && (
+                                                    {annuncioEnrichment.livello_concorrenza && (
                                                         <div>
                                                             <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Livello concorrenza</h3>
-                                                            <p className="mt-1 text-sm font-medium text-slate-900">{concorso.annuncio_enrichment.livello_concorrenza}</p>
+                                                            <p className="mt-1 text-sm font-medium text-slate-900">{annuncioEnrichment.livello_concorrenza}</p>
                                                         </div>
                                                     )}
-                                                    {concorso.annuncio_enrichment.smart_working_guess && (
+                                                    {annuncioEnrichment.smart_working_guess && (
                                                         <div>
                                                             <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Smart working</h3>
-                                                            <p className="mt-1 text-sm font-medium text-slate-900">{concorso.annuncio_enrichment.smart_working_guess}</p>
+                                                            <p className="mt-1 text-sm font-medium text-slate-900">{annuncioEnrichment.smart_working_guess}</p>
                                                         </div>
                                                     )}
                                                 </div>
                                             )}
-                                            {concorso.annuncio_enrichment.normativa_summary && (
+                                            {annuncioEnrichment.normativa_summary && (
                                                 <div className="p-4">
                                                     <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Sintesi normativa</h3>
-                                                    <p className="mt-1 text-sm leading-relaxed text-slate-700">{concorso.annuncio_enrichment.normativa_summary}</p>
+                                                    <p className="mt-1 text-sm leading-relaxed text-slate-700">{annuncioEnrichment.normativa_summary}</p>
                                                 </div>
                                             )}
-                                            {concorso.annuncio_enrichment.normativa_riferimento && Array.isArray(concorso.annuncio_enrichment.normativa_riferimento) && (
+                                            {annuncioEnrichment.normativa_riferimento && Array.isArray(annuncioEnrichment.normativa_riferimento) && (
                                                 <div className="p-4">
                                                     <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Riferimenti normativi</h3>
                                                     <div className="mt-2 flex flex-wrap gap-2">
-                                                        {concorso.annuncio_enrichment.normativa_riferimento.map((item: string, i: number) => (
+                                                        {annuncioEnrichment.normativa_riferimento.map((item: string, i: number) => (
                                                             <span key={i} className="rounded-full border border-slate-300 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
                                                                 {item}
                                                             </span>
@@ -939,9 +964,12 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                                     className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 transition hover:border-slate-300 hover:bg-slate-100"
                                                 >
                                                     {enteHeroImage ? (
-                                                        <img
+                                                        <Image
                                                             src={enteHeroImage}
                                                             alt={`${concorso.ente_nome ?? 'Ente'} immagine`}
+                                                            width={80}
+                                                            height={56}
+                                                            unoptimized
                                                             className="h-14 w-20 rounded-lg object-cover"
                                                         />
                                                     ) : (
@@ -961,9 +989,12 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                             ) : (
                                                 <div className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
                                                     {enteHeroImage ? (
-                                                        <img
+                                                        <Image
                                                             src={enteHeroImage}
                                                             alt={`${concorso.ente_nome ?? 'Ente'} immagine`}
+                                                            width={80}
+                                                            height={56}
+                                                            unoptimized
                                                             className="h-14 w-20 rounded-lg object-cover"
                                                         />
                                                     ) : (

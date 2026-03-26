@@ -1,7 +1,16 @@
 import Script from 'next/script';
 
+type JsonLdValue =
+    | string
+    | number
+    | boolean
+    | null
+    | undefined
+    | JsonLdValue[]
+    | { [key: string]: JsonLdValue };
+
 export interface JsonLdProps {
-    data: Record<string, any>;
+    data: Record<string, JsonLdValue>;
 }
 
 export function JsonLd({ data }: JsonLdProps) {
@@ -10,7 +19,7 @@ export function JsonLd({ data }: JsonLdProps) {
             id="json-ld"
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
-            strategy="beforeInteractive"
+            strategy="afterInteractive"
         />
     );
 }
@@ -40,7 +49,17 @@ export const getBreadcrumbSchema = (items: { name: string; item: string }[]) => 
     })),
 });
 
-export const getJobPostingSchema = (concorso: any) => ({
+export const getJobPostingSchema = (concorso: {
+    titolo_breve?: string | null;
+    titolo?: string | null;
+    descrizione?: string | null;
+    data_pubblicazione?: string | null;
+    data_scadenza?: string | null;
+    ente_nome?: string | null;
+    link_sito_pa?: string | null;
+    favicon_url?: string | null;
+    regioni?: unknown;
+}) => ({
     '@context': 'https://schema.org',
     '@type': 'JobPosting',
     title: concorso.titolo_breve || concorso.titolo,

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import * as Avatar from '@radix-ui/react-avatar';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { News, type NewsArticle } from '@/components/ui/sidebar-news';
@@ -243,13 +244,15 @@ export function Sidebar({ userProfile }: { userProfile: SidebarUserProfile | nul
                     )}
                 >
                     {isCollapsed ? (
-                        <img
+                        <Image
                             src="/fav.png"
                             alt="Concoro"
+                            width={36}
+                            height={36}
                             className="h-9 w-9 rounded-xl border border-border/60 bg-white p-1 shadow-sm"
                         />
                     ) : (
-                        <img src="/concoro-logo-light.png" alt="Concoro" className="h-7 w-auto opacity-90" />
+                        <Image src="/concoro-logo-light.png" alt="Concoro" width={120} height={28} className="h-7 w-auto opacity-90" />
                     )}
                     <SidebarTooltip enabled={isCollapsed} content="Sidebar ac">
                         <button

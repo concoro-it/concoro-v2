@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import {
     Bell,
@@ -379,9 +380,12 @@ export default async function EntePage({ params }: Props) {
                         </div>
 
                         {ente?.logo_url && (
-                            <img
+                            <Image
                                 src={ente.logo_url}
                                 alt={`Logo ${ente.ente_nome}`}
+                                width={64}
+                                height={64}
+                                unoptimized
                                 className="h-16 w-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.5)]"
                             />
                         )}
@@ -433,9 +437,12 @@ export default async function EntePage({ params }: Props) {
                             </h2>
                             <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-[linear-gradient(140deg,#f2f7ff_0%,#e9f2ff_50%,#deedff_100%)] p-3">
                                 {ente?.cover_image_url ? (
-                                    <img
+                                    <Image
                                         src={ente.cover_image_url}
                                         alt={`${ente.ente_nome} sede`}
+                                        width={640}
+                                        height={192}
+                                        unoptimized
                                         className="h-24 w-full rounded-xl object-cover"
                                     />
                                 ) : (
@@ -446,9 +453,12 @@ export default async function EntePage({ params }: Props) {
                                 <div className="mt-3 flex items-center justify-between gap-3">
                                     <p className="line-clamp-1 text-sm font-semibold text-slate-900">{ente.ente_nome}</p>
                                     {ente?.logo_url && (
-                                        <img
+                                        <Image
                                             src={ente.logo_url}
                                             alt={`Logo ${ente.ente_nome}`}
+                                            width={32}
+                                            height={32}
+                                            unoptimized
                                             className="h-8 w-8 rounded-lg border border-slate-200 bg-white p-1 object-contain"
                                         />
                                     )}

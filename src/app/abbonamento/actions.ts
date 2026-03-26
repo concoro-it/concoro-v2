@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe/client';
 import { redirect } from 'next/navigation';
 import { getServerAppUrl } from '@/lib/auth/url';
+import type Stripe from 'stripe';
 
 const APP_URL = getServerAppUrl();
 
@@ -63,7 +64,7 @@ export async function createCheckoutSession() {
         .eq('id', user.id)
         .single();
 
-    const sessionObj: any = {
+    const sessionObj: Stripe.Checkout.SessionCreateParams = {
         mode: 'subscription',
         payment_method_types: ['card', 'paypal'],
         line_items: [

@@ -48,8 +48,8 @@ export interface Concorso {
     capacita_richieste: string | null;
     collocazione_organizzativa: string | null;
     conoscenze_tecnico_specialistiche: string | null;
-    annuncio_enrichment: any;
-    ux_highlights: any;
+    annuncio_enrichment: import('@/types/ente').JsonValue | null;
+    ux_highlights: import('@/types/ente').JsonValue | null;
     is_active: boolean | null;
     created_at: string | null;
     updated_at: string | null;

@@ -304,7 +304,7 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
                                         className="w-full rounded-xl border border-slate-200 bg-slate-100 py-2.5 pl-9 pr-3 text-sm text-slate-600"
                                     />
                                 </div>
-                                <p className="text-xs text-slate-500">L\'email di login viene gestita da autenticazione account.</p>
+                                <p className="text-xs text-slate-500">L&apos;email di login viene gestita da autenticazione account.</p>
                             </label>
 
                             <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -501,7 +501,7 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
                             <p className="text-[0.7rem] font-semibold uppercase tracking-[0.11em] text-[#0A4E88]">Consiglio operativo</p>
                             <h3 className="mt-2 text-lg font-semibold tracking-tight text-slate-900">Massimizza il matching</h3>
                             <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                                Aggiorna almeno regione, settore e profilo professionale: sono i segnali piu utili per ranking e suggerimenti nell\'hub.
+                                Aggiorna almeno regione, settore e profilo professionale: sono i segnali piu utili per ranking e suggerimenti nell&apos;hub.
                             </p>
                             <div className="mt-4 space-y-2 text-sm text-slate-700">
                                 <p className="flex items-center gap-2"><Clock3 className="h-4 w-4 text-[#0A4E88]" /> Tempo medio aggiornamento: 2 minuti</p>

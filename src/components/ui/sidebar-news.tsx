@@ -187,10 +187,6 @@ function NewsCard({
     document.removeEventListener("pointercancel", onDragCancel);
   };
 
-  React.useEffect(() => {
-    return () => unbindListeners();
-  }, []);
-
   const onPointerDown = (e: React.PointerEvent) => {
     if (!active || !ref.current || animation.current?.playState === "running") return;
 

@@ -5,6 +5,16 @@ import type { Profile } from '@/types/profile';
 import type { Articolo } from '@/types/articolo';
 import { toUrlSlug } from '@/lib/utils/regioni';
 
+type NamedEntity = { denominazione?: string; nome?: string };
+type RegionePayload = { regione?: NamedEntity; denominazione?: string; nome?: string };
+type ProvinciaPayload = {
+    provincia?: { denominazione?: string; sigla?: string; codice?: string };
+    denominazione?: string;
+    sigla?: string;
+    codice?: string;
+    regione?: { denominazione?: string } | string | null;
+};
+
 const CONCORSI_COLS = `
   concorso_id, status, status_label, slug, titolo, titolo_breve,
   num_posti, tipo_procedura, is_remote, data_pubblicazione, data_scadenza,
@@ -264,11 +274,13 @@ export async function getRegioniWithCount(supabase: SupabaseClient): Promise<Arr
 
         for (const raw of arr) {
             try {
-                const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                const parsed: RegionePayload = typeof raw === 'string'
+                    ? JSON.parse(raw) as RegionePayload
+                    : raw as RegionePayload;
                 const name =
-                    (parsed as any)?.regione?.denominazione ||
-                    (parsed as any)?.denominazione ||
-                    (parsed as any)?.nome;
+                    parsed.regione?.denominazione ||
+                    parsed.denominazione ||
+                    parsed.nome;
 
                 if (typeof name === 'string' && name.trim()) {
                     counts[name] = (counts[name] ?? 0) + 1;
@@ -293,14 +305,18 @@ export async function getProvinceWithCount(supabase: SupabaseClient): Promise<Ar
 
     const counts: Record<string, { provincia: string; sigla: string; regione: string | null; count: number }> = {};
     for (const row of data) {
-        const arr = row.province_array as any[];
+        const arr = row.province_array as unknown[];
         if (!Array.isArray(arr)) continue;
         for (const s of arr) {
             try {
-                const parsed = typeof s === 'string' ? JSON.parse(s) : s;
+                const parsed: ProvinciaPayload = typeof s === 'string'
+                    ? JSON.parse(s) as ProvinciaPayload
+                    : s as ProvinciaPayload;
                 const name = parsed?.provincia?.denominazione || parsed?.denominazione;
                 const sigla = parsed?.provincia?.sigla || parsed?.provincia?.codice || parsed?.sigla || parsed?.codice;
-                const regione = parsed?.regione?.denominazione || parsed?.regione || null;
+                const regione = typeof parsed.regione === 'string'
+                    ? parsed.regione
+                    : parsed.regione?.denominazione ?? null;
                 if (name && sigla) {
                     if (!counts[name]) counts[name] = { provincia: name, sigla, regione: typeof regione === 'string' ? regione : null, count: 0 };
                     if (!counts[name].regione && typeof regione === 'string') counts[name].regione = regione;

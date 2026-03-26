@@ -83,17 +83,17 @@ export function mapSavedSearchToConcorsoFilters(search: SavedSearch): ConcorsoFi
     const filters = normalizeSavedSearchFilters(search.filters);
 
     return {
-        query: filters.query,
-        regione: filters.regioni[0],
-        provincia: filters.province[0],
-        settore: filters.settori[0],
-        tipo_procedura: filters.tipo_procedura,
-        ente_slug: filters.ente_slug,
+        query: filters.query ?? undefined,
+        regione: filters.regioni[0] ?? undefined,
+        provincia: filters.province[0] ?? undefined,
+        settore: filters.settori[0] ?? undefined,
+        tipo_procedura: filters.tipo_procedura ?? undefined,
+        ente_slug: filters.ente_slug ?? undefined,
         stato: filters.stato ?? 'aperti',
         sort: filters.sort ?? 'recenti',
-        published_from: filters.published_from,
-        date_from: filters.date_from,
-        date_to: filters.date_to,
+        published_from: filters.published_from ?? undefined,
+        date_from: filters.date_from ?? undefined,
+        date_to: filters.date_to ?? undefined,
     };
 }
 

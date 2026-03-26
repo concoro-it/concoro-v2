@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server';
 import { getUserTier } from '@/lib/auth/getUserTier';
 import { PaywallBanner } from '@/components/paywall/PaywallBanner';
 import { Bot, Send, Sparkles } from 'lucide-react';
-import Link from 'next/link';
 
 export const metadata: Metadata = { title: 'Genio - Assistente AI | Concoro' };
 
@@ -51,7 +50,7 @@ export default async function ChatPage() {
                                     <Bot className="w-4 h-4 text-white" />
                                 </div>
                                 <div className="bg-muted px-4 py-2.5 rounded-2xl rounded-tl-sm text-sm">
-                                    Certamente! Sto generando un quiz basato sui materi d'esame previsti...
+                                    Certamente! Sto generando un quiz basato sui materi d&apos;esame previsti...
                                 </div>
                             </div>
                         </div>
@@ -84,7 +83,7 @@ export default async function ChatPage() {
                         <Bot className="w-4 h-4 text-white" />
                     </div>
                     <div className="bg-surface border border-border px-4 py-3 rounded-2xl rounded-tl-sm text-sm max-w-[85%]">
-                        <p>Benvenuto nell'assistente Genio! Cerca tra le FAQ, chiedi supporto per compilare una domanda di partecipazione o richiedi riassunti di bandi complessi.</p>
+                        <p>Benvenuto nell&apos;assistente Genio! Cerca tra le FAQ, chiedi supporto per compilare una domanda di partecipazione o richiedi riassunti di bandi complessi.</p>
                         <hr className="my-2 border-border" />
                         <p className="text-xs text-muted-foreground">Nota: La funzionalità AI completa verrà attivata a breve. Al momento puoi chiedermi domande esplorative.</p>
                     </div>

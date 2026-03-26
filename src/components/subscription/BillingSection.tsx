@@ -83,9 +83,10 @@ export function BillingSection({ tier, isPro, stripeCustomerId }: BillingSection
 
             const { url } = await response.json();
             window.location.href = url;
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Portal session error:', err);
-            setError(err.message || 'An unexpected error occurred. Please try again.');
+            const message = err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.';
+            setError(message);
             setIsPortalLoading(false);
         }
     };

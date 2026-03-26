@@ -59,16 +59,19 @@ export function Navbar({ user }: NavbarProps) {
                 <div className="hidden md:flex items-center gap-3">
                     <Link
                         href="/dashboard"
-                        className="inline-flex items-center justify-center h-10 w-10 rounded-full ring-1 ring-border overflow-hidden bg-muted hover:opacity-90 transition-opacity"
+                        className="relative inline-flex items-center justify-center h-10 w-10 rounded-full ring-1 ring-border overflow-hidden bg-muted hover:opacity-90 transition-opacity"
                         aria-label="Vai al profilo"
                         title={profileLabel}
                     >
                         {profileImage === '/fav.png' ? (
                             <span className="text-sm font-semibold text-foreground">{profileInitial}</span>
                         ) : (
-                            <img
+                            <Image
                                 src={profileImage}
                                 alt={profileLabel}
+                                fill
+                                sizes="40px"
+                                unoptimized
                                 className="h-full w-full object-cover"
                             />
                         )}

@@ -1,10 +1,19 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { cn } from '@/lib/utils/cn';
 import { Card, CardContent } from '@/components/ui/card';
 import { CalendarDays, Clock, ArrowRight } from 'lucide-react';
 
 interface ArticoloCardProps {
-    articolo: any; // Ideally typed to match the markdown/CMS blog post type
+    articolo: {
+        title?: string;
+        slug?: string;
+        description?: string;
+        date?: string;
+        readTime?: string;
+        category?: string;
+        image?: string;
+    };
     className?: string;
     compact?: boolean;
 }
@@ -36,12 +45,13 @@ export function ArticoloCard({ articolo, className, compact = false }: ArticoloC
                                 {category}
                             </span>
                         </div>
-                        {/* Using a standard img tag for simplicity since next/image needs remote domains configured, but next/image works fine for local */}
-                        <img
+                        <Image
                             src={image}
                             alt={title}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 33vw"
+                            unoptimized
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            loading="lazy"
                         />
                     </div>
                 )}

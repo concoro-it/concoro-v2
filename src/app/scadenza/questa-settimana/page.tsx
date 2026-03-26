@@ -8,7 +8,8 @@ export const metadata: Metadata = {
     description: 'Concorsi pubblici in scadenza nei prossimi 7 giorni. Non perdere le opportunità della settimana.',
 };
 const FREE_VISIBLE = 5;
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function QuestaSettimanaPage() {
     const supabase = createCachedPublicClient({ revalidate, tags: ['public:scadenza-settimana'] });

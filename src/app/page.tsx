@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
     ArrowRight,
     Building2,
@@ -131,7 +132,6 @@ export default async function HomePage() {
         getSettoriWithCount(supabase),
     ]);
 
-    const featuredCount = featured.length;
     const regioniCount = regioni.length;
     const provinceCount = province.length;
     const settoriCount = settori.length;
@@ -374,9 +374,11 @@ export default async function HomePage() {
                                     >
                                         {flagPath && (
                                             <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 overflow-hidden rounded-full opacity-20 transition group-hover:opacity-30">
-                                                <img
+                                                <Image
                                                     src={flagPath}
                                                     alt={`${regione} simbolo`}
+                                                    fill
+                                                    sizes="96px"
                                                     className="h-full w-full object-cover object-center"
                                                 />
                                             </div>

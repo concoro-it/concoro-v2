@@ -75,9 +75,10 @@ export function PricingSection({
 
             const { url } = await response.json();
             window.location.href = url;
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Subscription Error:", err);
-            setError(err?.message || "Impossibile procedere al pagamento. Riprova più tardi.");
+            const message = err instanceof Error ? err.message : "Impossibile procedere al pagamento. Riprova più tardi.";
+            setError(message);
             setIsLoading(false);
         }
     };

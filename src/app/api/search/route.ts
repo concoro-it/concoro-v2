@@ -5,7 +5,7 @@ import { openai } from '@/lib/openai/client';
 
 export async function POST(req: NextRequest) {
     try {
-        const { query, filters } = await req.json();
+        const { query } = await req.json();
         if (!query) return NextResponse.json({ error: 'Query required' }, { status: 400 });
 
         const supabase = await createClient();

@@ -11,6 +11,6 @@ if (process.env.NODE_ENV === 'production' && stripeSecretKey?.startsWith('sk_tes
 }
 
 export const stripe = stripeSecretKey
-    // @ts-ignore - Ignore exact string literal matching for apiVersion
+    // @ts-expect-error - Stripe type definitions may lag behind latest API version literals.
     ? new Stripe(stripeSecretKey, { apiVersion: '2025-01-27.acacia' })
     : null;

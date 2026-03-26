@@ -295,7 +295,7 @@ function getTierTone(tier: UserTier): { hasAccess: boolean } {
   return { hasAccess: false };
 }
 
-export function GenioWorkspace({ tier, profile: _profile, userName, userAvatarUrl }: GenioWorkspaceProps) {
+export function GenioWorkspace({ tier, userName, userAvatarUrl }: GenioWorkspaceProps) {
   const { hasAccess } = getTierTone(tier);
 
   const [messages, setMessages] = useState<Message[]>([initialMessage]);
@@ -459,12 +459,12 @@ export function GenioWorkspace({ tier, profile: _profile, userName, userAvatarUr
                 <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl leading-[1.04] tracking-tight text-slate-900 sm:text-4xl lg:text-[2.8rem]">
                   Genio trasforma ogni bando in
                   <span className="mx-2 bg-gradient-to-r from-[#0E2F50] via-[#0A4E88] to-[#0E2F50] bg-clip-text text-transparent">
-                    un piano d'azione chiaro
+                    un piano d&apos;azione chiaro
                   </span>
                   per candidarti con metodo.
                 </h1>
                 <p className="max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
-                  Con Pro ottieni analisi dei requisiti, sintesi operative, bozze pronte all'uso e supporto continuo direttamente nel tuo hub.
+                  Con Pro ottieni analisi dei requisiti, sintesi operative, bozze pronte all&apos;uso e supporto continuo direttamente nel tuo hub.
                 </p>
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   <Link
@@ -643,9 +643,12 @@ export function GenioWorkspace({ tier, profile: _profile, userName, userAvatarUr
                         {message.role === 'assistant' ? (
                           <GenioBadge className="h-8 w-8" />
                         ) : userAvatarUrl ? (
-                          <img
+                          <Image
                             src={userAvatarUrl}
                             alt="Foto profilo"
+                            width={32}
+                            height={32}
+                            unoptimized
                             className="h-8 w-8 rounded-full object-cover"
                             referrerPolicy="no-referrer"
                           />

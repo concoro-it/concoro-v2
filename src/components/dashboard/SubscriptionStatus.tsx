@@ -8,7 +8,11 @@ import { Crown, AlertCircle, Calendar, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SubscriptionStatusProps {
-    subscription: any; // Ideally typed to match Stripe subscription model
+    subscription: {
+        status?: string | null;
+        cancel_at_period_end?: boolean | null;
+        current_period_end?: string | null;
+    } | null;
 }
 
 export function SubscriptionStatus({ subscription }: SubscriptionStatusProps) {
@@ -26,7 +30,7 @@ export function SubscriptionStatus({ subscription }: SubscriptionStatusProps) {
                 month: 'long',
                 day: 'numeric'
             }).format(new Date(dateString));
-        } catch (e) {
+        } catch {
             return '';
         }
     };

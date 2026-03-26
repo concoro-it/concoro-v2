@@ -25,7 +25,6 @@ export function CardStack({
     className,
 }: CardStackProps) {
     const [activeIndex, setActiveIndex] = useState(0)
-    const [isDragging, setIsDragging] = useState(false)
 
     if (!cards || cards.length === 0) {
         return null
@@ -42,7 +41,6 @@ export function CardStack({
             // Swiped right - go to previous card
             setActiveIndex((prev) => (prev - 1 + cards.length) % cards.length)
         }
-        setIsDragging(false)
     }
 
     const getStackOrder = () => {
@@ -86,7 +84,6 @@ export function CardStack({
                                 drag={isTopCard ? "x" : false}
                                 dragConstraints={{ left: 0, right: 0 }}
                                 dragElastic={0.7}
-                                onDragStart={() => setIsDragging(true)}
                                 onDragEnd={handleDragEnd}
                                 whileDrag={{ scale: 1.05, cursor: "grabbing" }}
                                 className={cn(

@@ -12,7 +12,8 @@ export const metadata: Metadata = {
     description: 'Trova concorsi in scadenza oggi, questa settimana e questo mese.',
 };
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function ScadenzePage() {
     const supabase = createCachedPublicClient({ revalidate, tags: ['public:scadenza-index'] });

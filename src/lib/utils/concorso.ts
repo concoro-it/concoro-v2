@@ -152,7 +152,11 @@ export function parseSettori(concorso: import('@/types/concorso').Concorso): str
 export function parseRequisiti(concorso: import('@/types/concorso').Concorso): string[] {
     if (!concorso.requisiti_generali) return [];
     return concorso.requisiti_generali.map(r => {
-        const text = typeof r === 'string' ? r : (r as any).descrizione || JSON.stringify(r);
+        const text = typeof r === 'string'
+            ? r
+            : (typeof r === 'object' && r !== null && 'descrizione' in r
+                ? String((r as { descrizione?: unknown }).descrizione ?? JSON.stringify(r))
+                : JSON.stringify(r));
         // Remove leading hyphen(s) and accompanying whitespace
         return text.replace(/^-+\s*/, '').trim();
     });
@@ -168,7 +172,7 @@ function formatBadge(text: string): string {
     if (!text) return '';
 
     // Remove literal [ ] " ' characters that might be present if it's a stringified list
-    let cleaned = text.replace(/[\[\]"']/g, '').trim();
+    const cleaned = text.replace(/[\[\]"']/g, '').trim();
 
     if (!cleaned) return '';
 
@@ -180,7 +184,7 @@ function formatBadge(text: string): string {
 }
 
 // Helper to handle both string and JSON array cases for badges
-function parseBadgeList(input: any): string[] {
+function parseBadgeList(input: unknown): string[] {
     if (!input) return [];
 
     let items: string[] = [];
@@ -240,7 +244,7 @@ export function getAllegatoCount(concorso: import('@/types/concorso').Concorso):
  * Eliminates all inline styling from HTML (style and class attributes)
  * but keeps the tags themselves.
  */
-export function stripHtmlStyling(html: any): string {
+export function stripHtmlStyling(html: unknown): string {
     if (!html || typeof html !== 'string') return '';
 
     // Remove style="..." and class="..." attributes
@@ -257,7 +261,7 @@ export function stripHtmlStyling(html: any): string {
  * Formats a title or text to Sentence case while preserving Italian special names.
  * Handles multiple sentences by looking for . ! ? delimiters.
  */
-export function formatConcorsoTitle(text: any): string {
+export function formatConcorsoTitle(text: unknown): string {
     if (!text || typeof text !== 'string') return '';
 
     // List of common Italian special names/acronyms that should stay capitalized
@@ -324,11 +328,11 @@ export function formatConcorsoTitle(text: any): string {
 /**
  * Strips HTML styling and applies sentence case to text content.
  */
-export function formatHtmlDescription(html: any): string {
+export function formatHtmlDescription(html: unknown): string {
     if (!html || typeof html !== 'string') return '';
 
     // 1. Strip style and class
-    let cleaned = stripHtmlStyling(html);
+    const cleaned = stripHtmlStyling(html);
 
     // 2. Process text nodes while ignoring tags
     const regex = /(<[^>]+>|[^<]+)/g;

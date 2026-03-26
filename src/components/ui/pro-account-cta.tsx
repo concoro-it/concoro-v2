@@ -23,7 +23,7 @@ export function ProAccountCTA({ className }: { className?: string }) {
                     </div>
 
                     <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                        Sblocca il pieno potenziale di Concoro e non perdere mai un'opportunità.
+                        Sblocca il pieno potenziale di Concoro e non perdere mai un&apos;opportunità.
                     </p>
 
                     <ul className="space-y-2.5">

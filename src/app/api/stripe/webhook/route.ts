@@ -102,9 +102,10 @@ export async function POST(req: Request) {
             return new NextResponse('Stripe not configured', { status: 500 });
         }
         event = stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET!);
-    } catch (error: any) {
-        console.error(`Webhook Error: ${error.message}`);
-        return new NextResponse(`Webhook Error: ${error.message}`, { status: 400 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown Stripe webhook error';
+        console.error(`Webhook Error: ${message}`);
+        return new NextResponse(`Webhook Error: ${message}`, { status: 400 });
     }
 
     const lock = await acquireDispatchLock({
@@ -132,8 +133,12 @@ export async function POST(req: Request) {
 
                 if (session.mode === 'subscription' && session.client_reference_id) {
                     const subscriptionId = session.subscription as string;
-                    const stripeSubscription = await stripe!.subscriptions.retrieve(subscriptionId);
+                    const stripeSubscription = await stripe!.subscriptions.retrieve(subscriptionId) as Stripe.Subscription;
                     const priceId = stripeSubscription.items.data[0].price.id;
+                    const periodEnd = stripeSubscription.items.data[0]?.current_period_end;
+                    if (!periodEnd) {
+                        throw new Error(`Missing current_period_end for Stripe subscription ${subscriptionId}`);
+                    }
 
                     await updateUserSubscription(
                         supabaseAdmin,
@@ -142,7 +147,7 @@ export async function POST(req: Request) {
                         stripeSubscription.status,
                         session.customer as string,
                         subscriptionId,
-                        new Date((stripeSubscription as any).current_period_end * 1000)
+                        new Date(periodEnd * 1000)
                     );
                 }
                 break;
@@ -151,6 +156,7 @@ export async function POST(req: Request) {
             case 'customer.subscription.updated': {
                 const subscription = event.data.object as Stripe.Subscription;
                 const priceId = subscription.items.data[0].price.id;
+                const periodEnd = subscription.items.data[0]?.current_period_end;
 
                 const { data: profile } = await supabaseAdmin
                     .from('profiles')
@@ -166,7 +172,7 @@ export async function POST(req: Request) {
                         subscription.status,
                         subscription.customer as string,
                         subscription.id,
-                        new Date((subscription as any).current_period_end * 1000)
+                        new Date((periodEnd ?? Math.floor(Date.now() / 1000)) * 1000)
                     );
                 }
                 break;

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { createCachedPublicClient } from '@/lib/supabase/server';
-import { getConcorsi, getProvinceWithCount, getRegioniWithCount, getSettoriWithCount, getUserProfile } from '@/lib/supabase/queries';
+import { getConcorsi, getProvinceWithCount, getRegioniWithCount, getSettoriWithCount } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import {
     ArrowRight,
