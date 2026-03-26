@@ -6,6 +6,7 @@ const AUTHENTICATED_ALLOWED_PUBLIC_PATH_PREFIXES = [
     '/pricing',
     '/manifest',
     '/manifest.webmanifest',
+    '/reset-password',
 ];
 
 function hasSupabaseAuthCookie(request: NextRequest) {

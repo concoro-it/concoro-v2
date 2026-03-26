@@ -1,5 +1,7 @@
 'use client';
 import React from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { MenuToggleIcon } from '@/components/ui/menu-toggle-icon';
@@ -58,7 +60,16 @@ export function Header() {
                     },
                 )}
             >
-                <WordmarkIcon className="h-4" />
+                <Link href="/" aria-label="Concoro ana sayfa">
+                    <Image
+                        src="/concoro-logo-light.png"
+                        alt="Concoro Logo"
+                        width={120}
+                        height={32}
+                        className="h-[25.6px] w-auto object-contain"
+                        priority
+                    />
+                </Link>
                 <div className="hidden items-center gap-2 md:flex">
                     {links.map((link, i) => (
                         <a key={i} className={buttonVariants({ variant: 'ghost' })} href={link.href}>

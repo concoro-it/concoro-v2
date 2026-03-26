@@ -11,6 +11,7 @@ export function LoginForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPw, setShowPw] = useState(false);
+    const [acceptedPolicy, setAcceptedPolicy] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
@@ -109,6 +110,31 @@ export function LoginForm() {
                     {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                     {loading ? 'Accesso in corso...' : 'Accedi'}
                 </button>
+
+                <label
+                    htmlFor="login-policy"
+                    className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-xs leading-relaxed text-slate-600"
+                >
+                    <input
+                        id="login-policy"
+                        type="checkbox"
+                        required
+                        checked={acceptedPolicy}
+                        onChange={(e) => setAcceptedPolicy(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900 accent-slate-900"
+                    />
+                    <span>
+                        Confermo di aver letto e accettato{' '}
+                        <Link href="/termini" className="font-medium text-slate-800 underline underline-offset-2 hover:text-slate-950">
+                            Termini di Servizio
+                        </Link>{' '}
+                        e{' '}
+                        <Link href="/privacy" className="font-medium text-slate-800 underline underline-offset-2 hover:text-slate-950">
+                            Privacy Policy
+                        </Link>
+                        .
+                    </span>
+                </label>
             </form>
 
             <p className="text-center text-sm text-muted-foreground">

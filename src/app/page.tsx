@@ -247,7 +247,7 @@ export default async function HomePage() {
                                 Tutti i concorsi, ordinati come li cerchi
                             </h2>
                             <p className="text-sm leading-relaxed text-slate-600">
-                                Dati da fonti ufficiali (InPA). Nella Hub puoi filtrare per regione, provincia, ente, settore e scadenza,
+                                Dati da fonti ufficiali (InPA e Gazzetta Ufficiale). Nella Hub puoi filtrare per regione, provincia, ente, settore e scadenza,
                                 salvare bandi e ricerche, e tornare sempre su cio che conta per te.
                             </p>
                             <div className="grid gap-2 sm:grid-cols-2">
@@ -304,7 +304,7 @@ export default async function HomePage() {
                     </ol>
 
                     <p className="mt-5 text-xs text-slate-500">
-                        Fonte dati: pubblicazioni ufficiali su InPA. Aggiornamento continuo della piattaforma.
+                        Fonte dati: pubblicazioni ufficiali su InPA e Gazzetta Ufficiale. Aggiornamento continuo della piattaforma.
                     </p>
                 </section>
 

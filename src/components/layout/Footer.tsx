@@ -39,7 +39,7 @@ export function Footer() {
                             />
                         </Link>
                         <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-                            La piattaforma italiana per trovare i concorsi pubblici. Aggiornati ogni giorno dal portale InPA.
+                            La piattaforma italiana per trovare i concorsi pubblici. Aggiornati ogni giorno da InPA e Gazzetta Ufficiale.
                         </p>
                     </div>
 
@@ -91,10 +91,11 @@ export function Footer() {
                         © {new Date().getFullYear()} Concoro. Tutti i diritti riservati.
                     </p>
                     <p className="text-xs text-muted-foreground">
-                        Dati forniti dal portale{' '}
+                        Dati forniti da{' '}
                         <a href="https://www.inpa.gov.it" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
                             InPA
-                        </a>
+                        </a>{' '}
+                        e Gazzetta Ufficiale
                     </p>
                 </div>
             </div>

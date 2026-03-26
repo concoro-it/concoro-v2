@@ -27,7 +27,7 @@ export default function TermsPage() {
                     title: '2. Oggetto del servizio',
                     paragraphs: [
                         'Concoro offre una piattaforma digitale per consultare, organizzare e monitorare concorsi pubblici in Italia, con funzionalita che possono includere filtri avanzati, salvataggi, notifiche, contenuti personalizzati, area profilo e funzioni premium.',
-                        'I dati sui concorsi possono derivare da fonti ufficiali, incluse integrazioni o contenuti collegati al portale InPA. L’utente resta tenuto a verificare sempre il bando ufficiale prima di compiere scelte o candidature.',
+                        'I dati sui concorsi possono derivare da fonti ufficiali, incluse integrazioni o contenuti collegati a InPA e Gazzetta Ufficiale. L’utente resta tenuto a verificare sempre il bando ufficiale prima di compiere scelte o candidature.',
                     ],
                 },
                 {

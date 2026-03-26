@@ -19,8 +19,8 @@ const baseMetadata: Metadata = {
         default: 'Concoro — Concorsi Pubblici in Italia',
         template: '%s | Concoro',
     },
-    description: 'Trova i migliori concorsi pubblici in Italia. Cerca per regione, ente, settore o scadenza. Aggiornati ogni giorno dal portale InPA.',
-    keywords: ['concorsi pubblici', 'concorso pubblico', 'bandi concorso', 'lavoro pubblico', 'PA', 'InPA'],
+    description: 'Trova i migliori concorsi pubblici in Italia. Cerca per regione, ente, settore o scadenza. Aggiornati ogni giorno da InPA e Gazzetta Ufficiale.',
+    keywords: ['concorsi pubblici', 'concorso pubblico', 'bandi concorso', 'lavoro pubblico', 'PA', 'InPA', 'Gazzetta Ufficiale'],
     metadataBase: new URL(getServerAppUrl()),
     openGraph: {
         type: 'website',

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { LoginForm } from '@/components/auth/LoginForm';
+import { AuthSplitShell } from '@/components/auth/AuthSplitShell';
 
 export const metadata: Metadata = {
     title: 'Accedi',
@@ -11,8 +12,8 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-surface">
+        <AuthSplitShell heroTitle="Concoro ci ha aiutato a ridurre il tempo di ricerca e candidarci prima sui bandi giusti.">
             <LoginForm />
-        </div>
+        </AuthSplitShell>
     );
 }
