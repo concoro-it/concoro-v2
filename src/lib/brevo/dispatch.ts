@@ -1,7 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createEvent, type BrevoEventIdentifiers } from '@/lib/brevo/events';
 
-export type DispatchSource = 'auth_callback' | 'cron_deadline' | 'cron_weekly' | 'cron_contact_sync' | 'stripe_webhook';
+export type DispatchSource =
+    | 'auth_callback'
+    | 'cron_deadline'
+    | 'cron_weekly'
+    | 'cron_contact_sync'
+    | 'cron_saved_search'
+    | 'stripe_webhook';
 
 type DispatchEventInput = {
     supabase: SupabaseClient;

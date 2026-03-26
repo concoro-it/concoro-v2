@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, LayoutDashboard, Search, Sparkles, Bookmark, Bot, CircleHelp, User, CreditCard } from 'lucide-react';
+import { Menu, X, LayoutDashboard, Search, Sparkles, Bookmark, Bell, Bot, CircleHelp, User, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type MenuItem = {
@@ -18,6 +18,7 @@ const menuItems: MenuItem[] = [
   { label: 'Concorsi', href: '/hub/concorsi', icon: Search },
   { label: 'Matching', href: '/hub/matching', icon: Sparkles },
   { label: 'Salvati', href: '/hub/salvati', icon: Bookmark },
+  { label: 'Alert', href: '/hub/alert', icon: Bell },
   { label: 'Genio', href: '/hub/genio', icon: Bot },
   { label: 'Profilo', href: '/hub/profile', icon: User },
   { label: 'Billing', href: '/hub/billing', icon: CreditCard },

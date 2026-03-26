@@ -8,6 +8,7 @@ export const PLANS = {
         features: [
             'Tutti i concorsi senza limiti',
             'Ricerche salvate illimitate',
+            'Saved search alerts con digest giornaliero',
             'AI Assistant Genio',
             'Notifiche email personalizzate',
             'Accesso anticipato a nuove funzionalità',

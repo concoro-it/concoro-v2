@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserTier } from '@/lib/auth/getUserTier';
+import { getConcorsi } from '@/lib/supabase/queries';
+import { mapSavedSearchToConcorsoFilters } from '@/lib/saved-search-alerts';
+import type { SavedSearch } from '@/types/profile';
 
 export async function POST(req: NextRequest) {
     const supabase = await createClient();
@@ -33,6 +36,47 @@ export async function POST(req: NextRequest) {
     }).select().single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Best-effort: wire the new preset into Alert Center immediately.
+    // If this fails we keep preset save successful and the cron will still process later.
+    try {
+        const savedSearch = data as SavedSearch;
+
+        await supabase
+            .from('saved_search_alert_subscriptions')
+            .upsert(
+                {
+                    user_id: user.id,
+                    saved_search_id: savedSearch.id,
+                    enabled: true,
+                    updated_at: new Date().toISOString(),
+                },
+                { onConflict: 'user_id,saved_search_id' }
+            );
+
+        const filtersForQuery = mapSavedSearchToConcorsoFilters(savedSearch);
+        const result = await getConcorsi(supabase, filtersForQuery, 1, 10);
+        const nowIso = new Date().toISOString();
+
+        const seedRows = (result.data ?? [])
+            .filter((item) => Boolean(item.concorso_id))
+            .map((item) => ({
+                user_id: user.id,
+                saved_search_id: savedSearch.id,
+                concorso_id: item.concorso_id,
+                first_seen_at: nowIso,
+                updated_at: nowIso,
+            }));
+
+        if (seedRows.length > 0) {
+            await supabase
+                .from('saved_search_alert_matches')
+                .upsert(seedRows, { onConflict: 'user_id,saved_search_id,concorso_id' });
+        }
+    } catch (seedError) {
+        console.error('[save-search] alert seed failed', seedError);
+    }
+
     return NextResponse.json({ saved: true, search: data });
 }
 

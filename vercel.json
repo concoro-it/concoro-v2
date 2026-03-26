@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/brevo/weekly-digest",
       "schedule": "0 8 * * 1"
+    },
+    {
+      "path": "/api/cron/brevo/saved-search-digest",
+      "schedule": "15 7 * * *"
     }
   ]
 }

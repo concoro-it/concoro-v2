@@ -162,3 +162,30 @@ export interface UserAlertPreferences {
     created_at: string;
     updated_at: string;
 }
+
+export interface SavedSearchAlertPreference {
+    user_id: string;
+    enabled: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface SavedSearchAlertSubscription {
+    id: string;
+    user_id: string;
+    saved_search_id: string;
+    enabled: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface SavedSearchAlertMatch {
+    id: string;
+    user_id: string;
+    saved_search_id: string;
+    concorso_id: string;
+    first_seen_at: string;
+    last_notified_at: string | null;
+    created_at: string;
+    updated_at: string;
+}

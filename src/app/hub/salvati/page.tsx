@@ -216,6 +216,12 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                         </div>
                     ) : activeTab === 'ricerche' ? isProTier ? (
                         <div className="space-y-3">
+                            <div className="rounded-xl border border-sky-200 bg-sky-50/70 px-4 py-3 text-sm text-sky-900">
+                                Gestisci i digest delle ricerche da{' '}
+                                <Link href="/hub/alert" className="font-semibold underline underline-offset-2">
+                                    Alert Center
+                                </Link>.
+                            </div>
                             {savedSearches.length > 0 ? savedSearches.map((search) => {
                                 const filters = search.filters || {};
                                 const href = buildSearchHref(search);

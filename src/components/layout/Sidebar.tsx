@@ -8,6 +8,7 @@ import { News, type NewsArticle } from '@/components/ui/sidebar-news';
 import {
     LayoutDashboard,
     Search,
+    Bell,
     MapPin,
     MapPinned,
     Building2,
@@ -33,6 +34,13 @@ type MenuItem = {
     href: string;
     icon?: React.ReactNode;
     pro?: boolean;
+    badgeCount?: number;
+};
+
+type SidebarUserProfile = {
+    avatar_url?: string | null;
+    full_name?: string | null;
+    email?: string | null;
 };
 
 function SidebarTooltip({
@@ -91,12 +99,13 @@ const CONCORSI_SUBMENU: MenuItem[] = [
     },
 ];
 
-export function Sidebar({ userProfile }: { userProfile: any }) {
+export function Sidebar({ userProfile }: { userProfile: SidebarUserProfile | null }) {
     const router = useRouter();
     const pathname = usePathname();
     const supabase = createClient();
     const [isCollapsed, setIsCollapsed] = React.useState(false);
     const [isConcorsiOpen, setIsConcorsiOpen] = React.useState(false);
+    const [alertUnreadCount, setAlertUnreadCount] = React.useState(0);
 
     const navigation: MenuItem[] = [
         {
@@ -113,6 +122,12 @@ export function Sidebar({ userProfile }: { userProfile: any }) {
             href: '/hub/salvati',
             name: 'Salvati',
             icon: <Bookmark className="w-5 h-5" />,
+        },
+        {
+            href: '/hub/alert',
+            name: 'Alert',
+            icon: <Bell className="w-5 h-5" />,
+            badgeCount: alertUnreadCount,
         },
         {
             href: '/hub/matching',
@@ -183,6 +198,34 @@ export function Sidebar({ userProfile }: { userProfile: any }) {
             CONCORSI_SUBMENU.some((item) => pathname?.startsWith(item.href));
         if (isConcorsiRoute) setIsConcorsiOpen(true);
     }, [pathname]);
+
+    React.useEffect(() => {
+        let cancelled = false;
+
+        const loadSummary = async () => {
+            try {
+                const response = await fetch('/api/profile/saved-search-alerts/summary', { method: 'GET' });
+                if (!response.ok) return;
+
+                const result = (await response.json().catch(() => null)) as { unread_count?: number } | null;
+                if (cancelled) return;
+
+                setAlertUnreadCount(typeof result?.unread_count === 'number' ? result.unread_count : 0);
+            } catch {
+                // noop: sidebar badge is best-effort
+            }
+        };
+
+        void loadSummary();
+        const interval = window.setInterval(() => {
+            void loadSummary();
+        }, 120000);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(interval);
+        };
+    }, []);
 
     return (
         <Tooltip.Provider>
@@ -300,6 +343,11 @@ export function Sidebar({ userProfile }: { userProfile: any }) {
                                             </div>
                                             {!isCollapsed && (
                                                 <span className="transition-transform group-hover:translate-x-0.5">{item.name}</span>
+                                            )}
+                                            {!isCollapsed && (item.badgeCount ?? 0) > 0 && (
+                                                <span className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">
+                                                    {item.badgeCount! > 99 ? '99+' : item.badgeCount}
+                                                </span>
                                             )}
                                             {!isCollapsed && item.pro && (
                                                 <span className="ml-auto inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-700">
