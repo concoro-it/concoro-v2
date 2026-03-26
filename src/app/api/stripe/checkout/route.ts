@@ -40,7 +40,7 @@ export async function POST(req: Request) {
                     quantity: 1,
                 },
             ],
-            success_url: `${host}/hub/bacheca?session_id={CHECKOUT_SESSION_ID}&success=true`,
+            success_url: `${host}/hub/welcome-pro?session_id={CHECKOUT_SESSION_ID}&success=true&billing_cycle=${billingCycle}`,
             cancel_url: `${host}/pricing?canceled=true`,
         });
 

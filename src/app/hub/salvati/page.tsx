@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import {
     ArrowRight,
+    Bell,
     Bookmark,
     BookmarkCheck,
     Crown,
@@ -16,6 +17,7 @@ import { getUserTier } from '@/lib/auth/getUserTier';
 import { getSavedConcorsi, getSavedSearches } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import { UpgradeProModal } from '@/components/paywall/UpgradeProModal';
+import { AlertSettingsPanel } from '@/components/salvati/AlertSettingsPanel';
 import { deleteSearchAction } from '@/app/hub/ricerche/actions';
 import type { SavedSearch } from '@/types/profile';
 
@@ -59,7 +61,8 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
         searchParams,
     ]);
 
-    const activeTab = resolvedSearchParams?.tab === 'ricerche' ? 'ricerche' : 'concorsi';
+    const requestedTab = resolvedSearchParams?.tab;
+    const activeTab = requestedTab === 'ricerche' || requestedTab === 'alert' ? requestedTab : 'concorsi';
     const isProTier = tier === 'pro' || tier === 'admin';
     const savedConcorsiLimit = tier === 'free' ? 1 : null;
     const savedSearchesLimit = isProTier ? null : 0;
@@ -161,6 +164,13 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                                     {savedSearches.length}
                                 </span>
                             </Link>
+                            <Link
+                                href="/hub/salvati?tab=alert"
+                                className={`${tabBaseClasses} ${activeTab === 'alert' ? tabActiveClasses : tabInactiveClasses}`}
+                            >
+                                <Bell className="h-4 w-4" />
+                                Alert
+                            </Link>
                         </div>
                         <Link href="/hub/concorsi" className="inline-flex items-center gap-1 text-sm font-semibold text-[#0A4E88] hover:underline">
                             Vai ai concorsi
@@ -204,7 +214,7 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                                 </div>
                             )}
                         </div>
-                    ) : isProTier ? (
+                    ) : activeTab === 'ricerche' ? isProTier ? (
                         <div className="space-y-3">
                             {savedSearches.length > 0 ? savedSearches.map((search) => {
                                 const filters = search.filters || {};
@@ -299,6 +309,8 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                                 </div>
                             </div>
                         </div>
+                    ) : (
+                        <AlertSettingsPanel tier={tier} />
                     )}
                 </section>
             </div>

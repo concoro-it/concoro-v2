@@ -154,3 +154,11 @@ export interface SavedSearch {
     };
     created_at: string;
 }
+
+export interface UserAlertPreferences {
+    user_id: string;
+    deadline_enabled: boolean;
+    deadline_offsets: number[];
+    created_at: string;
+    updated_at: string;
+}
