@@ -77,14 +77,14 @@ function toDateLabel(value: string | null | undefined): string {
 function buildPresetChips(filters: NormalizedSavedSearchFilters): FilterChip[] {
     const chips: FilterChip[] = [];
 
-    if (filters.query) chips.push({ label: `Query: ${filters.query}`, tone: 'blue' });
+    if (filters.query) chips.push({ label: `Ricerca: ${filters.query}`, tone: 'blue' });
     filters.regioni.forEach((item) => chips.push({ label: item, tone: 'blue' }));
     filters.province.forEach((item) => chips.push({ label: item, tone: 'slate' }));
     filters.settori.forEach((item) => chips.push({ label: item, tone: 'emerald' }));
     if (filters.tipo_procedura) chips.push({ label: filters.tipo_procedura, tone: 'slate' });
     if (filters.ente_slug) chips.push({ label: `Ente: ${filters.ente_slug}`, tone: 'slate' });
     if (filters.stato) chips.push({ label: `Stato: ${filters.stato}`, tone: 'amber' });
-    if (filters.sort) chips.push({ label: `Sort: ${filters.sort}`, tone: 'amber' });
+    if (filters.sort) chips.push({ label: `Ordina: ${filters.sort}`, tone: 'amber' });
 
     if (chips.length === 0) {
         chips.push({ label: 'Tutti i concorsi', tone: 'slate' });
@@ -215,11 +215,11 @@ export function PresetDetailView({ presetId, tier }: PresetDetailViewProps) {
                     <div className="relative">
                         <Link href="/hub/alert" className="inline-flex items-center gap-1 text-sm font-semibold text-[#0A4E88] hover:underline">
                             <ArrowLeft className="h-4 w-4" />
-                            Torna ad Alert
+                            Torna agli avvisi
                         </Link>
 
                         {loading ? (
-                            <p className="mt-4 text-sm text-slate-600">Caricamento preset...</p>
+                            <p className="mt-4 text-sm text-slate-600">Caricamento filtro...</p>
                         ) : data ? (
                             <>
                                 <h1 className="mt-4 [font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl leading-[1.05] tracking-tight text-slate-900 sm:text-4xl lg:text-[2.7rem]">
@@ -230,7 +230,7 @@ export function PresetDetailView({ presetId, tier }: PresetDetailViewProps) {
                                 </p>
                                 <div className="mt-4 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 w-fit">
                                     <Bell className="h-4 w-4 text-slate-500" />
-                                    <span className="text-sm font-medium text-slate-700">Tracking preset</span>
+                                    <span className="text-sm font-medium text-slate-700">Monitoraggio filtro</span>
                                     <Checkbox
                                         checked={data.preset.enabled}
                                         disabled={!isPro || saving}
@@ -249,7 +249,7 @@ export function PresetDetailView({ presetId, tier }: PresetDetailViewProps) {
                                 <div>
                                     <p className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100/80 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-amber-900">
                                         <Lock className="h-3.5 w-3.5" />
-                                        Preview Free
+                                        Anteprima gratuita
                                     </p>
                                     <h2 className="mt-3 text-lg font-semibold text-slate-900">Mostriamo solo i primi {FREE_FEED_PREVIEW_LIMIT} risultati</h2>
                                 </div>

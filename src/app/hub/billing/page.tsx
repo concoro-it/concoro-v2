@@ -3,25 +3,20 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight, ShieldAlert, Wallet } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getUserTier } from '@/lib/auth/getUserTier';
 import { BillingSection } from '@/components/subscription/BillingSection';
+import { getUserContext } from '@/lib/auth/getUserContext';
 
-export const metadata: Metadata = { title: 'Billing | Dashboard' };
+export const metadata: Metadata = { title: 'Fatturazione | Hub' };
 
 export default async function DashboardBillingPage() {
     const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    const { user, profile, tier } = await getUserContext<{
+        stripe_customer_id?: string | null;
+    }>(supabase, { profileSelect: 'tier, stripe_customer_id' });
 
     if (!user) {
         redirect('/login');
     }
-
-    const [tier, { data: profile }] = await Promise.all([
-        getUserTier(supabase),
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
-    ]);
 
     const isPro = tier === 'pro' || tier === 'admin';
 
@@ -34,15 +29,15 @@ export default async function DashboardBillingPage() {
                     <div className="space-y-4">
                         <nav className="flex items-center gap-1.5 text-sm text-slate-500">
                             <Link href="/hub/bacheca" className="hover:text-slate-900">
-                                Dashboard
+                                Bacheca
                             </Link>
                             <ChevronRight className="h-4 w-4" />
-                            <span className="text-slate-900">Billing</span>
+                            <span className="text-slate-900">Fatturazione</span>
                         </nav>
 
                         <span className="inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-slate-50/90 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.13em] text-slate-700">
                             <Wallet className="h-3.5 w-3.5" />
-                            Centro fatturazione
+                            Centro di fatturazione
                         </span>
 
                         <div className="space-y-2">

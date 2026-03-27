@@ -16,12 +16,12 @@ type MenuItem = {
 const menuItems: MenuItem[] = [
   { label: 'Bacheca', href: '/hub/bacheca', icon: LayoutDashboard },
   { label: 'Concorsi', href: '/hub/concorsi', icon: Search },
-  { label: 'Matching', href: '/hub/matching', icon: Sparkles },
+  { label: 'Abbinamenti', href: '/hub/matching', icon: Sparkles },
   { label: 'Salvati', href: '/hub/salvati', icon: Bookmark },
-  { label: 'Alert', href: '/hub/alert', icon: Bell },
+  { label: 'Avvisi', href: '/hub/alert', icon: Bell },
   { label: 'Genio', href: '/hub/genio', icon: Bot },
   { label: 'Profilo', href: '/hub/profile', icon: User },
-  { label: 'Billing', href: '/hub/billing', icon: CreditCard },
+  { label: 'Fatturazione', href: '/hub/billing', icon: CreditCard },
   { label: 'Assistenza', href: '/hub/assistenza', icon: CircleHelp },
 ];
 
@@ -46,7 +46,7 @@ export function HubMobileHeader() {
 
           <button
             type="button"
-            aria-label={open ? 'Menüyü kapat' : 'Menüyü aç'}
+            aria-label={open ? 'Chiudi menu' : 'Apri menu'}
             aria-expanded={open}
             onClick={() => setOpen((prev) => !prev)}
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/65 text-foreground/90 transition-colors hover:bg-muted/50"
@@ -56,7 +56,7 @@ export function HubMobileHeader() {
         </div>
 
         {open && (
-          <nav className="border-t border-border/60 px-2 pb-2 pt-2" aria-label="Hub mobil menusu">
+          <nav className="border-t border-border/60 px-2 pb-2 pt-2" aria-label="Menu mobile hub">
             <div className="grid grid-cols-2 gap-2">
               {menuItems.map((item) => {
                 const Icon = item.icon;

@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { getUserTier } from '@/lib/auth/getUserTier';
 import { PresetDetailView } from '@/components/alert/PresetDetailView';
+import { getUserContext } from '@/lib/auth/getUserContext';
 
-export const metadata: Metadata = { title: 'Preset Alert | Dashboard' };
+export const metadata: Metadata = { title: 'Dettaglio avviso | Hub' };
 
 type PageProps = {
     params: Promise<{ presetId: string }>;
@@ -14,15 +14,11 @@ export default async function AlertPresetDetailPage({ params }: PageProps) {
     const { presetId } = await params;
 
     const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    const { user, tier } = await getUserContext(supabase);
 
     if (!user) {
         redirect('/login');
     }
-
-    const tier = await getUserTier(supabase);
 
     return <PresetDetailView presetId={presetId} tier={tier} />;
 }

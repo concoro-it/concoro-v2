@@ -35,6 +35,7 @@ import { getServerAppUrl } from '@/lib/auth/url';
 
 interface Props {
     params: Promise<{ slug: string }>;
+    searchParams?: Promise<{ viewer_tier?: string }>;
 }
 
 interface AnnuncioEnrichment {
@@ -350,12 +351,19 @@ export async function generateStaticParams() {
 
 export const revalidate = 3600;
 
-export default async function ConcorsoDetailPage({ params }: Props) {
+export default async function ConcorsoDetailPage({ params, searchParams }: Props) {
     const { slug } = await params;
     const supabase = createCachedPublicClient({ revalidate, tags: ['public:concorso-detail'] });
     const concorso = await getConcorsoBySlug(supabase, slug);
     if (!concorso) notFound();
-    const isGuestUser = true;
+    const viewerTier = (await searchParams)?.viewer_tier;
+    const tier = viewerTier === 'pro' || viewerTier === 'admin' || viewerTier === 'free'
+        ? viewerTier
+        : 'anon';
+    const isGuestUser = tier !== 'pro' && tier !== 'admin';
+    const routePrefix = tier === 'anon' ? '' : '/hub';
+    const homeHref = routePrefix || '/';
+    const toInternalHref = (path: `/${string}`) => `${routePrefix}${path}`;
 
     const expired = isExpired(concorso.data_scadenza) || concorso.status === 'CLOSED';
     const regioni = parseRegioni(concorso);
@@ -399,8 +407,12 @@ export default async function ConcorsoDetailPage({ params }: Props) {
     const alertVisibleItems = isGuestUser ? alertItems.slice(0, sintesiItemsLimit) : alertItems;
     const hasHiddenHookItems = isGuestUser && hookItems.length > sintesiItemsLimit;
     const hasHiddenAlertItems = isGuestUser && alertItems.length > sintesiItemsLimit;
-    const signupCtaHref = `/signup?source=concorso-detail-paywall&concorso=${encodeURIComponent(slug)}`;
-    const loginCtaHref = `/login?source=concorso-detail-paywall&concorso=${encodeURIComponent(slug)}`;
+    const signupCtaHref = tier === 'anon'
+        ? `/signup?source=concorso-detail-paywall&concorso=${encodeURIComponent(slug)}`
+        : `/hub/billing?source=concorso-detail-paywall&concorso=${encodeURIComponent(slug)}`;
+    const loginCtaHref = tier === 'anon'
+        ? `/login?source=concorso-detail-paywall&concorso=${encodeURIComponent(slug)}`
+        : '/hub';
 
     const summaryItems: SintesiItem[] = [
         ...hookVisibleItems
@@ -587,9 +599,9 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                 <div className="relative border-b border-slate-200 bg-white/85">
                     <div className="container mx-auto max-w-[78rem] px-4 py-3 text-sm text-slate-500">
                         <nav className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
-                            <Link href="/" className="shrink-0 hover:text-slate-900">Home</Link>
+                            <Link href={homeHref} className="shrink-0 hover:text-slate-900">Home</Link>
                             <ChevronRight className="h-4 w-4 shrink-0" />
-                            <Link href="/concorsi" className="shrink-0 hover:text-slate-900">Concorsi</Link>
+                            <Link href={toInternalHref('/concorsi')} className="shrink-0 hover:text-slate-900">Concorsi</Link>
                             <ChevronRight className="h-4 w-4 shrink-0" />
                             <span className="min-w-0 truncate font-medium text-slate-900">{breadcrumbTailLabel}</span>
                         </nav>
@@ -628,7 +640,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                     : <Building2 className="h-5 w-5 text-slate-500" />
                                 }
                             {concorso.ente_slug
-                                    ? <Link href={`/ente/${concorso.ente_slug}`} className="text-sm font-semibold text-slate-700 hover:text-[#0A4E88] transition-colors">
+                                    ? <Link href={toInternalHref(`/ente/${concorso.ente_slug}`)} className="text-sm font-semibold text-slate-700 hover:text-[#0A4E88] transition-colors">
                                         {concorso.ente_nome}
                                     </Link>
                                     : <span className="text-sm font-semibold text-slate-700">{concorso.ente_nome}</span>
@@ -724,7 +736,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                                     {settori.slice(0, 3).map((s) => (
                                                         <Link
                                                             key={s}
-                                                            href={`/settore/${encodeURIComponent(s)}`}
+                                                            href={toInternalHref(`/settore/${encodeURIComponent(s)}`)}
                                                             className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] text-slate-700 transition hover:bg-slate-100"
                                                         >
                                                             {s}
@@ -738,7 +750,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                 {(enteHeroImage || (ente?.comune ?? ente?.provincia ?? ente?.regione) || concorso.ente_nome) && (
                                     concorso.ente_slug ? (
                                         <Link
-                                            href={`/ente/${concorso.ente_slug}`}
+                                            href={toInternalHref(`/ente/${concorso.ente_slug}`)}
                                             className="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 transition hover:border-slate-300 hover:bg-slate-100"
                                         >
                                             {enteHeroImage ? (
@@ -1059,7 +1071,9 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                                 </li>
                                             </ul>
                                             <Link
-                                                href={`/signup?source=concorso-sidebar-register&concorso=${encodeURIComponent(slug)}`}
+                                                href={tier === 'anon'
+                                                    ? `/signup?source=concorso-sidebar-register&concorso=${encodeURIComponent(slug)}`
+                                                    : `/hub/billing?source=concorso-sidebar-register&concorso=${encodeURIComponent(slug)}`}
                                                 className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                                             >
                                                 Registrati gratis
@@ -1082,7 +1096,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                                     <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-500">Province</p>
                                                     <div className="flex flex-wrap gap-2 text-xs font-semibold">
                                                         {province.slice(0, 4).map((p) => (
-                                                            <Link key={p} href={`/provincia/${toUrlSlug(p)}`} className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-slate-700 transition hover:border-slate-400 hover:bg-slate-100">
+                                                            <Link key={p} href={toInternalHref(`/provincia/${toUrlSlug(p)}`)} className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-slate-700 transition hover:border-slate-400 hover:bg-slate-100">
                                                                 {p}
                                                             </Link>
                                                         ))}
@@ -1094,7 +1108,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                                     <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-500">Regioni</p>
                                                     <div className="flex flex-wrap gap-2 text-xs font-semibold">
                                                         {regioni.slice(0, 3).map((r) => (
-                                                            <Link key={r} href={`/regione/${toUrlSlug(r)}`} className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-slate-700 transition hover:border-slate-400 hover:bg-slate-100">
+                                                            <Link key={r} href={toInternalHref(`/regione/${toUrlSlug(r)}`)} className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-slate-700 transition hover:border-slate-400 hover:bg-slate-100">
                                                                 {r}
                                                             </Link>
                                                         ))}
@@ -1102,7 +1116,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                                 </div>
                                             )}
                                             {concorso.ente_slug && (
-                                                <Link href={`/ente/${concorso.ente_slug}`} className="inline-flex items-center gap-2 rounded-full border border-[#0A4E88]/30 bg-[#0A4E88]/5 px-3 py-1.5 text-xs font-semibold text-[#083861] transition hover:bg-[#0A4E88]/10">
+                                                <Link href={toInternalHref(`/ente/${concorso.ente_slug}`)} className="inline-flex items-center gap-2 rounded-full border border-[#0A4E88]/30 bg-[#0A4E88]/5 px-3 py-1.5 text-xs font-semibold text-[#083861] transition hover:bg-[#0A4E88]/10">
                                                     Vai alla pagina ente
                                                     <ChevronRight className="h-3.5 w-3.5" />
                                                 </Link>
@@ -1122,7 +1136,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                     </div>
                                     {concorso.ente_slug && (
                                         <Link
-                                            href={`/ente/${concorso.ente_slug}`}
+                                            href={toInternalHref(`/ente/${concorso.ente_slug}`)}
                                             className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
                                         >
                                             Vai alla scheda ente
@@ -1160,7 +1174,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                         {(enteHeroImage || (ente?.comune ?? ente?.provincia ?? ente?.regione) || concorso.ente_nome) && (
                                             concorso.ente_slug ? (
                                                 <Link
-                                                    href={`/ente/${concorso.ente_slug}`}
+                                                    href={toInternalHref(`/ente/${concorso.ente_slug}`)}
                                                     className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 transition hover:border-slate-300 hover:bg-slate-100"
                                                 >
                                                     {enteHeroImage ? (

@@ -4,7 +4,7 @@ import { createClient, createStaticAdminClient } from '@/lib/supabase/server';
 import { ProfileSettings } from '@/components/dashboard/ProfileSettings';
 import type { Profile } from '@/types/profile';
 
-export const metadata: Metadata = { title: 'Profilo | Dashboard' };
+export const metadata: Metadata = { title: 'Profilo | Hub' };
 
 export default async function ProfilePage() {
     const supabase = await createClient();

@@ -1,19 +1,19 @@
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
-import { getConcorsi, getRegioniWithCount, getSavedConcorsiIds, getSettoriWithCount, getUserProfile } from '@/lib/supabase/queries';
+import { getConcorsi, getRegioniWithCount, getSavedConcorsiIds, getSettoriWithCount } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import { ChevronLeft, ChevronRight, Crown } from 'lucide-react';
 import Link from 'next/link';
 import type { ConcorsoFilters } from '@/types/concorso';
-import { getUserTier } from '@/lib/auth/getUserTier';
 import { redirect } from 'next/navigation';
 import { PreferencesControl } from '@/components/concorsi/PreferencesControl';
 import { ActiveFiltersBar } from '@/components/concorsi/ActiveFiltersBar';
 import { SearchBar } from '@/components/concorsi/SearchBar';
+import { getUserContext } from '@/lib/auth/getUserContext';
 
 export const metadata: Metadata = {
-    title: 'Concorsi | Dashboard',
-    description: 'Esplora i concorsi dal tuo dashboard.',
+    title: 'Concorsi | Hub',
+    description: 'Esplora i concorsi dalla tua bacheca.',
 };
 
 const REGISTERED_LIMIT = 20;
@@ -56,22 +56,18 @@ export default async function DashboardConcorsiPage({
     };
 
     const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    const { user, profile, tier } = await getUserContext(supabase);
 
     if (!user) {
         redirect('/login');
     }
 
-    const tier = await getUserTier(supabase);
     const isUnlimited = tier === 'pro' || tier === 'admin';
     const page = isUnlimited ? requestedPage : 1;
 
-    const [{ data: concorsi, count }, savedIds, profile, regioniWithCount, settoriWithCount] = await Promise.all([
+    const [{ data: concorsi, count }, savedIds, regioniWithCount, settoriWithCount] = await Promise.all([
         getConcorsi(supabase, filters, page, PAGE_LIMIT),
         getSavedConcorsiIds(supabase, user.id),
-        getUserProfile(supabase, user.id),
         getRegioniWithCount(supabase),
         getSettoriWithCount(supabase),
     ]);

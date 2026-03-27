@@ -34,7 +34,7 @@ export function AlertSettingsPanel({ tier }: AlertSettingsPanelProps) {
             const result = (await response.json().catch(() => null)) as AlertsResponse | { error?: string } | null;
 
             if (!response.ok) {
-                throw new Error((result as { error?: string } | null)?.error ?? 'Errore durante il caricamento alert');
+                throw new Error((result as { error?: string } | null)?.error ?? 'Errore durante il caricamento degli avvisi');
             }
 
             const payload = result as AlertsResponse;
@@ -83,13 +83,13 @@ export function AlertSettingsPanel({ tier }: AlertSettingsPanelProps) {
 
             const result = (await response.json().catch(() => null)) as { error?: string } | null;
             if (!response.ok) {
-                throw new Error(result?.error ?? 'Salvataggio alert non riuscito.');
+                throw new Error(result?.error ?? 'Salvataggio avvisi non riuscito.');
             }
 
-            toast.success('Preferenze alert salvate.');
+            toast.success('Preferenze avvisi salvate.');
         } catch (error) {
             console.error('Error saving alert settings:', error);
-            toast.error(error instanceof Error ? error.message : 'Salvataggio alert non riuscito.');
+            toast.error(error instanceof Error ? error.message : 'Salvataggio avvisi non riuscito.');
         } finally {
             setSaving(false);
         }
@@ -105,11 +105,11 @@ export function AlertSettingsPanel({ tier }: AlertSettingsPanelProps) {
                         Solo Pro
                     </span>
                     <h3 className="text-xl font-semibold text-slate-900 sm:text-2xl">
-                        Alert avanzati disponibili solo con Pro.
+                        Avvisi avanzati disponibili solo con Pro.
                     </h3>
                     <p className="text-sm leading-relaxed text-slate-700 sm:text-base">
-                        Free plan: solo promemoria 1 giorno prima (automatico).
-                        Con Pro scegli 7/3/1 giorni e gestisci i reminder dal tuo hub.
+                        Piano gratuito: solo promemoria 1 giorno prima (automatico).
+                        Con Pro scegli 7/3/1 giorni e gestisci i promemoria dalla tua bacheca.
                     </p>
                     <UpgradeProModal triggerClassName="inline-block">
                         <span className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">
@@ -129,11 +129,11 @@ export function AlertSettingsPanel({ tier }: AlertSettingsPanelProps) {
                     <div>
                         <p className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.11em] text-slate-600">
                             <Bell className="h-3.5 w-3.5" />
-                            Deadline Alerts
+                            Avvisi scadenze
                         </p>
                         <h3 className="mt-3 text-lg font-semibold text-slate-900">Promemoria scadenze concorsi salvati</h3>
                         <p className="mt-1 text-sm text-slate-600">
-                            Seleziona quando ricevere i reminder per i concorsi salvati.
+                            Seleziona quando ricevere i promemoria per i concorsi salvati.
                         </p>
                     </div>
                 </div>
@@ -147,7 +147,7 @@ export function AlertSettingsPanel({ tier }: AlertSettingsPanelProps) {
                             onCheckedChange={(checked) => setDeadlineEnabled(Boolean(checked))}
                         />
                         <label htmlFor="deadline_enabled" className="text-sm font-semibold text-slate-800">
-                            Attiva deadline alerts
+                            Attiva avvisi di scadenza
                         </label>
                     </div>
 

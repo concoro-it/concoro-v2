@@ -255,20 +255,30 @@ export async function getActiveConcorsiCount(supabase: SupabaseClient): Promise<
 }
 
 export async function getRegioniWithCount(supabase: SupabaseClient): Promise<Array<{ regione: string; count: number }>> {
+    const { data, error } = await supabase.rpc('get_regioni_with_count_active');
+    if (!error && data) {
+        return (data as Array<{ regione: string; count: number | string }>)
+            .map((row) => ({
+                regione: row.regione,
+                count: typeof row.count === 'string' ? Number(row.count) : row.count,
+            }))
+            .filter((row) => row.regione && Number.isFinite(row.count));
+    }
+
     const now = new Date().toISOString();
-    const { data, error } = await supabase
+    const { data: legacyData, error: legacyError } = await supabase
         .from('concorsi')
         .select('regioni_array')
         .eq('is_active', true)
         .gte('data_scadenza', now);
 
-    if (error || !data) {
-        console.error('Error in getRegioniWithCount:', error);
+    if (legacyError || !legacyData) {
+        console.error('Error in getRegioniWithCount:', error ?? legacyError);
         return [];
     }
 
     const counts: Record<string, number> = {};
-    for (const row of data as Array<{ regioni_array: unknown }>) {
+    for (const row of legacyData as Array<{ regioni_array: unknown }>) {
         const arr = row.regioni_array as unknown[];
         if (!Array.isArray(arr)) continue;
 
@@ -297,14 +307,28 @@ export async function getRegioniWithCount(supabase: SupabaseClient): Promise<Arr
 }
 
 export async function getProvinceWithCount(supabase: SupabaseClient): Promise<Array<{ provincia: string; sigla: string; regione: string | null; count: number }>> {
-    const { data } = await supabase
+    const { data, error } = await supabase.rpc('get_province_with_count_active');
+    if (!error && data) {
+        return (data as Array<{ provincia: string; sigla: string; regione: string | null; count: number | string }>)
+            .map((row) => ({
+                provincia: row.provincia,
+                sigla: row.sigla,
+                regione: row.regione ?? null,
+                count: typeof row.count === 'string' ? Number(row.count) : row.count,
+            }))
+            .filter((row) => row.provincia && row.sigla && Number.isFinite(row.count));
+    }
+
+    const now = new Date().toISOString();
+    const { data: legacyData, error: legacyError } = await supabase
         .from('concorsi')
         .select('province_array')
-        .eq('is_active', true);
-    if (!data) return [];
+        .eq('is_active', true)
+        .gte('data_scadenza', now);
+    if (legacyError || !legacyData) return [];
 
     const counts: Record<string, { provincia: string; sigla: string; regione: string | null; count: number }> = {};
-    for (const row of data) {
+    for (const row of legacyData) {
         const arr = row.province_array as unknown[];
         if (!Array.isArray(arr)) continue;
         for (const s of arr) {
@@ -322,7 +346,9 @@ export async function getProvinceWithCount(supabase: SupabaseClient): Promise<Ar
                     if (!counts[name].regione && typeof regione === 'string') counts[name].regione = regione;
                     counts[name].count++;
                 }
-            } catch { /* skip */ }
+            } catch {
+                // skip malformed province payload
+            }
         }
     }
     return Object.values(counts).sort((a, b) => b.count - a.count);
@@ -344,15 +370,28 @@ export async function getSettoriWithCount(supabase: SupabaseClient): Promise<Arr
 }
 
 export async function getEntiWithCount(supabase: SupabaseClient): Promise<Array<{ ente_nome: string; ente_slug: string; count: number }>> {
-    const { data } = await supabase
+    const { data, error } = await supabase.rpc('get_enti_with_count_active');
+    if (!error && data) {
+        return (data as Array<{ ente_nome: string; ente_slug: string; count: number | string }>)
+            .map((row) => ({
+                ente_nome: row.ente_nome ?? '',
+                ente_slug: row.ente_slug,
+                count: typeof row.count === 'string' ? Number(row.count) : row.count,
+            }))
+            .filter((row) => row.ente_slug && Number.isFinite(row.count));
+    }
+
+    const now = new Date().toISOString();
+    const { data: legacyData } = await supabase
         .from('concorsi')
         .select('ente_nome, ente_slug')
         .eq('is_active', true)
+        .gte('data_scadenza', now)
         .not('ente_slug', 'is', null);
-    if (!data) return [];
+    if (!legacyData) return [];
 
     const counts: Record<string, { ente_nome: string; ente_slug: string; count: number }> = {};
-    for (const row of data) {
+    for (const row of legacyData) {
         const key = row.ente_slug;
         if (!key) continue;
         if (!counts[key]) counts[key] = { ente_nome: row.ente_nome ?? '', ente_slug: key, count: 0 };

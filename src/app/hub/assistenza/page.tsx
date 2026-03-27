@@ -5,8 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { SupportContactForm } from '@/components/support/SupportContactForm';
 
 export const metadata: Metadata = {
-  title: 'Assistenza | Dashboard',
-  description: 'Contatta il team Concoro e ricevi supporto operativo dal tuo hub.',
+  title: 'Assistenza | Hub',
+  description: 'Contatta il team Concoro e ricevi supporto operativo dalla tua bacheca.',
 };
 
 export default async function AssistenzaPage() {
@@ -35,7 +35,7 @@ export default async function AssistenzaPage() {
           <div className="space-y-4">
             <nav className="flex items-center gap-1.5 text-sm text-slate-500">
               <Link href="/hub/bacheca" className="hover:text-slate-900">
-                Dashboard
+                Bacheca
               </Link>
               <ChevronRight className="h-4 w-4" />
               <span className="text-slate-900">Assistenza</span>
@@ -43,7 +43,7 @@ export default async function AssistenzaPage() {
 
             <span className="inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-slate-50/90 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.13em] text-slate-700">
               <LifeBuoy className="h-3.5 w-3.5" />
-              Help desk Concoro
+              Centro assistenza Concoro
             </span>
 
             <div className="space-y-2">
@@ -55,9 +55,9 @@ export default async function AssistenzaPage() {
                 se qualcosa si blocca.
               </h1>
               <p className="max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
-                Compila il form con tutti i dettagli utili: il team supporto ricevera la richiesta su
+                Compila il form con tutti i dettagli utili: il team supporto riceverà la richiesta su
                 <span className="mx-1 font-semibold text-slate-900">support@concoro.it</span>
-                e ti rispondera nel minor tempo possibile.
+                e ti risponderà nel minor tempo possibile.
               </p>
             </div>
 
@@ -106,7 +106,7 @@ export default async function AssistenzaPage() {
               <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Rimaniamo allineati</h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">
                 Per urgenze operative usa il form con categoria corretta. Se preferisci una comunicazione diretta,
-                puoi anche scriverci da client mail.
+                puoi anche scriverci dal client di posta.
               </p>
 
               <div className="mt-4 space-y-2.5 text-sm">
@@ -121,14 +121,14 @@ export default async function AssistenzaPage() {
                   href="/hub/billing"
                   className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 font-medium text-slate-700 transition hover:border-slate-400"
                 >
-                  Gestione billing e piano
+                  Gestione fatturazione e piano
                   <ArrowRight className="h-4 w-4 text-slate-500 transition group-hover:translate-x-0.5" />
                 </Link>
                 <Link
                   href="/hub/profile"
                   className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 font-medium text-slate-700 transition hover:border-slate-400"
                 >
-                  Aggiorna i dati account
+                  Aggiorna i dati dell&apos;account
                   <ArrowRight className="h-4 w-4 text-slate-500 transition group-hover:translate-x-0.5" />
                 </Link>
               </div>

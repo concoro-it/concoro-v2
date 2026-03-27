@@ -52,8 +52,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     return (
         <html lang="it" className={`${inter.variable}`}>
             <head>
-                <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="beforeInteractive" />
-                <Script id="google-gtag" strategy="beforeInteractive">
+                <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
+                <Script id="google-gtag" strategy="afterInteractive">
                     {`
                         window.dataLayer = window.dataLayer || [];
                         function gtag(){dataLayer.push(arguments);}
@@ -81,7 +81,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                         gtag('config', '${GA_MEASUREMENT_ID}');
                     `}
                 </Script>
-                <Script id="microsoft-clarity" strategy="beforeInteractive">
+                <Script id="microsoft-clarity" strategy="lazyOnload">
                     {`
                         (function(c,l,a,r,i,t,y){
                             c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};

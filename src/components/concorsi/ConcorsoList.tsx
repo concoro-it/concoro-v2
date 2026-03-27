@@ -8,7 +8,10 @@ interface Props {
     detailBasePath?: string;
 }
 
-export function ConcorsoList({ concorsi, loading, savedIds = [], detailBasePath }: Props) {
+export function ConcorsoList({ concorsi, loading, savedIds, detailBasePath }: Props) {
+    const hasSavedState = Array.isArray(savedIds);
+    const savedIdsSet = hasSavedState ? new Set(savedIds) : null;
+
     if (loading) {
         return (
             <div className="grid grid-cols-1 gap-4">
@@ -37,7 +40,8 @@ export function ConcorsoList({ concorsi, loading, savedIds = [], detailBasePath 
                 <ConcorsoCard
                     key={c.concorso_id}
                     concorso={c}
-                    saved={savedIds.includes(c.concorso_id)}
+                    saved={savedIdsSet ? savedIdsSet.has(c.concorso_id) : undefined}
+                    disableSaveStatusAutoCheck={hasSavedState}
                     detailBasePath={detailBasePath}
                 />
             ))}

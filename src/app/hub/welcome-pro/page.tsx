@@ -6,7 +6,7 @@ import { ArrowRight, BadgeCheck, BellRing, BrainCircuit, CheckCircle2, Crown, Se
 import { ProPurchaseTracker } from '@/components/analytics/ProPurchaseTracker';
 
 export const metadata: Metadata = {
-    title: 'Welcome to Pro | Dashboard',
+    title: 'Benvenuto in Pro | Hub',
     description: 'Il tuo abbonamento Pro e attivo: inizia ora con monitoraggio, ricerche salvate e Genio.',
 };
 
@@ -66,7 +66,7 @@ export default async function WelcomeProPage({
 
                             <div className="space-y-2">
                                 <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl leading-[1.05] tracking-tight text-slate-900 sm:text-4xl lg:text-[2.85rem]">
-                                    Welcome to
+                                    Benvenuto in
                                     <span className="mx-2 bg-gradient-to-r from-[#0E2F50] via-[#0A4E88] to-[#0E2F50] bg-clip-text text-transparent">
                                         Concoro Pro
                                     </span>
@@ -93,8 +93,8 @@ export default async function WelcomeProPage({
                                 </div>
 
                                 <div className="rounded-xl border border-amber-200/80 bg-white/75 p-3 text-sm text-slate-700">
-                                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.11em] text-amber-800">Dettaglio checkout</p>
-                                    <p className="mt-2">Billing: <span className="font-semibold">{billingCycle === 'yearly' ? 'Annuale' : billingCycle === 'monthly' ? 'Mensile' : 'Pro'}</span></p>
+                                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.11em] text-amber-800">Dettaglio acquisto</p>
+                                    <p className="mt-2">Fatturazione: <span className="font-semibold">{billingCycle === 'yearly' ? 'Annuale' : billingCycle === 'monthly' ? 'Mensile' : 'Pro'}</span></p>
                                     {sessionId ? <p className="mt-1 truncate">Sessione: <span className="font-medium">{sessionId}</span></p> : null}
                                 </div>
                             </div>
@@ -104,12 +104,12 @@ export default async function WelcomeProPage({
                     <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         <article className="rounded-2xl border border-slate-200/90 bg-white/90 p-4 shadow-sm">
                             <span className="inline-flex rounded-xl bg-emerald-600/10 p-2 text-emerald-700"><BellRing className="h-4 w-4" /></span>
-                            <h2 className="mt-3 text-lg font-semibold text-slate-900">Alert mirati</h2>
+                            <h2 className="mt-3 text-lg font-semibold text-slate-900">Avvisi mirati</h2>
                             <p className="mt-1 text-sm text-slate-600">Attiva ricerche monitorate per ricevere solo bandi utili ai tuoi obiettivi.</p>
                         </article>
                         <article className="rounded-2xl border border-slate-200/90 bg-white/90 p-4 shadow-sm">
                             <span className="inline-flex rounded-xl bg-[#0E2F50]/10 p-2 text-[#0E2F50]"><Search className="h-4 w-4" /></span>
-                            <h2 className="mt-3 text-lg font-semibold text-slate-900">Ricerche Pro</h2>
+                            <h2 className="mt-3 text-lg font-semibold text-slate-900">Ricerche avanzate</h2>
                             <p className="mt-1 text-sm text-slate-600">Salva preset avanzati e riparti in un click senza rifare filtri ogni giorno.</p>
                         </article>
                         <article className="rounded-2xl border border-slate-200/90 bg-white/90 p-4 shadow-sm sm:col-span-2 lg:col-span-1">
@@ -127,7 +127,7 @@ export default async function WelcomeProPage({
                             </div>
                             <span className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.11em] text-slate-600">
                                 <Sparkles className="h-3.5 w-3.5" />
-                                onboarding
+                                avvio
                             </span>
                         </div>
 
@@ -142,7 +142,7 @@ export default async function WelcomeProPage({
                             </li>
                             <li className="flex items-start gap-2 rounded-xl border border-slate-200/85 bg-slate-50/70 px-3 py-2.5">
                                 <span className="mt-0.5 inline-flex rounded-full bg-emerald-100 p-0.5 text-emerald-700"><CheckCircle2 className="h-3 w-3" /></span>
-                                Testa <strong className="mx-1">Genio</strong> per valutare in pochi secondi fit e prossime azioni.
+                                Testa <strong className="mx-1">Genio</strong> per valutare in pochi secondi l&apos;idoneità e le prossime azioni.
                             </li>
                         </ul>
 

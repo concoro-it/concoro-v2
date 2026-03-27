@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 declare global {
     interface Window {
-        dataLayer?: Array<Record<string, unknown>>;
+        dataLayer?: unknown[];
         gtag?: (...args: unknown[]) => void;
     }
 }
@@ -15,6 +15,7 @@ interface ProPurchaseTrackerProps {
 }
 
 const EVENT_NAME = 'pro_purchase_completed';
+const GOOGLE_ADS_ID = 'AW-17657894796';
 
 export function ProPurchaseTracker({ sessionId, billingCycle }: ProPurchaseTrackerProps) {
     useEffect(() => {
@@ -40,7 +41,11 @@ export function ProPurchaseTracker({ sessionId, billingCycle }: ProPurchaseTrack
         window.dataLayer.push(payload);
 
         if (typeof window.gtag === 'function') {
+            window.gtag('config', GOOGLE_ADS_ID);
             window.gtag('event', EVENT_NAME, payload);
+        } else {
+            // Queue config command until gtag script is ready.
+            window.dataLayer.push(['config', GOOGLE_ADS_ID]);
         }
 
         try {

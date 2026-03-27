@@ -13,15 +13,15 @@ import {
     Trash2,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getUserTier } from '@/lib/auth/getUserTier';
 import { getSavedConcorsi, getSavedSearches } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import { UpgradeProModal } from '@/components/paywall/UpgradeProModal';
 import { AlertSettingsPanel } from '@/components/salvati/AlertSettingsPanel';
 import { deleteSearchAction } from '@/app/hub/ricerche/actions';
 import type { SavedSearch } from '@/types/profile';
+import { getUserContext } from '@/lib/auth/getUserContext';
 
-export const metadata: Metadata = { title: 'Salvati | Dashboard' };
+export const metadata: Metadata = { title: 'Salvati | Hub' };
 
 interface SalvatiPageProps {
     searchParams?: Promise<{
@@ -48,14 +48,13 @@ function buildSearchHref(search: SavedSearch): string {
 
 export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user, tier } = await getUserContext(supabase);
 
     if (!user) {
         redirect('/login');
     }
 
-    const [tier, savedConcorsi, savedSearches, resolvedSearchParams] = await Promise.all([
-        getUserTier(supabase),
+    const [savedConcorsi, savedSearches, resolvedSearchParams] = await Promise.all([
         getSavedConcorsi(supabase, user.id),
         getSavedSearches(supabase, user.id),
         searchParams,
@@ -81,7 +80,7 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                         <div className="space-y-4">
                             <span className="inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-slate-50/85 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.13em] text-slate-700">
                                 <BookmarkCheck className="h-3.5 w-3.5" />
-                                Workspace salvati
+                                Archivio salvati
                             </span>
                             <div className="space-y-2">
                                 <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl leading-[1.06] tracking-tight text-slate-900 sm:text-4xl lg:text-[2.8rem]">
@@ -101,7 +100,7 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.11em] text-slate-500">Il tuo piano</p>
                             <div className="mt-2 flex items-center gap-2">
                                 <span className="inline-flex items-center rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white">
-                                    {tier === 'admin' ? 'Admin' : tier === 'pro' ? 'Pro' : 'Free'}
+                                    {tier === 'admin' ? 'Admin' : tier === 'pro' ? 'Pro' : 'Gratuito'}
                                 </span>
                                 {!isProTier && (
                                     <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">
@@ -111,13 +110,13 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                             </div>
                             <div className="mt-4 space-y-2.5 text-sm text-slate-700">
                                 <p className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/75 px-3 py-2">
-                                    <span>Saved concorsi</span>
+                                    <span>Concorsi salvati</span>
                                     <span className="font-semibold">
                                         {savedConcorsi.length}/{savedConcorsiLimit ?? '∞'}
                                     </span>
                                 </p>
                                 <p className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/75 px-3 py-2">
-                                    <span>Saved searches</span>
+                                    <span>Ricerche salvate</span>
                                     <span className="font-semibold">
                                         {savedSearches.length}/{savedSearchesLimit ?? '∞'}
                                     </span>
@@ -149,7 +148,7 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                                 className={`${tabBaseClasses} ${activeTab === 'concorsi' ? tabActiveClasses : tabInactiveClasses}`}
                             >
                                 <Bookmark className="h-4 w-4" />
-                                Saved concorsi
+                                Concorsi salvati
                                 <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold">
                                     {savedConcorsi.length}
                                 </span>
@@ -159,7 +158,7 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                                 className={`${tabBaseClasses} ${activeTab === 'ricerche' ? tabActiveClasses : tabInactiveClasses}`}
                             >
                                 <Search className="h-4 w-4" />
-                                Saved searches
+                                Ricerche salvate
                                 <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold">
                                     {savedSearches.length}
                                 </span>
@@ -169,7 +168,7 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                                 className={`${tabBaseClasses} ${activeTab === 'alert' ? tabActiveClasses : tabInactiveClasses}`}
                             >
                                 <Bell className="h-4 w-4" />
-                                Alert
+                                Avvisi
                             </Link>
                         </div>
                         <Link href="/hub/concorsi" className="inline-flex items-center gap-1 text-sm font-semibold text-[#0A4E88] hover:underline">
@@ -182,11 +181,11 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                         <div className="space-y-4">
                             {!isProTier && savedConcorsiLimit !== null && (
                                 <div className="rounded-xl border border-amber-200 bg-amber-50/75 px-4 py-3 text-sm text-amber-900">
-                                    <p className="font-semibold">Limite Free: 1 concorso salvato</p>
+                                    <p className="font-semibold">Limite gratuito: 1 concorso salvato</p>
                                     <p className="mt-1">
                                         {remainingConcorsiSlots === 0
-                                            ? 'Hai raggiunto il limite. Fai upgrade a Pro per salvare altri concorsi.'
-                                            : `Ti resta ${remainingConcorsiSlots} slot disponibile.`}
+                                            ? 'Hai raggiunto il limite. Passa a Pro per salvare altri concorsi.'
+                                            : `Ti restano ${remainingConcorsiSlots} posti disponibili.`}
                                     </p>
                                 </div>
                             )}
@@ -219,7 +218,7 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                             <div className="rounded-xl border border-sky-200 bg-sky-50/70 px-4 py-3 text-sm text-sky-900">
                                 Gestisci i digest delle ricerche da{' '}
                                 <Link href="/hub/alert" className="font-semibold underline underline-offset-2">
-                                    Alert Center
+                                    Centro avvisi
                                 </Link>.
                             </div>
                             {savedSearches.length > 0 ? savedSearches.map((search) => {
@@ -293,10 +292,10 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                                     Solo Pro
                                 </span>
                                 <h3 className="text-xl font-semibold text-slate-900 sm:text-2xl">
-                                    Saved searches sono disponibili solo con Pro.
+                                    Le ricerche salvate sono disponibili solo con Pro.
                                 </h3>
                                 <p className="text-sm leading-relaxed text-slate-700 sm:text-base">
-                                    Con il piano Free puoi salvare un solo concorso e non puoi salvare ricerche. Passa a Pro per monitoraggio illimitato.
+                                    Con il piano gratuito puoi salvare un solo concorso e non puoi salvare ricerche. Passa a Pro per il monitoraggio illimitato.
                                 </p>
                                 <div className="grid gap-2.5 sm:grid-cols-2">
                                     <UpgradeProModal triggerClassName="w-full">

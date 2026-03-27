@@ -3,6 +3,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { HubMobileHeader } from '@/components/layout/HubMobileHeader';
 import { InteractiveMenu } from '@/components/ui/modern-mobile-menu';
 import { redirect } from 'next/navigation';
+import { getUserContext } from '@/lib/auth/getUserContext';
 
 export default async function DashboardLayout({
     children,
@@ -10,19 +11,14 @@ export default async function DashboardLayout({
     children: React.ReactNode;
 }) {
     const supabase = await createClient();
-
-    // Fetch user and profile
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user, profile } = await getUserContext<{
+        avatar_url?: string | null;
+        full_name?: string | null;
+    }>(supabase, { profileSelect: 'avatar_url, full_name' });
 
     if (!user) {
         redirect('/login');
     }
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
 
     return (
         <div className="flex min-h-screen bg-gray-50/50">

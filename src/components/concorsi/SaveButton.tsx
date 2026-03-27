@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { BookmarkIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,22 +14,31 @@ interface SaveButtonProps {
     initialSaved?: boolean;
     className?: string;
     iconOnly?: boolean;
+    skipStatusHydrationCheck?: boolean;
 }
 
 export function SaveButton({
     concorsoId,
-    initialSaved = false,
+    initialSaved,
     className,
     iconOnly = false,
+    skipStatusHydrationCheck = false,
 }: SaveButtonProps) {
-    const [isSaved, setIsSaved] = useState(initialSaved);
+    const [isSaved, setIsSaved] = useState(Boolean(initialSaved));
     const [isLoading, setIsLoading] = useState(false);
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [showUpgradeProModal, setShowUpgradeProModal] = useState(false);
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient(), []);
 
     useEffect(() => {
-        // If initialSaved wasn't provided or we want to double check on mount for logged in users
+        if (typeof initialSaved === 'boolean') {
+            setIsSaved(initialSaved);
+        }
+    }, [initialSaved]);
+
+    useEffect(() => {
+        if (skipStatusHydrationCheck || typeof initialSaved === 'boolean') return;
+
         const checkSavedStatus = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
@@ -47,7 +56,7 @@ export function SaveButton({
         };
 
         checkSavedStatus();
-    }, [concorsoId, supabase]);
+    }, [concorsoId, skipStatusHydrationCheck, initialSaved, supabase]);
 
     const handleSaveToggle = async (e: React.MouseEvent) => {
         e.preventDefault(); // Prevent navigation if button is inside a Link
@@ -89,7 +98,7 @@ export function SaveButton({
 
                     if ((count ?? 0) >= 1) {
                         setShowUpgradeProModal(true);
-                        toast.error('Con il piano Free puoi salvare un solo concorso.');
+                        toast.error('Con il piano gratuito puoi salvare un solo concorso.');
                         setIsLoading(false);
                         return;
                     }

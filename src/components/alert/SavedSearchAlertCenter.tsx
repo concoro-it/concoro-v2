@@ -77,14 +77,14 @@ function toDateLabel(value: string | null | undefined): string {
 function buildPresetChips(filters: NormalizedSavedSearchFilters): FilterChip[] {
     const chips: FilterChip[] = [];
 
-    if (filters.query) chips.push({ label: `Query: ${filters.query}`, tone: 'blue' });
+    if (filters.query) chips.push({ label: `Ricerca: ${filters.query}`, tone: 'blue' });
     filters.regioni.forEach((item) => chips.push({ label: item, tone: 'blue' }));
     filters.province.forEach((item) => chips.push({ label: item, tone: 'slate' }));
     filters.settori.forEach((item) => chips.push({ label: item, tone: 'emerald' }));
     if (filters.tipo_procedura) chips.push({ label: filters.tipo_procedura, tone: 'slate' });
     if (filters.ente_slug) chips.push({ label: `Ente: ${filters.ente_slug}`, tone: 'slate' });
     if (filters.stato) chips.push({ label: `Stato: ${filters.stato}`, tone: 'amber' });
-    if (filters.sort) chips.push({ label: `Sort: ${filters.sort}`, tone: 'amber' });
+    if (filters.sort) chips.push({ label: `Ordina: ${filters.sort}`, tone: 'amber' });
 
     if (chips.length === 0) {
         chips.push({ label: 'Tutti i concorsi', tone: 'slate' });
@@ -231,17 +231,17 @@ export function SavedSearchAlertCenter({ tier }: AlertCenterProps) {
                         <div className="alert-stagger" style={{ ['--d' as string]: '0ms' }}>
                             <span className="inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-slate-50/85 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.13em] text-slate-700">
                                 <Bell className="h-3.5 w-3.5" />
-                                Alert Center
+                                Centro avvisi
                             </span>
                             <h1 className="mt-4 [font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl leading-[1.05] tracking-tight text-slate-900 sm:text-4xl lg:text-[2.8rem]">
                                 Controlla i
                                 <span className="mx-2 bg-gradient-to-r from-[#0E2F50] via-[#0A4E88] to-[#0E2F50] bg-clip-text text-transparent">
-                                    preset attivi
+                                    filtri attivi
                                 </span>
-                                e i nuovi match in un unico dashboard.
+                                e le nuove corrispondenze in un&apos;unica bacheca.
                             </h1>
                             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
-                                Ogni preset diventa una vista operativa: filtri chiari, stato digest, cronologia risultati e accesso rapido al dettaglio.
+                                Ogni filtro diventa una vista operativa: criteri chiari, stato del riepilogo, cronologia risultati e accesso rapido al dettaglio.
                             </p>
                         </div>
 
@@ -250,14 +250,14 @@ export function SavedSearchAlertCenter({ tier }: AlertCenterProps) {
                             <div className="mt-3 grid gap-2 text-sm">
                                 <p className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2">
                                     <span>Piano</span>
-                                    <span className="font-semibold">{tier === 'admin' ? 'Admin' : tier === 'pro' ? 'Pro' : 'Free'}</span>
+                                    <span className="font-semibold">{tier === 'admin' ? 'Admin' : tier === 'pro' ? 'Pro' : 'Gratuito'}</span>
                                 </p>
                                 <p className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2">
-                                    <span>Preset attivi</span>
+                                    <span>Filtri attivi</span>
                                     <span className="font-semibold">{activeSubscriptions}</span>
                                 </p>
                                 <p className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2">
-                                    <span>Match tracciati</span>
+                                    <span>Corrispondenze tracciate</span>
                                     <span className="font-semibold">{totalMatches}</span>
                                 </p>
                             </div>
@@ -290,11 +290,11 @@ export function SavedSearchAlertCenter({ tier }: AlertCenterProps) {
                                 <div>
                                     <p className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100/80 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-amber-900">
                                         <Lock className="h-3.5 w-3.5" />
-                                        Preview Free
+                                        Anteprima gratuita
                                     </p>
-                                    <h2 className="mt-3 text-lg font-semibold text-slate-900">Vedi i primi 5 match, sblocca il feed completo con Pro</h2>
+                                    <h2 className="mt-3 text-lg font-semibold text-slate-900">Vedi le prime 5 corrispondenze, sblocca il flusso completo con Pro</h2>
                                     <p className="mt-1 text-sm text-slate-700">
-                                        Free: email con 1 annuncio e “+N altri concorsi”. Pro: digest completo e gestione avanzata preset.
+                                        Gratuito: email con 1 annuncio e “+N altri concorsi”. Pro: riepilogo completo e gestione avanzata dei filtri.
                                     </p>
                                 </div>
                                 <UpgradeProModal triggerClassName="inline-block">
@@ -310,13 +310,13 @@ export function SavedSearchAlertCenter({ tier }: AlertCenterProps) {
                     <article className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Digest</p>
+                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Riepilogo</p>
                                 <h3 className="mt-1 text-lg font-semibold text-slate-900">Invio giornaliero via email</h3>
                                 <p className="mt-1 text-sm text-slate-600">Un evento per utente, con i risultati piu rilevanti dei preset monitorati.</p>
                             </div>
                             <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                                 <Mail className="h-4 w-4 text-slate-500" />
-                                <span className="text-sm font-medium text-slate-700">Digest attivo</span>
+                                <span className="text-sm font-medium text-slate-700">Riepilogo attivo</span>
                                 <Checkbox
                                     checked={Boolean(settings?.enabled)}
                                     disabled={!isPro || saving || loading || !settings}
@@ -329,10 +329,10 @@ export function SavedSearchAlertCenter({ tier }: AlertCenterProps) {
 
                 <section className="dashboard-section-frame p-4 sm:p-5 alert-stagger" style={{ ['--d' as string]: '260ms' }}>
                     <div className="mb-4 flex items-center justify-between">
-                        <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Preset monitorati</h2>
+                        <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Filtri monitorati</h2>
                         <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">
                             <SlidersHorizontal className="h-3.5 w-3.5" />
-                            {settings?.subscriptions.length ?? 0} preset
+                            {settings?.subscriptions.length ?? 0} filtri
                         </span>
                     </div>
 
@@ -349,9 +349,9 @@ export function SavedSearchAlertCenter({ tier }: AlertCenterProps) {
                                     >
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
-                                                <h3 className="text-base font-semibold text-slate-900">{item.name || 'Preset senza nome'}</h3>
+                                                <h3 className="text-base font-semibold text-slate-900">{item.name || 'Filtro senza nome'}</h3>
                                                 <p className="mt-1 text-xs text-slate-500">
-                                                    Ultimo risultato: {toDateLabel(item.last_match_at)} • Totale: {item.current_total_count}
+                                                    Ultima corrispondenza: {toDateLabel(item.last_match_at)} • Totale: {item.current_total_count}
                                                 </p>
                                             </div>
                                             <Checkbox
@@ -379,7 +379,7 @@ export function SavedSearchAlertCenter({ tier }: AlertCenterProps) {
 
                                         <div className="mt-4 flex items-center justify-between">
                                             <span className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
-                                                {item.enabled ? 'Tracking attivo' : 'Tracking sospeso'}
+                                                {item.enabled ? 'Monitoraggio attivo' : 'Monitoraggio sospeso'}
                                             </span>
                                             <Link
                                                 href={`/hub/alert/preset/${item.saved_search_id}`}
@@ -395,8 +395,8 @@ export function SavedSearchAlertCenter({ tier }: AlertCenterProps) {
                         </div>
                     ) : (
                         <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 px-5 py-10 text-center">
-                            <h3 className="text-base font-semibold text-slate-900">Nessun preset monitorato</h3>
-                            <p className="mt-1 text-sm text-slate-600">Salva una ricerca da concorsi per attivare il monitoraggio alert.</p>
+                            <h3 className="text-base font-semibold text-slate-900">Nessun filtro monitorato</h3>
+                            <p className="mt-1 text-sm text-slate-600">Salva una ricerca nella sezione concorsi per attivare gli avvisi.</p>
                             <Button asChild className="mt-4">
                                 <Link href="/hub/concorsi">Apri concorsi</Link>
                             </Button>
@@ -409,13 +409,13 @@ export function SavedSearchAlertCenter({ tier }: AlertCenterProps) {
                         <h2 className="text-xl font-semibold text-slate-900">Ultime corrispondenze</h2>
                         <p className="text-sm text-slate-500">
                             {feed?.total ?? 0} totali
-                            {!isPro && ` • preview ${FREE_FEED_PREVIEW_LIMIT}`}
+                            {!isPro && ` • anteprima ${FREE_FEED_PREVIEW_LIMIT}`}
                         </p>
                     </div>
 
                     <div className="space-y-3">
                         {loading ? (
-                            <p className="text-sm text-slate-600">Caricamento alert...</p>
+                            <p className="text-sm text-slate-600">Caricamento avvisi...</p>
                         ) : feed?.items?.length ? feed.items.map((item) => {
                             const concorso = item.concorso;
                             const href = concorso?.slug ? `/hub/concorsi/${concorso.slug}` : '/hub/concorsi';
@@ -423,14 +423,14 @@ export function SavedSearchAlertCenter({ tier }: AlertCenterProps) {
                             return (
                                 <article key={`${item.saved_search_id}:${item.concorso_id}`} className="rounded-xl border border-slate-200 bg-white p-4">
                                     <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
-                                        {item.saved_search_name ?? 'Preset'}
+                                        {item.saved_search_name ?? 'Filtro'}
                                     </p>
                                     <h3 className="mt-2 text-base font-semibold text-slate-900">{concorso?.titolo ?? 'Concorso'}</h3>
                                     <p className="mt-1 text-sm text-slate-600">{concorso?.ente_nome ?? 'Ente non disponibile'}</p>
                                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
                                         <span>Pubblicato: {toDateLabel(concorso?.data_pubblicazione)}</span>
                                         <Link href={href} className="font-semibold text-[#0A4E88] hover:underline">
-                                            Apri annuncio
+                                            Apri bando
                                         </Link>
                                     </div>
                                 </article>

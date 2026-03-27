@@ -21,6 +21,7 @@ interface Props {
     detailBasePath?: string;
     matchScore?: number | null;
     descriptionOverride?: string | null;
+    disableSaveStatusAutoCheck?: boolean;
 }
 
 function stripAllHtml(html: string): string {
@@ -92,7 +93,7 @@ function getDaysUntil(dateValue: string | Date | null | undefined): number | nul
     return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export function ConcorsoCard({ concorso, saved, detailBasePath, matchScore, descriptionOverride }: Props) {
+export function ConcorsoCard({ concorso, saved, detailBasePath, matchScore, descriptionOverride, disableSaveStatusAutoCheck = false }: Props) {
     const pathname = usePathname();
 
     const regione = getFirstRegione(concorso);
@@ -170,7 +171,7 @@ export function ConcorsoCard({ concorso, saved, detailBasePath, matchScore, desc
                                 <span className={cn('text-[1.6rem] font-bold leading-none', scorePalette.text)}>{roundedScore}</span>
                             </div>
                             <span className="pointer-events-none absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500 ring-1 ring-slate-200">
-                                Fit
+                                Compatibilità
                             </span>
                         </div>
                     )}
@@ -287,7 +288,8 @@ export function ConcorsoCard({ concorso, saved, detailBasePath, matchScore, desc
                     </button>
                     <SaveButton
                         concorsoId={concorso.concorso_id}
-                        initialSaved={Boolean(saved)}
+                        initialSaved={typeof saved === 'boolean' ? saved : undefined}
+                        skipStatusHydrationCheck={disableSaveStatusAutoCheck}
                         iconOnly
                         className="opacity-70 hover:opacity-100"
                     />

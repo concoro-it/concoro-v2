@@ -78,14 +78,14 @@ export function BillingSection({ tier, isPro, stripeCustomerId }: BillingSection
 
             if (!response.ok) {
                 const data = await response.json();
-                throw new Error(data.error || 'Failed to create portal session');
+                throw new Error(data.error || 'Impossibile creare la sessione del portale');
             }
 
             const { url } = await response.json();
             window.location.href = url;
         } catch (err: unknown) {
             console.error('Portal session error:', err);
-            const message = err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.';
+            const message = err instanceof Error ? err.message : 'Si è verificato un errore imprevisto. Riprova.';
             setError(message);
             setIsPortalLoading(false);
         }
@@ -104,7 +104,7 @@ export function BillingSection({ tier, isPro, stripeCustomerId }: BillingSection
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div className="space-y-2">
                             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                                Overview piano
+                                Panoramica piano
                             </p>
                             <div className="flex items-center gap-2">
                                 <div
@@ -241,7 +241,7 @@ export function BillingSection({ tier, isPro, stripeCustomerId }: BillingSection
                             </div>
                         ) : (
                             <div className="p-8 text-sm text-slate-600">
-                                Stripe non ha ancora registrato una cronologia fatture.
+                                Stripe non ha ancora registrato una cronologia di fatture.
                             </div>
                         )}
                     </div>
@@ -256,8 +256,8 @@ export function BillingSection({ tier, isPro, stripeCustomerId }: BillingSection
                     <ul className="mt-3 space-y-2 text-sm text-slate-700">
                         {[
                             'Monitoraggio continuo dei concorsi in target',
-                            'Ricerche salvate e alert email intelligenti',
-                            'Supporto operativo con Genio in hub',
+                            'Ricerche salvate e avvisi email intelligenti',
+                            'Supporto operativo con Genio nella bacheca',
                         ].map((feature) => (
                             <li key={feature} className="flex items-start gap-2">
                                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />

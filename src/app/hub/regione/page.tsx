@@ -7,8 +7,8 @@ import { getRegioniWithCount } from '@/lib/supabase/queries';
 import { toUrlSlug } from '@/lib/utils/regioni';
 
 export const metadata: Metadata = {
-    title: 'Regioni | Dashboard',
-    description: 'Esplora i concorsi per regione dal dashboard.',
+    title: 'Regioni | Hub',
+    description: 'Esplora i concorsi per regione dalla bacheca.',
 };
 
 export const revalidate = 3600;
@@ -52,7 +52,7 @@ export default async function HubRegioneIndexPage() {
             <div className="relative container mx-auto max-w-[78rem] px-4 py-8 sm:px-6 sm:py-10">
                 <div className="mb-6">
                     <nav className="mb-4 text-sm text-slate-500">
-                        <Link href="/hub/bacheca" className="hover:text-slate-900">Dashboard</Link>
+                        <Link href="/hub/bacheca" className="hover:text-slate-900">Bacheca</Link>
                         {' › '}
                         <span className="text-slate-900">Regioni</span>
                     </nav>

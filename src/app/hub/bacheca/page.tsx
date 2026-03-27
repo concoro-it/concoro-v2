@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { getUserTier } from '@/lib/auth/getUserTier';
 import { getActiveConcorsiCount, getProvinceWithCount, getRegioniWithCount, getSavedConcorsi } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
+import { getUserContext } from '@/lib/auth/getUserContext';
 import {
     ArrowRight,
     Bookmark,
@@ -16,24 +16,21 @@ import {
 } from 'lucide-react';
 import ProvinciaMapExplorer from '@/components/dashboard/ProvinciaMapExplorer';
 
-export const metadata: Metadata = { title: 'Bacheca | Dashboard' };
+export const metadata: Metadata = { title: 'Bacheca | Hub' };
 
 export default async function DashboardPage() {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user, profile, tier } = await getUserContext(supabase);
     if (!user) redirect('/login');
 
-    const [tier, savedConcorsi, profile, regionCounts, provinceCounts, activeConcorsiCount] = await Promise.all([
-        getUserTier(supabase),
+    const [savedConcorsi, regionCounts, provinceCounts, activeConcorsiCount] = await Promise.all([
         getSavedConcorsi(supabase, user.id),
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
         getRegioniWithCount(supabase),
         getProvinceWithCount(supabase),
         getActiveConcorsiCount(supabase),
     ]);
 
-    const profileData = profile.data;
-    const firstName = profileData?.full_name?.split(' ')[0] ?? 'utente';
+    const firstName = profile?.full_name?.split(' ')[0] ?? 'utente';
     const trackedRegions = regionCounts.filter((item) => item.count > 0).length;
     const topRegion = [...regionCounts].sort((a, b) => b.count - a.count)[0];
     const tierLabel = tier === 'pro' ? 'Pro' : tier === 'admin' ? 'Admin' : 'Gratuito';

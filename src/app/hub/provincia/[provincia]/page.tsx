@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import PublicProvinciaPage, { generateMetadata as generatePublicMetadata } from '@/app/provincia/[provincia]/page';
+import { createClient } from '@/lib/supabase/server';
+import { getUserContext } from '@/lib/auth/getUserContext';
 
 interface Props {
     params: Promise<{ provincia: string }>;
@@ -30,5 +32,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function HubProvinciaPage({ params, searchParams }: Props) {
-    return <PublicProvinciaPage params={params} searchParams={searchParams} />;
+    const supabase = await createClient();
+    const { tier } = await getUserContext(supabase);
+    const mergedSearchParams = (async () => ({
+        ...(await searchParams),
+        viewer_tier: tier,
+    }))();
+    return <PublicProvinciaPage params={params} searchParams={mergedSearchParams} />;
 }

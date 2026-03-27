@@ -21,8 +21,8 @@ import { formatDateShort } from '@/lib/utils/date';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 
 export const metadata: Metadata = {
-    title: 'Scadenze | Dashboard',
-    description: 'Trova concorsi in scadenza oggi, questa settimana e questo mese dal dashboard.',
+    title: 'Scadenze | Hub',
+    description: 'Trova concorsi in scadenza oggi, questa settimana e questo mese dalla bacheca.',
 };
 
 const DEADLINE_BUCKETS = [
@@ -117,13 +117,13 @@ export default async function HubScadenzePage() {
                 <section className="grid gap-4 rounded-[1.75rem] border border-slate-200/80 bg-white/82 p-5 backdrop-blur-sm sm:p-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-6 lg:p-7">
                     <div className="space-y-4">
                         <nav className="flex items-center gap-1.5 text-sm text-slate-500">
-                            <Link href="/hub/bacheca" className="hover:text-slate-900">Dashboard</Link>
+                            <Link href="/hub/bacheca" className="hover:text-slate-900">Bacheca</Link>
                             <ChevronRight className="h-4 w-4" />
                             <span className="text-slate-900">Scadenze</span>
                         </nav>
                         <span className="inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-slate-50/90 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.13em] text-slate-700">
                             <Flame className="h-3.5 w-3.5" />
-                            Deadline control room
+                            Sala controllo scadenze
                         </span>
                         <div className="space-y-2">
                             <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl leading-[1.05] tracking-tight text-slate-900 sm:text-4xl lg:text-[2.85rem]">

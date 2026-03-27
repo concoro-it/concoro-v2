@@ -151,7 +151,7 @@ export function MatchingWorkspace({ userId, tier, profile }: MatchingWorkspacePr
   const loadingMessages = [
     'Sto leggendo il tuo CV in PDF...',
     'Sto incrociando profilo e preferenze...',
-    'Sto calcolando il punteggio di compatibilita...',
+    'Sto calcolando il punteggio di compatibilità...',
     'Sto ordinando i bandi piu rilevanti...',
   ];
 
@@ -327,7 +327,7 @@ export function MatchingWorkspace({ userId, tier, profile }: MatchingWorkspacePr
                   In pochi secondi.
                 </h1>
                 <p className="max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
-                  Upload CV e matching intelligente sono disponibili nel piano Pro.
+                  Caricamento CV e abbinamento intelligente sono disponibili nel piano Pro.
                 </p>
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   <Link
@@ -351,20 +351,20 @@ export function MatchingWorkspace({ userId, tier, profile }: MatchingWorkspacePr
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.11em] text-slate-500">Piano attivo</p>
                 <div className="mt-2 flex items-center gap-2">
                   <Badge variant="secondary">Tier: {tierLabel}</Badge>
-                  <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100">Matching bloccato</Badge>
+                  <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100">Abbinamento bloccato</Badge>
                 </div>
                 <ul className="mt-4 space-y-2.5 text-sm text-slate-700">
                   <li className="flex items-start gap-2">
                     <Sparkles className="mt-0.5 h-4 w-4 text-[#0A4E88]" />
-                    Upload CV con parsing automatico del PDF
+                    Caricamento CV con parsing automatico del PDF
                   </li>
                   <li className="flex items-start gap-2">
                     <Sparkles className="mt-0.5 h-4 w-4 text-[#0A4E88]" />
-                    Match ordinati per punteggio di compatibilita
+                    Abbinamenti ordinati per punteggio di compatibilità
                   </li>
                   <li className="flex items-start gap-2">
                     <Sparkles className="mt-0.5 h-4 w-4 text-[#0A4E88]" />
-                    Notifiche radar su nuovi bandi compatibili
+                    Avvisi radar su nuovi bandi compatibili
                   </li>
                 </ul>
               </div>
@@ -396,8 +396,8 @@ export function MatchingWorkspace({ userId, tier, profile }: MatchingWorkspacePr
               <div className="mx-auto flex h-full w-full max-w-5xl min-h-0 flex-col overflow-hidden">
                 <header className="mb-4 flex items-start justify-between gap-4">
                   <div>
-                    <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">Risultati Match</h2>
-                    <p className="mt-1 text-sm text-slate-600">Lista ordinata per punteggio di compatibilita</p>
+                    <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">Risultati abbinamento</h2>
+                    <p className="mt-1 text-sm text-slate-600">Lista ordinata per punteggio di compatibilità</p>
                   </div>
                   <Button
                     type="button"
@@ -414,7 +414,7 @@ export function MatchingWorkspace({ userId, tier, profile }: MatchingWorkspacePr
                 <div className="scrollbar-hide mt-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
                   {matchedCards.map((item) => {
                     const baseText = (item.concorso.riassunto ?? item.concorso.descrizione ?? '').trim();
-                    const enrichedSuffix = ' Profilo coerente con i requisiti principali e priorita del matching.';
+                    const enrichedSuffix = ' Profilo coerente con i requisiti principali e priorità dell\'abbinamento.';
                     const descriptionOverride = `${baseText}${enrichedSuffix}`.trim();
 
                     return (

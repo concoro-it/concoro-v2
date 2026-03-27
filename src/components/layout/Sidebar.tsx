@@ -126,13 +126,13 @@ export function Sidebar({ userProfile }: { userProfile: SidebarUserProfile | nul
         },
         {
             href: '/hub/alert',
-            name: 'Alert',
+            name: 'Avvisi',
             icon: <Bell className="w-5 h-5" />,
             badgeCount: alertUnreadCount,
         },
         {
             href: '/hub/matching',
-            name: 'Matching',
+            name: 'Abbinamenti',
             icon: <Sparkles className="w-5 h-5" />,
             pro: true,
         },
@@ -144,7 +144,7 @@ export function Sidebar({ userProfile }: { userProfile: SidebarUserProfile | nul
         },
         {
             href: '/hub/billing',
-            name: 'Billing',
+            name: 'Fatturazione',
             icon: <CreditCard className="w-5 h-5" />,
         },
         {
@@ -254,10 +254,10 @@ export function Sidebar({ userProfile }: { userProfile: SidebarUserProfile | nul
                     ) : (
                         <Image src="/concoro-logo-light.png" alt="Concoro" width={120} height={28} className="h-7 w-auto opacity-90" />
                     )}
-                    <SidebarTooltip enabled={isCollapsed} content="Sidebar ac">
+                    <SidebarTooltip enabled={isCollapsed} content={isCollapsed ? 'Apri barra laterale' : 'Chiudi barra laterale'}>
                         <button
                             type="button"
-                            aria-label={isCollapsed ? 'Sidebar ac' : 'Sidebar kapat'}
+                            aria-label={isCollapsed ? 'Apri barra laterale' : 'Chiudi barra laterale'}
                             onClick={() => setIsCollapsed((prev) => !prev)}
                             className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                         >
@@ -296,7 +296,7 @@ export function Sidebar({ userProfile }: { userProfile: SidebarUserProfile | nul
                                             {!isCollapsed && (
                                                 <button
                                                     type="button"
-                                                    aria-label="Concorsi alt menuyu ac veya kapat"
+                                                    aria-label="Apri o chiudi il sottomenu concorsi"
                                                     onClick={() => setIsConcorsiOpen((prev) => !prev)}
                                                     className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                                                 >

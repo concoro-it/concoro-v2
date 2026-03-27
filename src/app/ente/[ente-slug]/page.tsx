@@ -35,6 +35,7 @@ import type {
 
 interface Props {
     params: Promise<{ 'ente-slug': string }>;
+    searchParams?: Promise<{ viewer_tier?: string }>;
 }
 
 const PAGE_STEPS = [
@@ -170,7 +171,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export const revalidate = 86400;
 
-export default async function EntePage({ params }: Props) {
+export default async function EntePage({ params, searchParams }: Props) {
     const { 'ente-slug': slug } = await params;
     const supabase = createCachedServiceClient({ revalidate, tags: ['public:ente-detail'] });
 
@@ -206,10 +207,19 @@ export default async function EntePage({ params }: Props) {
     const openConcorsi = concorsi.filter(isOpenConcorso);
     const closedConcorsi = concorsi.filter((item) => !isOpenConcorso(item));
     const openConcorsiCount = openConcorsi.length;
-    const tier = 'anon' as const;
-    const isLocked = true;
-    const visibleResults = openConcorsi.slice(0, FREE_VISIBLE);
-    const lockedResults = [...openConcorsi.slice(FREE_VISIBLE), ...closedConcorsi];
+    const viewerTier = (await searchParams)?.viewer_tier;
+    const tier = viewerTier === 'pro' || viewerTier === 'admin' || viewerTier === 'free'
+        ? viewerTier
+        : 'anon';
+    const routePrefix = tier === 'anon' ? '' : '/hub';
+    const homeHref = routePrefix || '/';
+    const toInternalHref = (path: `/${string}`) => `${routePrefix}${path}`;
+    const signupHref = tier === 'anon'
+        ? `/signup?ente=${slug}`
+        : `/hub/billing?source=ente-page&ente=${slug}`;
+    const isLocked = tier !== 'pro' && tier !== 'admin';
+    const visibleResults = isLocked ? openConcorsi.slice(0, FREE_VISIBLE) : concorsi;
+    const lockedResults = isLocked ? [...openConcorsi.slice(FREE_VISIBLE), ...closedConcorsi] : [];
     const showPaywall = isLocked && lockedResults.length > 0;
 
     const identita = parseJson<EnteIdentitaIstituzionale>(ente?.identita_istituzionale, {});
@@ -390,9 +400,9 @@ export default async function EntePage({ params }: Props) {
             <div className="relative border-b border-slate-200 bg-white/85">
                 <div className="container mx-auto max-w-[78rem] px-4 py-3 text-sm text-slate-500">
                     <nav className="flex flex-wrap items-center gap-2">
-                        <Link href="/" className="hover:text-slate-900">Home</Link>
+                        <Link href={homeHref} className="hover:text-slate-900">Home</Link>
                         <ChevronRight className="h-4 w-4" />
-                        <Link href="/ente" className="hover:text-slate-900">Enti Pubblici</Link>
+                        <Link href={toInternalHref('/ente')} className="hover:text-slate-900">Enti Pubblici</Link>
                         <ChevronRight className="h-4 w-4" />
                         <span className="font-medium text-slate-900">{ente.ente_nome}</span>
                     </nav>
@@ -440,14 +450,14 @@ export default async function EntePage({ params }: Props) {
                                 <Building2 className="h-4 w-4" />
                             </Link>
                             <Link
-                                href={`/concorsi?ente=${slug}`}
+                                href={toInternalHref(`/concorsi?ente=${slug}`)}
                                 className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
                             >
                                 Cerca altri bandi simili
                                 <ChevronRight className="h-4 w-4" />
                             </Link>
                             <Link
-                                href={`/signup?ente=${slug}`}
+                                href={signupHref}
                                 className="inline-flex items-center gap-2 rounded-xl border border-[#0A4E88]/30 bg-[#0A4E88]/5 px-5 py-3 text-sm font-semibold text-[#083861] transition hover:bg-[#0A4E88]/10"
                             >
                                 Ricevi nuovi bandi di questo ente
@@ -552,7 +562,7 @@ export default async function EntePage({ params }: Props) {
                                 <div className="flex flex-wrap gap-2">
                                     {regioneSlug && (
                                         <Link
-                                            href={`/regione/${regioneSlug}`}
+                                            href={toInternalHref(`/regione/${regioneSlug}`)}
                                             className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                                         >
                                             Altri bandi in {ente?.regione}
@@ -560,7 +570,7 @@ export default async function EntePage({ params }: Props) {
                                     )}
                                     {provinciaSlug && (
                                         <Link
-                                            href={`/provincia/${provinciaSlug}`}
+                                            href={toInternalHref(`/provincia/${provinciaSlug}`)}
                                             className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                                         >
                                             Bandi in provincia di {ente?.provincia}
@@ -614,7 +624,7 @@ export default async function EntePage({ params }: Props) {
                         <div className="flex flex-wrap gap-2">
                             {regioneSlug && (
                                 <Link
-                                    href={`/regione/${regioneSlug}`}
+                                    href={toInternalHref(`/regione/${regioneSlug}`)}
                                     className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                                 >
                                     Vedi bandi in {ente?.regione}
@@ -622,7 +632,7 @@ export default async function EntePage({ params }: Props) {
                             )}
                             {provinciaSlug && (
                                 <Link
-                                    href={`/provincia/${provinciaSlug}`}
+                                    href={toInternalHref(`/provincia/${provinciaSlug}`)}
                                     className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                                 >
                                     Vedi bandi in provincia di {ente?.provincia}
@@ -824,14 +834,14 @@ export default async function EntePage({ params }: Props) {
                     </p>
                     <div className="mt-2 flex flex-wrap">
                         <Link
-                            href={`/signup?ente=${slug}`}
+                            href={signupHref}
                             className="m-4 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
                         >
                             Attiva notifiche ente
                             <Bell className="h-4 w-4" />
                         </Link>
                         <Link
-                            href={`/concorsi?ente=${slug}`}
+                            href={toInternalHref(`/concorsi?ente=${slug}`)}
                             className="m-4 inline-flex items-center gap-2 rounded-xl border border-white/35 px-5 py-3 text-sm font-semibold text-white transition hover:border-white"
                         >
                             Esplora i bandi attivi
@@ -841,8 +851,8 @@ export default async function EntePage({ params }: Props) {
                         <div className="m-4 mt-2 flex flex-wrap gap-4 text-sm text-slate-200">
                             {website && <a href={website} target="_blank" rel="noopener noreferrer" className="hover:text-white">Sito istituzionale</a>}
                             {mapsHref && <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="hover:text-white">Mappa sede</a>}
-                            {regioneSlug && <Link href={`/regione/${regioneSlug}`} className="hover:text-white">Bandi in {ente?.regione}</Link>}
-                            {provinciaSlug && <Link href={`/provincia/${provinciaSlug}`} className="hover:text-white">Bandi in provincia di {ente?.provincia}</Link>}
+                            {regioneSlug && <Link href={toInternalHref(`/regione/${regioneSlug}`)} className="hover:text-white">Bandi in {ente?.regione}</Link>}
+                            {provinciaSlug && <Link href={toInternalHref(`/provincia/${provinciaSlug}`)} className="hover:text-white">Bandi in provincia di {ente?.provincia}</Link>}
                             {socialLinks.map(link => (
                                 <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer" className="hover:text-white">
                                     {link.label}
