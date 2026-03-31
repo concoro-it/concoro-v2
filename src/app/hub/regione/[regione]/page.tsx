@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
 import PublicRegionePage, { generateMetadata as generatePublicMetadata } from '@/app/regione/[regione]/page';
-import { createClient } from '@/lib/supabase/server';
-import { getUserContext } from '@/lib/auth/getUserContext';
 
 interface Props {
     params: Promise<{ regione: string }>;
@@ -32,11 +30,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function HubRegionePage({ params, searchParams }: Props) {
-    const supabase = await createClient();
-    const { tier } = await getUserContext(supabase);
-    const mergedSearchParams = (async () => ({
-        ...(await searchParams),
-        viewer_tier: tier,
-    }))();
-    return <PublicRegionePage params={params} searchParams={mergedSearchParams} />;
+    return <PublicRegionePage params={params} searchParams={searchParams} />;
 }

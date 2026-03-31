@@ -29,7 +29,7 @@ export function getCanonicalSiteUrl() {
     return PRODUCTION_CANONICAL_URL;
 }
 
-export function getClientOAuthRedirectUrl() {
+export function getClientOAuthRedirectUrl(nextPath?: string | null) {
     const configuredSiteUrl = getConfiguredSiteUrl();
     const windowOrigin = stripTrailingSlash(window.location.origin);
     const hasConfiguredSiteUrl = Boolean(configuredSiteUrl && configuredSiteUrl.length > 0);
@@ -39,11 +39,16 @@ export function getClientOAuthRedirectUrl() {
         : windowOrigin;
 
     // In production, a stale localhost env var should never override the actual domain.
-    if (isLocalhostUrl(baseUrl) && !isLocalhostUrl(windowOrigin)) {
-        return `${windowOrigin}/api/auth/callback`;
+    const callbackBaseUrl = isLocalhostUrl(baseUrl) && !isLocalhostUrl(windowOrigin)
+        ? windowOrigin
+        : baseUrl;
+    const callbackUrl = new URL('/api/auth/callback', callbackBaseUrl);
+
+    if (nextPath) {
+        callbackUrl.searchParams.set('next', nextPath);
     }
 
-    return `${baseUrl}/api/auth/callback`;
+    return callbackUrl.toString();
 }
 
 export function getRequestBaseUrl(request: NextRequest) {

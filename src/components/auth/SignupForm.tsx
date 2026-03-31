@@ -5,8 +5,15 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, Loader2, Check } from 'lucide-react';
 import { getClientOAuthRedirectUrl } from '@/lib/auth/url';
+import { buildAuthQueryParams, sanitizeInternalRedirectPath } from '@/lib/auth/redirect';
 
-export function SignupForm() {
+interface SignupFormProps {
+    redirectTo?: string;
+    source?: string | null;
+    intent?: string | null;
+}
+
+export function SignupForm({ redirectTo = '/hub/bacheca', source, intent }: SignupFormProps) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
@@ -16,6 +23,8 @@ export function SignupForm() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     const supabase = createClient();
+    const safeRedirectTo = sanitizeInternalRedirectPath(redirectTo);
+    const loginHref = `/login?${buildAuthQueryParams({ redirectTo: safeRedirectTo, source, intent })}`;
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -26,7 +35,7 @@ export function SignupForm() {
             password,
             options: {
                 data: { full_name: fullName },
-                emailRedirectTo: getClientOAuthRedirectUrl(),
+                emailRedirectTo: getClientOAuthRedirectUrl(safeRedirectTo),
             },
         });
         if (error) {
@@ -42,7 +51,7 @@ export function SignupForm() {
     async function handleGoogle() {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: { redirectTo: getClientOAuthRedirectUrl() },
+            options: { redirectTo: getClientOAuthRedirectUrl(safeRedirectTo) },
         });
         if (error) setError('Errore con Google OAuth. Riprova.');
     }
@@ -147,7 +156,7 @@ export function SignupForm() {
 
             <p className="text-center text-sm text-muted-foreground">
                 Hai già un account?{' '}
-                <Link href="/login" className="font-medium text-primary hover:underline">Accedi</Link>
+                <Link href={loginHref} className="font-medium text-primary hover:underline">Accedi</Link>
             </p>
         </div>
     );

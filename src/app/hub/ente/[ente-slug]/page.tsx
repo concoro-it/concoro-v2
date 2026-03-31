@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
 import PublicEntePage, { generateMetadata as generatePublicMetadata } from '@/app/ente/[ente-slug]/page';
-import { createClient } from '@/lib/supabase/server';
-import { getUserContext } from '@/lib/auth/getUserContext';
 
 interface Props {
     params: Promise<{ 'ente-slug': string }>;
@@ -31,7 +29,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function HubEntePage({ params }: Props) {
-    const supabase = await createClient();
-    const { tier } = await getUserContext(supabase);
-    return <PublicEntePage params={params} searchParams={Promise.resolve({ viewer_tier: tier })} />;
+    return <PublicEntePage params={params} />;
 }

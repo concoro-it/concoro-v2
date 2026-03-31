@@ -7,6 +7,7 @@ import { Suspense } from 'react';
 import { ConditionalHeader } from '@/components/layout/ConditionalHeader';
 import { ConditionalFooter } from '@/components/layout/ConditionalFooter';
 import { ConsentBanner } from '@/components/analytics/ConsentBanner';
+import { PublicPageviewGateBanner } from '@/components/paywall/PublicPageviewGateBanner';
 import { getServerAppUrl } from '@/lib/auth/url';
 import { CONSENT_STORAGE_KEY } from '@/lib/analytics/consent';
 
@@ -95,6 +96,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Suspense fallback={null}>
                     <ConditionalHeader />
                 </Suspense>
+                <PublicPageviewGateBanner />
                 <main>{children}</main>
                 <ConsentBanner />
                 <Suspense fallback={null}>

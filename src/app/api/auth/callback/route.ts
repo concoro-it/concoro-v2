@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createStaticAdminClient } from '@/lib/supabase/server';
 import { getRequestBaseUrl } from '@/lib/auth/url';
+import { sanitizeInternalRedirectPath } from '@/lib/auth/redirect';
 import {
     dispatchBrevoEventOnce,
     getProfileWithCounts,
@@ -11,7 +12,7 @@ import {
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
-    const next = searchParams.get('next') ?? '/hub/bacheca';
+    const next = sanitizeInternalRedirectPath(searchParams.get('next'));
     const baseUrl = getRequestBaseUrl(request);
 
     if (code) {

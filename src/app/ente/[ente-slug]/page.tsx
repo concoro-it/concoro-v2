@@ -14,11 +14,12 @@ import {
     ShieldCheck,
     Train,
 } from 'lucide-react';
-import { createCachedServiceClient } from '@/lib/supabase/server';
+import { createCachedServiceClient, createClient } from '@/lib/supabase/server';
 import { getAllEnti, getConcorsiByEnte, getEnteBySlug } from '@/lib/supabase/queries';
 import { formatDateIT } from '@/lib/utils/date';
 import { toUrlSlug } from '@/lib/utils/regioni';
 import { getServerAppUrl } from '@/lib/auth/url';
+import { getUserContext } from '@/lib/auth/getUserContext';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import { BlurredResultsSection } from '@/components/paywall/PaywallBanner';
 import type {
@@ -35,7 +36,6 @@ import type {
 
 interface Props {
     params: Promise<{ 'ente-slug': string }>;
-    searchParams?: Promise<{ viewer_tier?: string }>;
 }
 
 const PAGE_STEPS = [
@@ -171,7 +171,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export const revalidate = 86400;
 
-export default async function EntePage({ params, searchParams }: Props) {
+export default async function EntePage({ params }: Props) {
     const { 'ente-slug': slug } = await params;
     const supabase = createCachedServiceClient({ revalidate, tags: ['public:ente-detail'] });
 
@@ -207,10 +207,8 @@ export default async function EntePage({ params, searchParams }: Props) {
     const openConcorsi = concorsi.filter(isOpenConcorso);
     const closedConcorsi = concorsi.filter((item) => !isOpenConcorso(item));
     const openConcorsiCount = openConcorsi.length;
-    const viewerTier = (await searchParams)?.viewer_tier;
-    const tier = viewerTier === 'pro' || viewerTier === 'admin' || viewerTier === 'free'
-        ? viewerTier
-        : 'anon';
+    const authSupabase = await createClient();
+    const { tier } = await getUserContext(authSupabase);
     const routePrefix = tier === 'anon' ? '' : '/hub';
     const homeHref = routePrefix || '/';
     const toInternalHref = (path: `/${string}`) => `${routePrefix}${path}`;

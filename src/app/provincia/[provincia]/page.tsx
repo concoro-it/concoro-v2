@@ -12,7 +12,7 @@ import {
     ShieldCheck,
     Sparkles,
 } from 'lucide-react';
-import { createCachedPublicClient, createStaticClient } from '@/lib/supabase/server';
+import { createCachedPublicClient, createClient, createStaticClient } from '@/lib/supabase/server';
 import { getConcorsi, getProvinceWithCount } from '@/lib/supabase/queries';
 import { getServerAppUrl } from '@/lib/auth/url';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
@@ -20,6 +20,7 @@ import { BlurredResultsSection } from '@/components/paywall/PaywallBanner';
 import { EnteComboboxFilter } from '@/components/regione/EnteComboboxFilter';
 import { toUrlSlug } from '@/lib/utils/regioni';
 import type { ConcorsoFilters } from '@/types/concorso';
+import { getUserContext } from '@/lib/auth/getUserContext';
 
 const FREE_VISIBLE = 5;
 const LIMIT = 20;
@@ -63,7 +64,6 @@ interface Props {
         settore?: string;
         ente_slug?: string;
         page?: string;
-        viewer_tier?: string;
     }>;
 }
 
@@ -177,9 +177,8 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
         ente_slug: enteSlug || undefined,
     };
 
-    const tier = paramsObj.viewer_tier === 'pro' || paramsObj.viewer_tier === 'admin' || paramsObj.viewer_tier === 'free'
-        ? paramsObj.viewer_tier
-        : 'anon';
+    const authSupabase = await createClient();
+    const { tier } = await getUserContext(authSupabase);
     const routePrefix = tier === 'anon' ? '' : '/hub';
     const isLocked = tier !== 'pro' && tier !== 'admin';
     const resultsLimit = isLocked ? FREE_VISIBLE : LIMIT;

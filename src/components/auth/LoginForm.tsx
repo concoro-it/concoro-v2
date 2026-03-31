@@ -6,8 +6,15 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { getClientOAuthRedirectUrl } from '@/lib/auth/url';
+import { buildAuthQueryParams, sanitizeInternalRedirectPath } from '@/lib/auth/redirect';
 
-export function LoginForm() {
+interface LoginFormProps {
+    redirectTo?: string;
+    source?: string | null;
+    intent?: string | null;
+}
+
+export function LoginForm({ redirectTo = '/hub/bacheca', source, intent }: LoginFormProps) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPw, setShowPw] = useState(false);
@@ -16,6 +23,8 @@ export function LoginForm() {
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
     const supabase = createClient();
+    const safeRedirectTo = sanitizeInternalRedirectPath(redirectTo);
+    const signupHref = `/signup?${buildAuthQueryParams({ redirectTo: safeRedirectTo, source, intent })}`;
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -25,7 +34,7 @@ export function LoginForm() {
         if (error) {
             setError('Email o password non corretti. Riprova.');
         } else {
-            router.push('/hub/bacheca');
+            router.push(safeRedirectTo);
             router.refresh();
         }
         setLoading(false);
@@ -34,7 +43,7 @@ export function LoginForm() {
     async function handleGoogle() {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: { redirectTo: getClientOAuthRedirectUrl() },
+            options: { redirectTo: getClientOAuthRedirectUrl(safeRedirectTo) },
         });
         if (error) setError('Errore con Google OAuth. Riprova.');
     }
@@ -139,7 +148,7 @@ export function LoginForm() {
 
             <p className="text-center text-sm text-muted-foreground">
                 Non hai un account?{' '}
-                <Link href="/signup" className="font-medium text-primary hover:underline">Registrati</Link>
+                <Link href={signupHref} className="font-medium text-primary hover:underline">Registrati</Link>
             </p>
         </div>
     );

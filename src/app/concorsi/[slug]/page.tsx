@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { createCachedPublicClient, createStaticClient } from '@/lib/supabase/server';
+import { createCachedPublicClient, createClient, createStaticClient } from '@/lib/supabase/server';
 import { getConcorsoBySlug, getRelatedConcorsi, getAllConcorsiSlugs, getEnteBySlug, getEnteByName } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import {
@@ -23,6 +23,7 @@ import { ProAccountCTA } from '@/components/ui/pro-account-cta';
 import { SaveButton } from '@/components/concorsi/SaveButton';
 import { ShareButton } from '@/components/concorsi/ShareButton';
 import { SintesiSection, type SintesiItem } from '@/components/concorsi/SintesiSection';
+import { buildAuthQueryParams } from '@/lib/auth/redirect';
 import type {
     EnteAnalisiLogistica,
     EnteFaqItem,
@@ -32,10 +33,10 @@ import type {
     JsonValue
 } from '@/types/ente';
 import { getServerAppUrl } from '@/lib/auth/url';
+import { getUserContext } from '@/lib/auth/getUserContext';
 
 interface Props {
     params: Promise<{ slug: string }>;
-    searchParams?: Promise<{ viewer_tier?: string }>;
 }
 
 interface AnnuncioEnrichment {
@@ -351,19 +352,25 @@ export async function generateStaticParams() {
 
 export const revalidate = 3600;
 
-export default async function ConcorsoDetailPage({ params, searchParams }: Props) {
+export default async function ConcorsoDetailPage({ params }: Props) {
     const { slug } = await params;
     const supabase = createCachedPublicClient({ revalidate, tags: ['public:concorso-detail'] });
     const concorso = await getConcorsoBySlug(supabase, slug);
     if (!concorso) notFound();
-    const viewerTier = (await searchParams)?.viewer_tier;
-    const tier = viewerTier === 'pro' || viewerTier === 'admin' || viewerTier === 'free'
-        ? viewerTier
-        : 'anon';
+    const authSupabase = await createClient();
+    const { tier } = await getUserContext(authSupabase);
     const isGuestUser = tier !== 'pro' && tier !== 'admin';
     const routePrefix = tier === 'anon' ? '' : '/hub';
     const homeHref = routePrefix || '/';
     const toInternalHref = (path: `/${string}`) => `${routePrefix}${path}`;
+    const authRedirectPath = `/hub/concorsi/${encodeURIComponent(slug)}`;
+    const authQueryParams = buildAuthQueryParams({
+        redirectTo: authRedirectPath,
+        source: 'concorso-detail',
+        intent: 'continue',
+    });
+    const anonSignupHref = `/signup?${authQueryParams}`;
+    const anonLoginHref = `/login?${authQueryParams}`;
 
     const expired = isExpired(concorso.data_scadenza) || concorso.status === 'CLOSED';
     const regioni = parseRegioni(concorso);
@@ -408,10 +415,10 @@ export default async function ConcorsoDetailPage({ params, searchParams }: Props
     const hasHiddenHookItems = isGuestUser && hookItems.length > sintesiItemsLimit;
     const hasHiddenAlertItems = isGuestUser && alertItems.length > sintesiItemsLimit;
     const signupCtaHref = tier === 'anon'
-        ? `/signup?source=concorso-detail-paywall&concorso=${encodeURIComponent(slug)}`
+        ? anonSignupHref
         : `/hub/billing?source=concorso-detail-paywall&concorso=${encodeURIComponent(slug)}`;
     const loginCtaHref = tier === 'anon'
-        ? `/login?source=concorso-detail-paywall&concorso=${encodeURIComponent(slug)}`
+        ? anonLoginHref
         : '/hub';
 
     const summaryItems: SintesiItem[] = [
@@ -665,15 +672,33 @@ export default async function ConcorsoDetailPage({ params, searchParams }: Props
 
                             <div className="flex flex-wrap gap-3">
                                 {!expired && concorso.link_reindirizzamento && (
-                                    <a
-                                        href={concorso.link_reindirizzamento}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-                                    >
-                                        Vai al portale candidatura
-                                        <ExternalLink className="h-4 w-4" />
-                                    </a>
+                                    tier === 'anon' ? (
+                                        <div className="flex flex-wrap items-center gap-3">
+                                            <Link
+                                                href={anonSignupHref}
+                                                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                                            >
+                                                Vai al portale candidatura
+                                                <ExternalLink className="h-4 w-4" />
+                                            </Link>
+                                            <Link
+                                                href={anonLoginHref}
+                                                className="text-sm font-semibold text-slate-700 underline decoration-slate-300 underline-offset-2 transition hover:text-slate-900"
+                                            >
+                                                Hai già un account? Accedi
+                                            </Link>
+                                        </div>
+                                    ) : (
+                                        <a
+                                            href={concorso.link_reindirizzamento}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                                        >
+                                            Vai al portale candidatura
+                                            <ExternalLink className="h-4 w-4" />
+                                        </a>
+                                    )
                                 )}
                                 {!expired && normaliseLink(concorso.link_sito_pa) && (
                                     <a
@@ -1072,7 +1097,7 @@ export default async function ConcorsoDetailPage({ params, searchParams }: Props
                                             </ul>
                                             <Link
                                                 href={tier === 'anon'
-                                                    ? `/signup?source=concorso-sidebar-register&concorso=${encodeURIComponent(slug)}`
+                                                    ? anonSignupHref
                                                     : `/hub/billing?source=concorso-sidebar-register&concorso=${encodeURIComponent(slug)}`}
                                                 className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                                             >
