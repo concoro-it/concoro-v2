@@ -4,7 +4,6 @@ import { getAllConcorsiSlugs, getAllProvinceSlugs, getAllRegioniSlugs, getAllSet
 import { getCanonicalSiteUrl } from '@/lib/auth/url';
 
 // Regenerate sitemap periodically so new/removed concorsi URLs are reflected automatically.
-export const revalidate = 900; // 15 minutes
 export const revalidate = 86400; // 24 hours
 
 
