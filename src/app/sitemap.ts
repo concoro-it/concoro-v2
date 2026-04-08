@@ -1,21 +1,25 @@
 import { MetadataRoute } from 'next';
-import { createStaticClient } from '@/lib/supabase/server';
-import { getAllConcorsiSlugs, getAllProvinceSlugs, getAllRegioniSlugs, getAllSettoriSlugs } from '@/lib/supabase/queries';
+import { createStaticAdminClient, createStaticClient } from '@/lib/supabase/server';
+import { getAllConcorsiSlugs, getAllEnteSlugs, getAllProvinceSlugs, getAllRegioniSlugs, getAllSettoriSlugs } from '@/lib/supabase/queries';
 import { getCanonicalSiteUrl } from '@/lib/auth/url';
 
 // Regenerate sitemap periodically so new/removed concorsi URLs are reflected automatically.
 export const revalidate = 86400; // 24 hours
-
-
 // Vercel/Next.js dynamic sitemap generation
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = getCanonicalSiteUrl();
-    const supabase = createStaticClient();
+    const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+        ? createStaticAdminClient()
+        : createStaticClient();
 
     // Keep the sitemap focused on canonical, index-worthy public pages.
     const staticRoutes = [
         '',
         '/concorsi',
+        '/ente',
+        '/regione',
+        '/provincia',
+        '/settore',
         '/pricing',
         '/privacy',
         '/cookie-policy',
@@ -32,11 +36,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // 2. Fetch Dynamic Routes in parallel
     const [
         concorsiSlugs,
+        enteSlugs,
         regioniSlugs,
         provinceSlugs,
         settoriSlugs
     ] = await Promise.all([
         getAllConcorsiSlugs(supabase),
+        getAllEnteSlugs(supabase),
         getAllRegioniSlugs(supabase),
         getAllProvinceSlugs(supabase),
         getAllSettoriSlugs(supabase)
@@ -48,6 +54,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(),
         changeFrequency: 'daily' as const,
         priority: 0.9,
+    }));
+
+    const entiRoutes = enteSlugs.map((slug) => ({
+        url: `${baseUrl}/ente/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'daily' as const,
+        priority: 0.8,
     }));
 
     const regioniRoutes = regioniSlugs.map((slug) => ({
@@ -74,6 +87,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [
         ...staticRoutes,
         ...concorsiRoutes,
+        ...entiRoutes,
         ...regioniRoutes,
         ...provinceRoutes,
         ...settoriRoutes,

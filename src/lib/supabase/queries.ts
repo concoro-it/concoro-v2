@@ -635,11 +635,34 @@ export async function getLatestArticoli(supabase: SupabaseClient, limit = 3): Pr
 }
 
 export async function getAllConcorsiSlugs(supabase: SupabaseClient): Promise<string[]> {
-    const { data } = await supabase
-        .from('concorsi')
-        .select('slug')
-        .not('slug', 'is', null);
-    return (data ?? []).map((r: { slug: string | null }) => r.slug).filter((s): s is string => Boolean(s));
+    const pageSize = 1000;
+    const slugs = new Set<string>();
+    let from = 0;
+
+    while (true) {
+        const { data, error } = await supabase
+            .from('concorsi')
+            .select('slug')
+            .not('slug', 'is', null)
+            .order('slug', { ascending: true })
+            .range(from, from + pageSize - 1);
+
+        if (error || !data || data.length === 0) {
+            break;
+        }
+
+        for (const row of data) {
+            if (row.slug) slugs.add(row.slug);
+        }
+
+        if (data.length < pageSize) {
+            break;
+        }
+
+        from += pageSize;
+    }
+
+    return Array.from(slugs);
 }
 
 export async function getAllRegioniSlugs(supabase: SupabaseClient): Promise<string[]> {
@@ -710,6 +733,37 @@ export async function getAllSettoriSlugs(supabase: SupabaseClient): Promise<stri
             }
         }
     }
+    return Array.from(slugs);
+}
+
+export async function getAllEnteSlugs(supabase: SupabaseClient): Promise<string[]> {
+    const pageSize = 1000;
+    const slugs = new Set<string>();
+    let from = 0;
+
+    while (true) {
+        const { data, error } = await supabase
+            .from('enti')
+            .select('ente_slug')
+            .not('ente_slug', 'is', null)
+            .order('ente_slug', { ascending: true })
+            .range(from, from + pageSize - 1);
+
+        if (error || !data || data.length === 0) {
+            break;
+        }
+
+        for (const row of data) {
+            if (row.ente_slug) slugs.add(row.ente_slug);
+        }
+
+        if (data.length < pageSize) {
+            break;
+        }
+
+        from += pageSize;
+    }
+
     return Array.from(slugs);
 }
 
