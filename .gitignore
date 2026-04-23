@@ -7,3 +7,15 @@ skills
 docs
 # Sentry Config File
 .env.sentry-build-plugin
+
+# macOS metadata
+.DS_Store
+
+# Local DB backups / temp artifacts
+migration-backups/
+supabase/.temp/
+
+# Accidental local empty files
+/Database
+/Direct
+/Settings

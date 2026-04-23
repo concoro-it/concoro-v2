@@ -4,7 +4,7 @@ import { getUserTier } from '@/lib/auth/getUserTier';
 
 const GENIO_WEBHOOK_URL =
   process.env.GENIO_WEBHOOK_URL ||
-  'https://n8n.srv865706.hstgr.cloud/webhook/733dace6-bb4e-4dab-997b-66a780681163';
+  'http://n8n-xx2fcgp7yy3d2ctibu3hgywo.31.97.47.35.sslip.io/webhook/733dace6-bb4e-4dab-997b-66a780681163';
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
