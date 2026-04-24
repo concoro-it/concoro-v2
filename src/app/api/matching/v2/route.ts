@@ -3,8 +3,10 @@ import type { Profile } from '@/types/profile';
 import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
+const WEBHOOK_TIMEOUT_MS = 60000;
 
 class RequestValidationError extends Error {}
+class WebhookForwardError extends Error {}
 
 interface ParsedMatchingRequest {
     userId: string;
@@ -37,11 +39,17 @@ async function tryForwardToN8n(payload: ParsedMatchingRequest): Promise<Response
         headers['x-matching-secret'] = n8nSecret;
     }
 
-    return fetch(webhookUrl, {
-        method: 'POST',
-        headers,
-        body: formData,
-    });
+    try {
+        return await fetch(webhookUrl, {
+            method: 'POST',
+            headers,
+            body: formData,
+            signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
+        });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown webhook error';
+        throw new WebhookForwardError(`Failed to forward matching request to n8n: ${message}`);
+    }
 }
 
 function normalizeString(value: unknown): string | null {
@@ -146,7 +154,11 @@ export async function POST(req: NextRequest) {
     } catch (error) {
         console.error('[matching-v2] fatal', error);
         const message = error instanceof Error ? error.message : 'Internal server error';
-        const status = error instanceof RequestValidationError ? 400 : 500;
+        const status = error instanceof RequestValidationError
+            ? 400
+            : error instanceof WebhookForwardError
+                ? 502
+                : 500;
         return NextResponse.json(
             {
                 error: message,

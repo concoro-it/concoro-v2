@@ -3,21 +3,32 @@ import { createClient } from '@/lib/supabase/server';
 import { getUserTier } from '@/lib/auth/getUserTier';
 
 const GENIO_WEBHOOK_URL =
+  process.env.N8N_GENIO_WEBHOOK_URL ||
   process.env.GENIO_WEBHOOK_URL ||
   'http://n8n-xx2fcgp7yy3d2ctibu3hgywo.31.97.47.35.sslip.io/webhook/733dace6-bb4e-4dab-997b-66a780681163';
+const WEBHOOK_TIMEOUT_MS = 60000;
+
+async function postToWebhook(url: string, body: FormData) {
+  return fetch(url, {
+    method: 'POST',
+    body,
+    cache: 'no-store',
+    signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
+  });
+}
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const tier = await getUserTier(supabase);
-
-  if (tier !== 'pro' && tier !== 'admin') {
-    return NextResponse.json(
-      { error: 'Questa funzionalita e disponibile solo per gli utenti Pro.' },
-      { status: 403 }
-    );
-  }
-
   try {
+    const supabase = await createClient();
+    const tier = await getUserTier(supabase);
+
+    if (tier !== 'pro' && tier !== 'admin') {
+      return NextResponse.json(
+        { error: 'Questa funzionalita e disponibile solo per gli utenti Pro.' },
+        { status: 403 }
+      );
+    }
+
     const inputForm = await req.formData();
     const outboundForm = new FormData();
 
@@ -32,21 +43,13 @@ export async function POST(req: NextRequest) {
       outboundForm.append('data0', file, file.name);
     }
 
-    let webhookRes = await fetch(GENIO_WEBHOOK_URL, {
-      method: 'POST',
-      body: outboundForm,
-      cache: 'no-store',
-    });
+    let webhookRes = await postToWebhook(GENIO_WEBHOOK_URL, outboundForm);
 
     // n8n'de workflow aktif degilse production webhook 404 doner;
     // bu durumda test endpoint'ini otomatik deneriz.
     if (!webhookRes.ok && webhookRes.status === 404 && GENIO_WEBHOOK_URL.includes('/webhook/')) {
       const testUrl = GENIO_WEBHOOK_URL.replace('/webhook/', '/webhook-test/');
-      webhookRes = await fetch(testUrl, {
-        method: 'POST',
-        body: outboundForm,
-        cache: 'no-store',
-      });
+      webhookRes = await postToWebhook(testUrl, outboundForm);
     }
 
     if (!webhookRes.ok) {
@@ -77,9 +80,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ reply });
   } catch (error) {
     console.error('[genio webhook]', error);
+    const message = error instanceof Error ? error.message : 'Unknown webhook error';
     return NextResponse.json(
-      { error: 'Si e verificato un errore durante la comunicazione con Genio.' },
-      { status: 500 }
+      { error: `Si e verificato un errore durante la comunicazione con Genio. ${message}` },
+      { status: 502 }
     );
   }
 }
