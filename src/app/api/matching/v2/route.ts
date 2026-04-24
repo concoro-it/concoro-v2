@@ -3,6 +3,8 @@ import type { Profile } from '@/types/profile';
 import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
+const DEFAULT_MATCHING_WEBHOOK_URL =
+    'https://n8n.concoro.it/webhook/concoro-matching-v2';
 const WEBHOOK_TIMEOUT_MS = 60000;
 
 class RequestValidationError extends Error {}
@@ -17,7 +19,7 @@ interface ParsedMatchingRequest {
 }
 
 async function tryForwardToN8n(payload: ParsedMatchingRequest): Promise<Response | null> {
-    const webhookUrl = process.env.N8N_MATCHING_WEBHOOK_URL;
+    const webhookUrl = process.env.N8N_MATCHING_WEBHOOK_URL || DEFAULT_MATCHING_WEBHOOK_URL;
     if (!webhookUrl) return null;
 
     const formData = new FormData();

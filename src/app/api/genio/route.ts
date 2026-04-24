@@ -5,7 +5,7 @@ import { getUserTier } from '@/lib/auth/getUserTier';
 const GENIO_WEBHOOK_URL =
   process.env.N8N_GENIO_WEBHOOK_URL ||
   process.env.GENIO_WEBHOOK_URL ||
-  'http://n8n-xx2fcgp7yy3d2ctibu3hgywo.31.97.47.35.sslip.io/webhook/733dace6-bb4e-4dab-997b-66a780681163';
+  'https://n8n.concoro.it/webhook/733dace6-bb4e-4dab-997b-66a780681163';
 const WEBHOOK_TIMEOUT_MS = 60000;
 
 async function postToWebhook(url: string, body: FormData) {
