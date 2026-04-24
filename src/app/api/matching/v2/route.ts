@@ -101,7 +101,17 @@ async function parseRequestPayload(req: NextRequest): Promise<ParsedMatchingRequ
         };
     }
 
-    const body = await req.json();
+    let body: {
+        user_id?: unknown;
+        request_id?: unknown;
+        profile_json?: unknown;
+        cv_text?: unknown;
+    };
+    try {
+        body = await req.json();
+    } catch {
+        throw new RequestValidationError('Valid JSON body or multipart/form-data is required');
+    }
     const userId = normalizeString(body?.user_id);
     if (!userId) {
         throw new RequestValidationError('user_id is required');

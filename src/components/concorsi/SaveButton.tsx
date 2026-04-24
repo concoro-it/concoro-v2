@@ -45,10 +45,10 @@ export function SaveButton({
 
             const { data, error } = await supabase
                 .from('saved_concorsi')
-                .select('*')
+                .select('id')
                 .eq('user_id', session.user.id)
                 .eq('concorso_id', concorsoId)
-                .single();
+                .maybeSingle();
 
             if (data && !error) {
                 setIsSaved(true);
@@ -88,7 +88,7 @@ export function SaveButton({
                     .from('profiles')
                     .select('tier')
                     .eq('id', session.user.id)
-                    .single();
+                    .maybeSingle();
 
                 if ((profile?.tier ?? 'free') === 'free') {
                     const { count } = await supabase
