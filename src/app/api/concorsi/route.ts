@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 /**
  * GET /api/concorsi
  * Ingest cron endpoint — protected by Authorization: Bearer {CRON_SECRET}
- * Called by a cron job (e.g. Vercel Cron, Cloud Scheduler) to trigger data ingestion from INPA.
+ * Called by an external cron job to trigger data ingestion from INPA.
  */
 export async function GET(req: NextRequest) {
     const authHeader = req.headers.get('authorization');

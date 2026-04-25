@@ -1,8 +1,7 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
-import { useChat } from 'ai/react';
-import type { Message } from 'ai';
+import { useRef, useEffect, useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, MessageSquare, Loader2 } from 'lucide-react';
@@ -14,20 +13,29 @@ interface ChatInterfaceProps {
     concorsoId?: string; // Optional context for the AI
 }
 
+type Message = {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+};
+
+const initialMessages: Message[] = [
+    {
+        id: 'welcome',
+        role: 'assistant',
+        content: "Ciao! Sono Genio, il tuo assistente AI per i concorsi pubblici. Posso aiutarti a trovare bandi adatti a te, spiegarti requisiti complessi o darti suggerimenti su come prepararti. Come posso aiutarti oggi?",
+    },
+];
+
+function createMessageId() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function ChatInterface({ className, concorsoId }: ChatInterfaceProps) {
-    const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
-        api: '/api/chat',
-        body: {
-            concorsoId,
-        },
-        initialMessages: [
-            {
-                id: 'welcome',
-                role: 'assistant',
-                content: "Ciao! Sono Genio, il tuo assistente AI per i concorsi pubblici. Posso aiutarti a trovare bandi adatti a te, spiegarti requisiti complessi o darti suggerimenti su come prepararti. Come posso aiutarti oggi?"
-            }
-        ]
-    });
+    const [messages, setMessages] = useState<Message[]>(initialMessages);
+    const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<Error | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
@@ -38,6 +46,93 @@ export function ChatInterface({ className, concorsoId }: ChatInterfaceProps) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages]);
+
+    const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+        setInput(e.target.value);
+    };
+
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        const content = input.trim();
+        if (!content || isLoading) return;
+
+        const userMessage: Message = {
+            id: createMessageId(),
+            role: 'user',
+            content,
+        };
+        const assistantMessage: Message = {
+            id: createMessageId(),
+            role: 'assistant',
+            content: '',
+        };
+        const nextMessages = [...messages, userMessage];
+
+        setInput('');
+        setError(null);
+        setIsLoading(true);
+        setMessages([...nextMessages, assistantMessage]);
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    concorsoId,
+                    messages: nextMessages
+                        .filter((message) => message.id !== 'welcome')
+                        .map(({ role, content }) => ({ role, content })),
+                }),
+            });
+
+            if (!response.ok || !response.body) {
+                throw new Error('Chat request failed');
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const events = buffer.split('\n\n');
+                buffer = events.pop() ?? '';
+
+                for (const event of events) {
+                    const dataLine = event
+                        .split('\n')
+                        .find((line) => line.startsWith('data: '));
+                    const data = dataLine?.slice(6);
+
+                    if (!data || data === '[DONE]') continue;
+
+                    const parsed = JSON.parse(data) as { text?: string };
+                    if (parsed.text) {
+                        setMessages((currentMessages) =>
+                            currentMessages.map((message) =>
+                                message.id === assistantMessage.id
+                                    ? { ...message, content: message.content + parsed.text }
+                                    : message
+                            )
+                        );
+                    }
+                }
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err : new Error('Chat request failed'));
+            setMessages((currentMessages) =>
+                currentMessages.filter((message) => message.id !== assistantMessage.id)
+            );
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // Submit form on Enter (without Shift)
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -64,10 +159,10 @@ export function ChatInterface({ className, concorsoId }: ChatInterfaceProps) {
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-8 scroll-smooth">
-                {messages.map((message: Message) => (
+                {messages.map((message) => (
                     <ChatMessage
                         key={message.id}
-                        role={message.role as 'user' | 'assistant'}
+                        role={message.role}
                         content={message.content}
                     />
                 ))}

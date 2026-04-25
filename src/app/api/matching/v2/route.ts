@@ -3,9 +3,10 @@ import type { Profile } from '@/types/profile';
 import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 const DEFAULT_MATCHING_WEBHOOK_URL =
     'https://n8n.concoro.it/webhook/concoro-matching-v2';
-const WEBHOOK_TIMEOUT_MS = 60000;
+const WEBHOOK_TIMEOUT_MS = 58000;
 
 class RequestValidationError extends Error {}
 class WebhookForwardError extends Error {}
@@ -157,6 +158,17 @@ export async function POST(req: NextRequest) {
 
         const bodyText = await forwardedResponse.text();
         const contentType = forwardedResponse.headers.get('content-type') || 'application/json; charset=utf-8';
+
+        if (!forwardedResponse.ok) {
+            const errorBody = bodyText.trim().slice(0, 500);
+            return NextResponse.json(
+                {
+                    error: `Matching webhook HTTP ${forwardedResponse.status}${errorBody ? `: ${errorBody}` : ''}`,
+                },
+                { status: 502 }
+            );
+        }
+
         return new NextResponse(bodyText, {
             status: forwardedResponse.status,
             headers: {

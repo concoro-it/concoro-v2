@@ -64,8 +64,6 @@ export function getRequestBaseUrl(request: NextRequest) {
     const host = request.headers.get('host');
     if (host) return `${proto}://${host}`;
 
-    if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-
     return stripTrailingSlash(new URL(request.url).origin);
 }
 

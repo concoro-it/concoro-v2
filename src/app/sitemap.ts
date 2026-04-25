@@ -5,7 +5,7 @@ import { getCanonicalSiteUrl } from '@/lib/auth/url';
 
 // Regenerate sitemap periodically so new/removed concorsi URLs are reflected automatically.
 export const revalidate = 86400; // 24 hours
-// Vercel/Next.js dynamic sitemap generation
+// Next.js dynamic sitemap generation
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = getCanonicalSiteUrl();
     const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY

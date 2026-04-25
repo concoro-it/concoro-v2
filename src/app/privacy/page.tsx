@@ -66,7 +66,7 @@ export default function PrivacyPage() {
                         'Brevo per invio email operative, notifiche e gestione dei contatti.',
                         'Google per Google Tag e Google Analytics, in base al consenso espresso.',
                         'OpenAI e workflow esterni collegati a Genio o funzioni di analisi documentale, limitatamente ai contenuti inviati dall’utente per ottenere la funzionalita richiesta.',
-                        'Vercel o analogo hosting provider per distribuzione dell’applicazione, log tecnici e sicurezza.',
+                        'Hosting provider self-hosted per distribuzione dell’applicazione, log tecnici e sicurezza.',
                     ],
                 },
                 {
