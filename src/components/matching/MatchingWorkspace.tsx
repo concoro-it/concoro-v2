@@ -50,6 +50,15 @@ const CONCORSI_MATCH_SELECT = `
   ente_nome, ente_slug, regioni_array, province_array,
   link_sito_pa, link_reindirizzamento, is_active, created_at
 `;
+const MATCHING_WEBHOOK_URL = 'https://n8n.concoro.it/webhook/concoro-matching-v2';
+
+function getMatchingSubmitUrl() {
+  const hostname = window.location.hostname;
+  if (hostname === 'concoro.it' || hostname.endsWith('.concoro.it')) {
+    return MATCHING_WEBHOOK_URL;
+  }
+  return '/api/matching/v2';
+}
 
 function isObject(value: unknown): value is JsonObject {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
@@ -214,7 +223,7 @@ export function MatchingWorkspace({ userId, tier, profile }: MatchingWorkspacePr
       formData.append('profile_json', JSON.stringify(profile ?? {}));
       formData.append('cv_pdf', file, file.name || 'cv.pdf');
 
-      const response = await fetch('/api/matching/v2', {
+      const response = await fetch(getMatchingSubmitUrl(), {
         method: 'POST',
         body: formData,
       });
