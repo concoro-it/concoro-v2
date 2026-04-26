@@ -50,13 +50,8 @@ const CONCORSI_MATCH_SELECT = `
   ente_nome, ente_slug, regioni_array, province_array,
   link_sito_pa, link_reindirizzamento, is_active, created_at
 `;
-const MATCHING_WEBHOOK_URL = 'https://n8n.concoro.it/webhook/concoro-matching-v2';
 
 function getMatchingSubmitUrl() {
-  const hostname = window.location.hostname;
-  if (hostname === 'concoro.it' || hostname.endsWith('.concoro.it')) {
-    return MATCHING_WEBHOOK_URL;
-  }
   return '/api/matching/v2';
 }
 

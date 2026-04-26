@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, KeyboardEvent, useMemo, useRef, useState } from 'react';
+import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -295,6 +295,20 @@ function getTierTone(tier: UserTier): { hasAccess: boolean } {
   return { hasAccess: false };
 }
 
+async function readJsonResponse(response: Response): Promise<Record<string, unknown>> {
+  const text = await response.text();
+  if (!text.trim()) return {};
+
+  try {
+    const parsed = JSON.parse(text);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+  } catch {
+    const contentType = response.headers.get('content-type') || 'unknown content type';
+    const preview = text.replace(/\s+/g, ' ').trim().slice(0, 160);
+    throw new Error(`Risposta non JSON dal server (${response.status}, ${contentType}). ${preview}`);
+  }
+}
+
 export function GenioWorkspace({ tier, userName, userAvatarUrl }: GenioWorkspaceProps) {
   const { hasAccess } = getTierTone(tier);
 
@@ -304,16 +318,23 @@ export function GenioWorkspace({ tier, userName, userAvatarUrl }: GenioWorkspace
   const [hasStarted, setHasStarted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
+  const [greeting, setGreeting] = useState('Ciao');
 
   const landingTextareaRef = useRef<HTMLTextAreaElement>(null);
   const chatTextareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
 
-  const greeting = useMemo(() => {
+  useEffect(() => {
     const currentHour = new Date().getHours();
-    if (currentHour >= 5 && currentHour < 12) return 'Buongiorno';
-    if (currentHour >= 12 && currentHour < 18) return 'Buon pomeriggio';
-    return 'Buonasera';
+    if (currentHour >= 5 && currentHour < 12) {
+      setGreeting('Buongiorno');
+      return;
+    }
+    if (currentHour >= 12 && currentHour < 18) {
+      setGreeting('Buon pomeriggio');
+      return;
+    }
+    setGreeting('Buonasera');
   }, []);
 
   const greetingName = userName?.trim() || 'Concorsista';
@@ -396,12 +417,17 @@ export function GenioWorkspace({ tier, userName, userAvatarUrl }: GenioWorkspace
         body: formData,
       });
 
-      const result = await response.json();
+      const result = await readJsonResponse(response);
       if (!response.ok) {
-        throw new Error(result?.error || `Errore HTTP ${response.status}`);
+        const serverError = typeof result.error === 'string' && result.error.trim()
+          ? result.error
+          : `Errore HTTP ${response.status}`;
+        throw new Error(serverError);
       }
 
-      const assistantReply = result.reply || "Ho completato l'analisi.";
+      const assistantReply = typeof result.reply === 'string' && result.reply.trim()
+        ? result.reply
+        : "Ho completato l'analisi.";
       const linkedConcorsoIds = extractConcorsoIds(assistantReply);
       const linkedConcorsi = linkedConcorsoIds.length > 0 ? await fetchConcorsiByIds(linkedConcorsoIds) : [];
       pushMessage('assistant', assistantReply, linkedConcorsi);
