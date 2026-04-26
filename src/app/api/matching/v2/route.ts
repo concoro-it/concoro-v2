@@ -11,12 +11,14 @@ const WEBHOOK_TIMEOUT_MS = 58000;
 class RequestValidationError extends Error {}
 class WebhookForwardError extends Error {}
 
+type UploadFile = Exclude<FormDataEntryValue, string>;
+
 interface ParsedMatchingRequest {
     userId: string;
     requestId: string;
     profileJson: Partial<Profile> | null;
     cvText: string | null;
-    cvPdf: File | null;
+    cvPdf: UploadFile | null;
 }
 
 async function tryForwardToN8n(payload: ParsedMatchingRequest): Promise<Response | null> {
@@ -78,6 +80,15 @@ function parseProfileJson(value: unknown): Partial<Profile> | null {
     return parsed as Partial<Profile>;
 }
 
+function isUploadFile(value: FormDataEntryValue | null): value is UploadFile {
+    return Boolean(
+        value &&
+        typeof value !== 'string' &&
+        typeof (value as { size?: unknown }).size === 'number' &&
+        typeof (value as { arrayBuffer?: unknown }).arrayBuffer === 'function'
+    );
+}
+
 async function parseRequestPayload(req: NextRequest): Promise<ParsedMatchingRequest> {
     const contentType = (req.headers.get('content-type') || '').toLowerCase();
 
@@ -93,7 +104,7 @@ async function parseRequestPayload(req: NextRequest): Promise<ParsedMatchingRequ
         const cvText = normalizeString(formData.get('cv_text'));
 
         const cvPdfRaw = formData.get('cv_pdf');
-        const cvPdf = cvPdfRaw instanceof File && cvPdfRaw.size > 0 ? cvPdfRaw : null;
+        const cvPdf = isUploadFile(cvPdfRaw) && cvPdfRaw.size > 0 ? cvPdfRaw : null;
 
         return {
             userId,

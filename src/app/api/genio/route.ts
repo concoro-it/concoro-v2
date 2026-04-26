@@ -11,6 +11,8 @@ const GENIO_WEBHOOK_URL =
   'https://n8n.concoro.it/webhook/733dace6-bb4e-4dab-997b-66a780681163';
 const WEBHOOK_TIMEOUT_MS = 60000;
 
+type UploadFile = Exclude<FormDataEntryValue, string>;
+
 async function postToWebhook(url: string, body: FormData) {
   return fetch(url, {
     method: 'POST',
@@ -18,6 +20,15 @@ async function postToWebhook(url: string, body: FormData) {
     cache: 'no-store',
     signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
   });
+}
+
+function isUploadFile(value: FormDataEntryValue | null): value is UploadFile {
+  return Boolean(
+    value &&
+    typeof value !== 'string' &&
+    typeof (value as { size?: unknown }).size === 'number' &&
+    typeof (value as { arrayBuffer?: unknown }).arrayBuffer === 'function'
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -42,8 +53,8 @@ export async function POST(req: NextRequest) {
     outboundForm.append('chatInput', chatInput || 'Analizza questo documento.');
     outboundForm.append('sessionId', sessionId);
 
-    if (file instanceof File) {
-      outboundForm.append('data0', file, file.name);
+    if (isUploadFile(file)) {
+      outboundForm.append('data0', file, file.name || 'documento.pdf');
     }
 
     let webhookRes = await postToWebhook(GENIO_WEBHOOK_URL, outboundForm);
