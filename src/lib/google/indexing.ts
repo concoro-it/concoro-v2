@@ -4,6 +4,9 @@ const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_INDEXING_PUBLISH_URL = 'https://indexing.googleapis.com/v3/urlNotifications:publish';
 const GOOGLE_INDEXING_METADATA_URL = 'https://indexing.googleapis.com/v3/urlNotifications/metadata';
 const GOOGLE_INDEXING_SCOPE = 'https://www.googleapis.com/auth/indexing';
+const GOOGLE_SITE_VERIFICATION_SCOPE = 'https://www.googleapis.com/auth/siteverification';
+const GOOGLE_SITE_VERIFICATION_TOKEN_URL = 'https://www.googleapis.com/siteVerification/v1/token';
+const GOOGLE_SITE_VERIFICATION_WEB_RESOURCE_URL = 'https://www.googleapis.com/siteVerification/v1/webResource';
 
 export type GoogleIndexingNotificationType = 'URL_UPDATED' | 'URL_DELETED';
 
@@ -57,7 +60,7 @@ function getServiceAccountConfig(): GoogleServiceAccountConfig {
     };
 }
 
-function createJwtAssertion(config: GoogleServiceAccountConfig) {
+function createJwtAssertion(config: GoogleServiceAccountConfig, scope: string) {
     const now = Math.floor(Date.now() / 1000);
     const header = {
         alg: 'RS256',
@@ -65,7 +68,7 @@ function createJwtAssertion(config: GoogleServiceAccountConfig) {
     };
     const claims = {
         iss: config.clientEmail,
-        scope: GOOGLE_INDEXING_SCOPE,
+        scope,
         aud: GOOGLE_OAUTH_TOKEN_URL,
         iat: now,
         exp: now + 3600,
@@ -78,8 +81,8 @@ function createJwtAssertion(config: GoogleServiceAccountConfig) {
     return `${unsignedJwt}.${base64UrlEncode(signature)}`;
 }
 
-async function getAccessToken() {
-    const assertion = createJwtAssertion(getServiceAccountConfig());
+async function getAccessToken(scope = GOOGLE_INDEXING_SCOPE) {
+    const assertion = createJwtAssertion(getServiceAccountConfig(), scope);
     const response = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -151,6 +154,60 @@ export async function getGoogleIndexingMetadata(url: string) {
 
     if (!response.ok) {
         throw new Error(typeof payload === 'object' && payload !== null ? JSON.stringify(payload) : `Google metadata request failed: ${response.status}`);
+    }
+
+    return payload;
+}
+
+export async function getGoogleSiteVerificationDnsToken(domain: string) {
+    const accessToken = await getAccessToken(GOOGLE_SITE_VERIFICATION_SCOPE);
+    const response = await fetch(GOOGLE_SITE_VERIFICATION_TOKEN_URL, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            verificationMethod: 'DNS_TXT',
+            site: {
+                identifier: domain,
+                type: 'INET_DOMAIN',
+            },
+        }),
+        cache: 'no-store',
+    });
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+        throw new Error(typeof payload === 'object' && payload !== null ? JSON.stringify(payload) : `Google site verification token request failed: ${response.status}`);
+    }
+
+    return payload as { token: string; method: 'DNS_TXT' };
+}
+
+export async function verifyGoogleSiteOwnershipWithDns(domain: string) {
+    const accessToken = await getAccessToken(GOOGLE_SITE_VERIFICATION_SCOPE);
+    const requestUrl = new URL(GOOGLE_SITE_VERIFICATION_WEB_RESOURCE_URL);
+    requestUrl.searchParams.set('verificationMethod', 'DNS_TXT');
+
+    const response = await fetch(requestUrl, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            site: {
+                identifier: domain,
+                type: 'INET_DOMAIN',
+            },
+        }),
+        cache: 'no-store',
+    });
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+        throw new Error(typeof payload === 'object' && payload !== null ? JSON.stringify(payload) : `Google site verification insert failed: ${response.status}`);
     }
 
     return payload;
