@@ -665,6 +665,121 @@ export async function getAllConcorsiSlugs(supabase: SupabaseClient): Promise<str
     return Array.from(slugs);
 }
 
+export type ConcorsoSitemapEntry = {
+    slug: string;
+    lastModified: string | null;
+};
+
+export type ConcorsoIndexingCandidate = {
+    slug: string;
+    lastModified: string | null;
+    deadline: string | null;
+};
+
+function hasIndexableConcorsoSlug(slug: string | null | undefined, title?: string | null) {
+    if (!slug) return false;
+    if (slug.startsWith('-')) return false;
+    if (!title || title.trim().length < 8) return false;
+    return true;
+}
+
+export async function getOpenConcorsiSitemapEntries(supabase: SupabaseClient): Promise<ConcorsoSitemapEntry[]> {
+    const pageSize = 1000;
+    const entries = new Map<string, ConcorsoSitemapEntry>();
+    const now = new Date().toISOString();
+    let from = 0;
+
+    while (true) {
+        const { data, error } = await supabase
+            .from('concorsi')
+            .select('slug, titolo, updated_at, data_pubblicazione, created_at')
+            .not('slug', 'is', null)
+            .eq('is_active', true)
+            .gte('data_scadenza', now)
+            .or('status.is.null,status.neq.CLOSED')
+            .order('data_scadenza', { ascending: true, nullsFirst: false })
+            .range(from, from + pageSize - 1);
+
+        if (error || !data || data.length === 0) {
+            break;
+        }
+
+        for (const row of data) {
+            if (!hasIndexableConcorsoSlug(row.slug, row.titolo)) continue;
+            entries.set(row.slug, {
+                slug: row.slug,
+                lastModified: row.updated_at ?? row.data_pubblicazione ?? row.created_at ?? null,
+            });
+        }
+
+        if (data.length < pageSize) {
+            break;
+        }
+
+        from += pageSize;
+    }
+
+    return Array.from(entries.values());
+}
+
+export async function getOpenConcorsiIndexingCandidates(
+    supabase: SupabaseClient,
+    sinceIso: string,
+    limit = 100
+): Promise<ConcorsoIndexingCandidate[]> {
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+        .from('concorsi')
+        .select('slug, titolo, updated_at, data_pubblicazione, created_at, data_scadenza')
+        .not('slug', 'is', null)
+        .eq('is_active', true)
+        .gte('data_scadenza', now)
+        .or('status.is.null,status.neq.CLOSED')
+        .or(`updated_at.gte.${sinceIso},data_pubblicazione.gte.${sinceIso},created_at.gte.${sinceIso}`)
+        .order('data_pubblicazione', { ascending: false, nullsFirst: false })
+        .limit(Math.min(Math.max(limit, 1), 200));
+
+    if (error || !data) return [];
+
+    return data
+        .filter((row) => hasIndexableConcorsoSlug(row.slug, row.titolo))
+        .map((row) => ({
+            slug: row.slug,
+            lastModified: row.updated_at ?? row.data_pubblicazione ?? row.created_at ?? null,
+            deadline: row.data_scadenza ?? null,
+        }));
+}
+
+export async function getExpiredConcorsiIndexingCandidates(
+    supabase: SupabaseClient,
+    sinceIso: string | null,
+    limit = 100
+): Promise<ConcorsoIndexingCandidate[]> {
+    const now = new Date().toISOString();
+    let query = supabase
+        .from('concorsi')
+        .select('slug, titolo, updated_at, data_pubblicazione, created_at, data_scadenza')
+        .not('slug', 'is', null)
+        .or(`data_scadenza.lt.${now},status.eq.CLOSED,is_active.eq.false`)
+        .order('data_scadenza', { ascending: false, nullsFirst: false })
+        .limit(Math.min(Math.max(limit, 1), 200));
+
+    if (sinceIso) {
+        query = query.or(`data_scadenza.gte.${sinceIso},updated_at.gte.${sinceIso}`);
+    }
+
+    const { data, error } = await query;
+    if (error || !data) return [];
+
+    return data
+        .filter((row) => row.slug && !row.slug.startsWith('-'))
+        .map((row) => ({
+            slug: row.slug,
+            lastModified: row.updated_at ?? row.data_pubblicazione ?? row.created_at ?? null,
+            deadline: row.data_scadenza ?? null,
+        }));
+}
+
 export async function getAllRegioniSlugs(supabase: SupabaseClient): Promise<string[]> {
     const { data } = await supabase
         .from('concorsi')

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { createCachedPublicClient, createClient, createStaticClient } from '@/lib/supabase/server';
-import { getConcorsoBySlug, getRelatedConcorsi, getAllConcorsiSlugs, getEnteBySlug, getEnteByName } from '@/lib/supabase/queries';
+import { getConcorsoBySlug, getRelatedConcorsi, getOpenConcorsiSitemapEntries, getEnteBySlug, getEnteByName } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import {
     parseRegioni, parseProvince, parseSettori, parseLinkAllegati,
@@ -346,8 +346,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export async function generateStaticParams() {
     const supabase = createStaticClient();
-    const slugs = await getAllConcorsiSlugs(supabase);
-    return slugs.map(slug => ({ slug }));
+    const entries = await getOpenConcorsiSitemapEntries(supabase);
+    return entries.map(({ slug }) => ({ slug }));
 }
 
 export const revalidate = 3600;
