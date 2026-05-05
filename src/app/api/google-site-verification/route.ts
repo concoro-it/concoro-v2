@@ -19,19 +19,24 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const domain = getDomain(request);
-    const result = await getGoogleSiteVerificationDnsToken(domain);
+    try {
+        const domain = getDomain(request);
+        const result = await getGoogleSiteVerificationDnsToken(domain);
 
-    return NextResponse.json({
-        ok: true,
-        domain,
-        method: result.method,
-        dnsRecord: {
-            type: 'TXT',
-            name: domain,
-            value: result.token,
-        },
-    });
+        return NextResponse.json({
+            ok: true,
+            domain,
+            method: result.method,
+            dnsRecord: {
+                type: 'TXT',
+                name: domain,
+                value: result.token,
+            },
+        });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown verification token error';
+        return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    }
 }
 
 export async function POST(request: NextRequest) {
@@ -39,12 +44,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const domain = getDomain(request);
-    const result = await verifyGoogleSiteOwnershipWithDns(domain);
+    try {
+        const domain = getDomain(request);
+        const result = await verifyGoogleSiteOwnershipWithDns(domain);
 
-    return NextResponse.json({
-        ok: true,
-        domain,
-        result,
-    });
+        return NextResponse.json({
+            ok: true,
+            domain,
+            result,
+        });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown verification insert error';
+        return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    }
 }
