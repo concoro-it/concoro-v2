@@ -141,6 +141,24 @@ export async function publishGoogleIndexingNotifications(
     return results;
 }
 
+export async function publishGoogleIndexingNotificationsUntilQuota(
+    notifications: Array<{ url: string; type: GoogleIndexingNotificationType }>
+) {
+    const accessToken = await getAccessToken();
+    const results: GoogleIndexingPublishResult[] = [];
+
+    for (const notification of notifications) {
+        const result = await publishGoogleIndexingNotification(notification.url, notification.type, accessToken);
+        results.push(result);
+
+        if (result.status === 429) {
+            break;
+        }
+    }
+
+    return results;
+}
+
 export async function getGoogleIndexingMetadata(url: string) {
     const accessToken = await getAccessToken();
     const requestUrl = new URL(GOOGLE_INDEXING_METADATA_URL);

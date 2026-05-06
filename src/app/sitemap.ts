@@ -3,8 +3,9 @@ import { createStaticAdminClient, createStaticClient } from '@/lib/supabase/serv
 import { getAllEnteSlugs, getAllProvinceSlugs, getAllRegioniSlugs, getAllSettoriSlugs, getOpenConcorsiSitemapEntries } from '@/lib/supabase/queries';
 import { getCanonicalSiteUrl } from '@/lib/auth/url';
 
-// Regenerate sitemap periodically so new/removed concorsi URLs are reflected automatically.
-export const revalidate = 3600; // 1 hour
+// Keep the sitemap fresh because new and expired concorsi are time-sensitive for JobPosting discovery.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 // Next.js dynamic sitemap generation
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = getCanonicalSiteUrl();
