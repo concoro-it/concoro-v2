@@ -14,6 +14,7 @@ const NOTIFICATION_TYPE: GoogleIndexingNotificationType = 'URL_UPDATED';
 
 type ExistingNotification = {
     url: string;
+    concorso_slug: string | null;
     concorso_last_modified: string | null;
     last_success_at: string | null;
 };
@@ -77,12 +78,12 @@ export async function GET(request: NextRequest) {
         });
     }
 
-    const urls = notifications.map((notification) => notification.url);
+    const slugs = notifications.map((notification) => notification.slug);
     const { data: existingRows, error: existingError } = await supabase
         .from('google_indexing_notifications')
-        .select('url, concorso_last_modified, last_success_at')
+        .select('url, concorso_slug, concorso_last_modified, last_success_at')
         .eq('notification_type', NOTIFICATION_TYPE)
-        .in('url', urls);
+        .in('concorso_slug', slugs);
 
     if (existingError) {
         return NextResponse.json({
@@ -92,13 +93,13 @@ export async function GET(request: NextRequest) {
         }, { status: 500 });
     }
 
-    const existingByUrl = new Map<string, ExistingNotification>();
+    const existingBySlug = new Map<string, ExistingNotification>();
     for (const row of (existingRows ?? []) as ExistingNotification[]) {
-        existingByUrl.set(row.url, row);
+        if (row.concorso_slug) existingBySlug.set(row.concorso_slug, row);
     }
 
     const pending = notifications.filter((notification) => {
-        const existing = existingByUrl.get(notification.url);
+        const existing = existingBySlug.get(notification.slug);
         if (!existing?.last_success_at) return true;
         return toComparableTime(existing.concorso_last_modified) < toComparableTime(notification.lastModified);
     });

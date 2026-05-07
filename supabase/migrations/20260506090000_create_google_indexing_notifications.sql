@@ -17,4 +17,7 @@ create table if not exists public.google_indexing_notifications (
 create index if not exists google_indexing_notifications_type_success_idx
     on public.google_indexing_notifications (notification_type, last_success_at desc);
 
+create index if not exists google_indexing_notifications_slug_type_idx
+    on public.google_indexing_notifications (concorso_slug, notification_type);
+
 alter table public.google_indexing_notifications enable row level security;
