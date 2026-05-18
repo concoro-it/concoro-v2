@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
-import { toUrlSlug } from '@/lib/utils/regioni';
+import { REGIONE_SLUG_MAP, toUrlSlug } from '@/lib/utils/regioni';
 
 const PV_GATE_COOKIE_NAME = 'pv_gate_v1';
 const PV_GATE_SOFT_COOKIE_NAME = 'pv_gate_soft';
@@ -8,6 +8,10 @@ const PV_GATE_TTL_SECONDS = 60 * 60 * 24;
 const PV_GATE_SOFT_TTL_SECONDS = 60 * 10;
 const PV_GATE_MAX_SEEN_PATHS = 24;
 const SEO_FUNNEL_PREFIXES = ['/concorsi', '/regione', '/provincia', '/ente', '/settore'];
+const LEGACY_STATIC_REDIRECTS: Record<string, string> = {
+    '/prezzi': '/pricing',
+    '/faq': '/concorsi',
+};
 const MAJOR_BOT_PATTERNS = [
     /googlebot/i,
     /bingbot/i,
@@ -188,25 +192,66 @@ function applyPvGateCookies(response: NextResponse, request: NextRequest, decisi
     return response;
 }
 
+function normalizeLegacyFacetValue(value: string | null) {
+    if (!value) return '';
+
+    const uniqueParts = new Set<string>();
+    const parts = value
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean);
+
+    for (const part of parts.length > 0 ? parts : [value.trim()]) {
+        const key = part.toLowerCase();
+        if (!uniqueParts.has(key)) {
+            uniqueParts.add(key);
+        }
+    }
+
+    return parts.find((part) => uniqueParts.has(part.toLowerCase())) ?? value.trim();
+}
+
+function isRegionSlug(slug: string) {
+    return Boolean(REGIONE_SLUG_MAP[slug]) || slug === 'valle-daosta';
+}
+
+function buildCanonicalRedirect(request: NextRequest, pathname: string) {
+    const redirectTarget = request.nextUrl.clone();
+    redirectTarget.hostname = 'concoro.it';
+    redirectTarget.pathname = pathname;
+    redirectTarget.search = '';
+    return NextResponse.redirect(redirectTarget, 301);
+}
+
 export async function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
     const legacyEnte = request.nextUrl.searchParams.get('ente');
     const legacyLocalita = request.nextUrl.searchParams.get('localita');
+    const legacySettore = request.nextUrl.searchParams.get('settore');
+    const legacyRegione = request.nextUrl.searchParams.get('regione');
+    const legacyProvincia = request.nextUrl.searchParams.get('provincia');
 
-    if ((pathname === '/concorsi' || pathname === '/concorsi/') && (legacyEnte || legacyLocalita)) {
-        const redirectTarget = request.nextUrl.clone();
-        const nextPath = legacyEnte ? '/ente' : '/provincia';
-        const nextValue = legacyEnte ?? legacyLocalita ?? '';
+    const normalizedPathname = pathname === '/' ? pathname : pathname.replace(/\/+$/, '');
+    const staticRedirectPath = LEGACY_STATIC_REDIRECTS[normalizedPathname];
+    if (staticRedirectPath) {
+        return buildCanonicalRedirect(request, staticRedirectPath);
+    }
+
+    if (
+        (pathname === '/concorsi' || pathname === '/concorsi/')
+        && (legacyEnte || legacySettore || legacyRegione || legacyProvincia || legacyLocalita)
+    ) {
+        const nextValue = normalizeLegacyFacetValue(
+            legacyEnte ?? legacySettore ?? legacyRegione ?? legacyProvincia ?? legacyLocalita
+        );
         const slug = toUrlSlug(nextValue);
 
         if (slug) {
-            if (redirectTarget.hostname.toLowerCase() === 'www.concoro.it') {
-                redirectTarget.hostname = 'concoro.it';
-            }
-            redirectTarget.pathname = `${nextPath}/${slug}`;
-            redirectTarget.searchParams.delete('ente');
-            redirectTarget.searchParams.delete('localita');
-            return NextResponse.redirect(redirectTarget, 301);
+            if (legacyEnte) return buildCanonicalRedirect(request, `/ente/${slug}`);
+            if (legacySettore) return buildCanonicalRedirect(request, `/settore/${slug}`);
+            if (legacyRegione) return buildCanonicalRedirect(request, `/regione/${slug}`);
+            if (legacyProvincia) return buildCanonicalRedirect(request, `/provincia/${slug}`);
+            return buildCanonicalRedirect(request, `/${isRegionSlug(slug) ? 'regione' : 'provincia'}/${slug}`);
         }
     }
 
