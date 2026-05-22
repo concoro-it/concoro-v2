@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { getClientOAuthRedirectUrl } from '@/lib/auth/url';
 import { buildAuthQueryParams, sanitizeInternalRedirectPath } from '@/lib/auth/redirect';
+import { ADMIN_EMAIL } from '@/lib/dashboard/constants';
 
 interface LoginFormProps {
     redirectTo?: string;
@@ -34,7 +35,8 @@ export function LoginForm({ redirectTo = '/hub/bacheca', source, intent }: Login
         if (error) {
             setError('Email o password non corretti. Riprova.');
         } else {
-            router.push(safeRedirectTo);
+            const normalizedEmail = email.trim().toLowerCase();
+            router.push(normalizedEmail === ADMIN_EMAIL ? '/admin' : safeRedirectTo);
             router.refresh();
         }
         setLoading(false);
