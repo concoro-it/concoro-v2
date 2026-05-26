@@ -12,8 +12,7 @@ interface Props {
 export function PaywallBanner({ lockedCount, isLoggedIn }: Props) {
     const monthly = PLANS.pro.price_monthly;
     const yearly = PLANS.pro.price_yearly;
-    const yearlyMonthlyEquivalent = yearly / 12;
-    const yearlySavings = Math.round((1 - yearlyMonthlyEquivalent / monthly) * 100);
+    const yearlySavings = Math.round((1 - yearly / (monthly * 12)) * 100);
     const headline = isLoggedIn
         ? `Ti stai perdendo ${lockedCount} concorsi oltre il piano gratuito`
         : `Hai raggiunto il limite gratuito: altri ${lockedCount} concorsi ti aspettano`;
@@ -33,7 +32,7 @@ export function PaywallBanner({ lockedCount, isLoggedIn }: Props) {
                 </div>
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200/70">
                     <Flame className="h-3.5 w-3.5" />
-                    {lockedCount} bandi oltre il limite
+                    {PLANS.pro.trial_days} giorni gratis
                 </div>
             </div>
 
@@ -62,6 +61,10 @@ export function PaywallBanner({ lockedCount, isLoggedIn }: Props) {
                 </div>
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
                     <Zap className="h-4 w-4 text-amber-500" />
+                    Carta richiesta per la prova
+                </div>
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                    <Zap className="h-4 w-4 text-emerald-500" />
                     Annuale: risparmi circa {yearlySavings}%
                 </div>
             </div>
@@ -72,7 +75,7 @@ export function PaywallBanner({ lockedCount, isLoggedIn }: Props) {
                         href="/pricing?billing=yearly&source=results-paywall"
                         className="group inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/35 transition-all hover:-translate-y-0.5 hover:bg-primary/95"
                     >
-                        Attiva Pro da €{yearlyMonthlyEquivalent.toFixed(2).replace('.', ',')}/mese
+                        Prova gratis, poi €{yearly.toFixed(2).replace('.', ',')}/anno
                         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                     </Link>
                     <Link
@@ -102,7 +105,7 @@ export function PaywallBanner({ lockedCount, isLoggedIn }: Props) {
 
             {isLoggedIn && (
                 <p className="mt-2 text-xs text-slate-500">
-                    Pagamento sicuro con Stripe. Nessun vincolo: puoi disdire quando vuoi.
+                    Pagamento sicuro con Stripe. Puoi disdire prima del rinnovo.
                 </p>
             )}
         </div>

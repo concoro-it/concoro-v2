@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Check, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { PLANS } from "@/lib/stripe/prices";
+import { buildProCheckoutUrl, PLANS } from "@/lib/stripe/prices";
 
 const freeFeatures = [
     "Esplora i concorsi sul portale principale",
@@ -29,8 +29,7 @@ export function PricingSection({
     const [isYearly, setIsYearly] = useState(initialBilling === "yearly" && canUseYearly);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const yearlyEquivalent = PLANS.pro.price_yearly / 12;
-    const yearlySavings = Math.round((1 - yearlyEquivalent / PLANS.pro.price_monthly) * 100);
+    const yearlySavings = Math.round((1 - PLANS.pro.price_yearly / (PLANS.pro.price_monthly * 12)) * 100);
 
     const handleSubscribe = async () => {
         if (!userId) {
@@ -47,34 +46,11 @@ export function PricingSection({
                 throw new Error("Piano non configurato al momento.");
             }
 
-            const response = await fetch("/api/stripe/checkout", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    billingCycle: isYearly ? "yearly" : "monthly",
-                }),
+            const checkoutUrl = buildProCheckoutUrl(isYearly ? "yearly" : "monthly", {
+                clientReferenceId: userId,
+                email: userEmail,
             });
-
-            if (!response.ok) {
-                let message = "Errore durante la creazione del checkout";
-                try {
-                    message = await response.text();
-                } catch {
-                    // no-op: keep fallback message
-                }
-
-                if (response.status === 401) {
-                    window.location.href = "/login?redirectTo=/pricing";
-                    return;
-                }
-
-                throw new Error(message || "Errore durante la creazione del checkout");
-            }
-
-            const { url } = await response.json();
-            window.location.href = url;
+            window.location.href = checkoutUrl;
         } catch (err: unknown) {
             console.error("Subscription Error:", err);
             const message = err instanceof Error ? err.message : "Impossibile procedere al pagamento. Riprova più tardi.";
@@ -87,11 +63,11 @@ export function PricingSection({
         <div className="container max-w-container mx-auto px-4 py-16">
             <div className="text-center mb-12 max-w-3xl mx-auto">
                 <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary mb-5">
-                    Prezzi pensati per chi non vuole perdere il concorso giusto
+                    7 giorni gratis, poi scegli il ritmo giusto
                 </div>
                 <h1 className="text-4xl font-bold tracking-tight mb-4">Monitora i bandi rilevanti, non solo i primi risultati</h1>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                    Con Free inizi a orientarti. Con Concoro Pro sblocchi alert mirati, ricerche senza limiti e Genio per capire piu in fretta dove conviene candidarti.
+                    Prova Concoro Pro gratis per {PLANS.pro.trial_days} giorni. Inserisci la carta al checkout, poi il piano si rinnova solo dopo il periodo di prova.
                 </p>
                 <div className="mt-5">
                     {userId ? (
@@ -124,7 +100,7 @@ export function PricingSection({
                             </span>
                         </div>
                         <p className="mt-3 text-sm text-muted-foreground">
-                            L&apos;annuale e il piano consigliato per chi segue concorsi durante tutto l&apos;anno.
+                            Entrambi i piani includono {PLANS.pro.trial_days} giorni di prova gratuita con carta richiesta al checkout.
                         </p>
                     </>
                 ) : (
@@ -176,14 +152,14 @@ export function PricingSection({
                         <h2 className="text-lg font-semibold">{PLANS.pro.name}</h2>
                         <div className="mt-2 flex items-baseline gap-1">
                             <span className="text-4xl font-bold">
-                                €{isYearly ? yearlyEquivalent.toFixed(2).replace('.', ',') : PLANS.pro.price_monthly.toFixed(2).replace('.', ',')}
+                                €{isYearly ? PLANS.pro.price_yearly.toFixed(2).replace('.', ',') : PLANS.pro.price_monthly.toFixed(2).replace('.', ',')}
                             </span>
-                            <span className="text-muted-foreground">/mese</span>
+                            <span className="text-muted-foreground">{isYearly ? "/anno" : "/mese"}</span>
                         </div>
                         <p className="text-sm text-muted-foreground mt-2">
                             {isYearly
-                                ? `Fatturato annualmente (€${PLANS.pro.price_yearly.toFixed(2).replace('.', ',')})`
-                                : "Fatturato mensilmente"}
+                                ? `${PLANS.pro.trial_days} giorni gratis, poi fatturato annualmente (€${PLANS.pro.price_yearly.toFixed(2).replace('.', ',')})`
+                                : `${PLANS.pro.trial_days} giorni gratis, poi fatturato mensilmente`}
                         </p>
                         <p className="text-sm font-medium text-foreground mt-3">
                             Per chi vuole monitorare bandi utili con continuita e arrivare prima sulle scadenze.
@@ -208,11 +184,11 @@ export function PricingSection({
                                 Attendere...
                             </>
                         ) : (
-                            isYearly ? "Attiva Pro annuale" : "Attiva Pro mensile"
+                            isYearly ? "Prova gratis, poi annuale" : "Prova gratis, poi mensile"
                         )}
                     </button>
                     <p className="mt-3 text-xs text-center text-muted-foreground">
-                        Ideale se controlli concorsi ogni settimana o non vuoi perdere un bando in scadenza.
+                        Carta richiesta per attivare la prova. Puoi disdire da Stripe prima del rinnovo.
                     </p>
                 </div>
             </div>
@@ -225,7 +201,7 @@ export function PricingSection({
             </div>
 
             <p className="text-center text-sm text-muted-foreground mt-8 flex items-center justify-center gap-2">
-                Pagamento sicuro tramite Stripe. Puoi disdire in qualsiasi momento.
+                Pagamento sicuro tramite Stripe. Carta richiesta anche durante la prova gratuita.
             </p>
         </div>
     );

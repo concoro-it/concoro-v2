@@ -34,6 +34,41 @@ async function getProfileByStripeCustomerId(customerId: string) {
     return data;
 }
 
+async function getProfileByEmail(email: string) {
+    const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .select('id, email')
+        .eq('email', email)
+        .maybeSingle();
+
+    if (error) {
+        console.error('[stripe-webhook] failed to resolve user by email', { email, error });
+        return null;
+    }
+
+    return data;
+}
+
+async function resolveCheckoutUserId(session: Stripe.Checkout.Session): Promise<string | null> {
+    if (session.client_reference_id) {
+        return session.client_reference_id;
+    }
+
+    const customerId = getStripeCustomerId(session.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null);
+    if (customerId) {
+        const profile = await getProfileByStripeCustomerId(customerId);
+        if (profile?.id) return profile.id;
+    }
+
+    const email = session.customer_details?.email ?? session.customer_email;
+    if (email) {
+        const profile = await getProfileByEmail(email);
+        if (profile?.id) return profile.id;
+    }
+
+    return null;
+}
+
 async function syncContactAndPublishPaymentEvent(
     paymentEventName: 'payment_received' | 'payment_upcoming_7d' | 'payment_failed',
     stripeEvent: Stripe.Event,
@@ -131,21 +166,35 @@ export async function POST(req: Request) {
             case 'checkout.session.completed': {
                 const session = event.data.object as Stripe.Checkout.Session;
 
-                if (session.mode === 'subscription' && session.client_reference_id) {
+                if (session.mode === 'subscription') {
+                    const userId = await resolveCheckoutUserId(session);
+                    if (!userId) {
+                        console.warn('[stripe-webhook] checkout session without resolvable user', {
+                            sessionId: session.id,
+                            customer: getStripeCustomerId(session.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null),
+                            email: session.customer_details?.email ?? session.customer_email,
+                        });
+                        break;
+                    }
+
                     const subscriptionId = session.subscription as string;
                     const stripeSubscription = await stripe!.subscriptions.retrieve(subscriptionId) as Stripe.Subscription;
                     const priceId = stripeSubscription.items.data[0].price.id;
                     const periodEnd = stripeSubscription.items.data[0]?.current_period_end;
+                    const customerId = getStripeCustomerId(stripeSubscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null);
                     if (!periodEnd) {
                         throw new Error(`Missing current_period_end for Stripe subscription ${subscriptionId}`);
+                    }
+                    if (!customerId) {
+                        throw new Error(`Missing customer for Stripe subscription ${subscriptionId}`);
                     }
 
                     await updateUserSubscription(
                         supabaseAdmin,
-                        session.client_reference_id,
+                        userId,
                         priceId,
                         stripeSubscription.status,
-                        session.customer as string,
+                        customerId,
                         subscriptionId,
                         new Date(periodEnd * 1000)
                     );

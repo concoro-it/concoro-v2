@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe/client';
+import { getProPriceId, PRO_TRIAL_DAYS } from '@/lib/stripe/prices';
 import { redirect } from 'next/navigation';
 import { getServerAppUrl } from '@/lib/auth/url';
 import type Stripe from 'stripe';
@@ -44,11 +45,7 @@ export async function createCheckoutSession() {
         throw new Error('Stripe is not configured.');
     }
 
-    // This price lookup uses the env variable
-    const priceId = process.env.STRIPE_PRO_PRICE_ID;
-    if (!priceId) {
-        throw new Error('Prezzo Stripe non configurato.');
-    }
+    const priceId = getProPriceId('monthly');
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -66,7 +63,8 @@ export async function createCheckoutSession() {
 
     const sessionObj: Stripe.Checkout.SessionCreateParams = {
         mode: 'subscription',
-        payment_method_types: ['card', 'paypal'],
+        payment_method_types: ['card'],
+        payment_method_collection: 'always',
         line_items: [
             {
                 price: priceId,
@@ -76,6 +74,14 @@ export async function createCheckoutSession() {
         success_url: `${APP_URL}/abbonamento?success=true`,
         cancel_url: `${APP_URL}/pricing?canceled=true`,
         client_reference_id: user.id,
+        subscription_data: {
+            trial_period_days: PRO_TRIAL_DAYS,
+            trial_settings: {
+                end_behavior: {
+                    missing_payment_method: 'cancel',
+                },
+            },
+        },
     };
 
     if (profile?.stripe_customer_id) {

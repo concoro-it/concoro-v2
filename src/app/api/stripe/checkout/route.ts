@@ -1,5 +1,5 @@
 import { stripe } from '@/lib/stripe/client';
-import { getProPriceId, type BillingCycle } from '@/lib/stripe/prices';
+import { PRO_TRIAL_DAYS, getProPriceId, type BillingCycle } from '@/lib/stripe/prices';
 import { NextResponse } from 'next/server';
 import { getServerAppUrl } from '@/lib/auth/url';
 import { createClient } from '@/lib/supabase/server';
@@ -73,6 +73,7 @@ export async function POST(req: Request) {
         const checkoutSession = await stripe.checkout.sessions.create({
             mode: 'subscription',
             payment_method_types: ['card'],
+            payment_method_collection: 'always',
             client_reference_id: user.id,
             ...(customerId ? { customer: customerId } : (user.email ? { customer_email: user.email } : {})),
             line_items: [
@@ -81,6 +82,14 @@ export async function POST(req: Request) {
                     quantity: 1,
                 },
             ],
+            subscription_data: {
+                trial_period_days: PRO_TRIAL_DAYS,
+                trial_settings: {
+                    end_behavior: {
+                        missing_payment_method: 'cancel',
+                    },
+                },
+            },
             success_url: `${host}/hub/welcome-pro?session_id={CHECKOUT_SESSION_ID}&success=true&billing_cycle=${billingCycle}`,
             cancel_url: `${host}/pricing?canceled=true`,
         });
