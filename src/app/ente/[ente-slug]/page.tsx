@@ -213,7 +213,7 @@ export default async function EntePage({ params }: Props) {
     const homeHref = routePrefix || '/';
     const toInternalHref = (path: `/${string}`) => `${routePrefix}${path}`;
     const signupHref = tier === 'anon'
-        ? `/signup?ente=${slug}`
+        ? '/signup'
         : `/hub/billing?source=ente-page&ente=${slug}`;
     const isLocked = tier !== 'pro' && tier !== 'admin';
     const visibleResults = isLocked ? openConcorsi.slice(0, FREE_VISIBLE) : concorsi;

@@ -69,7 +69,8 @@ export default async function EnteIndexPage() {
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                             <Link
-                                href="/signup?source=ente-index-paywall"
+                                href="/signup"
+                                rel="nofollow"
                                 className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                             >
                                 Crea account gratuito

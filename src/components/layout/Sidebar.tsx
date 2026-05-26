@@ -177,7 +177,7 @@ export function Sidebar({ userProfile }: { userProfile: SidebarUserProfile | nul
         },
         {
             id: 'tips-quiz',
-            href: 'https://concoro.it/blog',
+            href: 'https://concoro.it/concorsi',
             title: 'Come migliorare i punteggi ai quiz',
             summary: 'Strategie pratiche per aumentare precisione e velocita nelle simulazioni.',
             image: '/Layer_2.svg',

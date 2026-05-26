@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Image from 'next/image';
 import { createCachedPublicClient, createClient, createStaticClient } from '@/lib/supabase/server';
 import { getConcorsoBySlug, getRelatedConcorsi, getOpenConcorsiSitemapEntries, getEnteBySlug, getEnteByName } from '@/lib/supabase/queries';
@@ -24,6 +24,7 @@ import { SaveButton } from '@/components/concorsi/SaveButton';
 import { ShareButton } from '@/components/concorsi/ShareButton';
 import { SintesiSection, type SintesiItem } from '@/components/concorsi/SintesiSection';
 import { buildAuthQueryParams } from '@/lib/auth/redirect';
+import { getCanonicalConcorsoSlugByLegacyId, looksLikeLegacyConcorsoId } from '@/lib/seo/legacy-concorso';
 import type {
     EnteAnalisiLogistica,
     EnteFaqItem,
@@ -329,7 +330,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
     const supabase = createStaticClient();
     const concorso = await getConcorsoBySlug(supabase, slug);
-    if (!concorso) return { title: 'Concorso non trovato' };
+    if (!concorso) {
+        const canonicalSlug = await getCanonicalConcorsoSlugByLegacyId(slug);
+        if (canonicalSlug) {
+            return {
+                title: 'Concorso spostato',
+                alternates: {
+                    canonical: `/concorsi/${canonicalSlug}`,
+                },
+                robots: {
+                    index: false,
+                    follow: true,
+                },
+            };
+        }
+
+        return { title: 'Concorso non trovato' };
+    }
 
     const expired = isExpired(concorso.data_scadenza);
     const title = `${expired ? '[SCADUTO] ' : ''}${concorso.titolo_breve ?? concorso.titolo}`;
@@ -356,7 +373,14 @@ export default async function ConcorsoDetailPage({ params }: Props) {
     const { slug } = await params;
     const supabase = createCachedPublicClient({ revalidate, tags: ['public:concorso-detail'] });
     const concorso = await getConcorsoBySlug(supabase, slug);
-    if (!concorso) notFound();
+    if (!concorso) {
+        if (looksLikeLegacyConcorsoId(slug)) {
+            const canonicalSlug = await getCanonicalConcorsoSlugByLegacyId(slug);
+            if (canonicalSlug) permanentRedirect(`/concorsi/${canonicalSlug}`);
+        }
+
+        notFound();
+    }
     const authSupabase = await createClient();
     const { tier } = await getUserContext(authSupabase);
     const isGuestUser = tier !== 'pro' && tier !== 'admin';
@@ -676,6 +700,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                         <div className="flex flex-wrap items-center gap-3">
                                             <Link
                                                 href={anonSignupHref}
+                                                rel="nofollow"
                                                 className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                                             >
                                                 Vai al portale candidatura
@@ -683,6 +708,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                             </Link>
                                             <Link
                                                 href={anonLoginHref}
+                                                rel="nofollow"
                                                 className="text-sm font-semibold text-slate-700 underline decoration-slate-300 underline-offset-2 transition hover:text-slate-900"
                                             >
                                                 Hai già un account? Accedi
@@ -1099,6 +1125,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                                 href={tier === 'anon'
                                                     ? anonSignupHref
                                                     : `/hub/billing?source=concorso-sidebar-register&concorso=${encodeURIComponent(slug)}`}
+                                                rel={tier === 'anon' ? 'nofollow' : undefined}
                                                 className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                                             >
                                                 Registrati gratis

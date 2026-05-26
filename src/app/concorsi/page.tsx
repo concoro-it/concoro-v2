@@ -497,6 +497,7 @@ export default async function ConcorsiPage({
                         {page > 1 && (
                             <Link
                                 href={buildPageUrl(page - 1)}
+                                rel="nofollow"
                                 className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
                             >
                                 <ChevronLeft className="h-4 w-4" />
@@ -509,6 +510,7 @@ export default async function ConcorsiPage({
                         {page < totalPages && (
                             <Link
                                 href={buildPageUrl(page + 1)}
+                                rel="nofollow"
                                 className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
                             >
                                 Successiva

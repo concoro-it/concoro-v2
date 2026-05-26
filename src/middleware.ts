@@ -11,7 +11,28 @@ const SEO_FUNNEL_PREFIXES = ['/concorsi', '/regione', '/provincia', '/ente', '/s
 const LEGACY_STATIC_REDIRECTS: Record<string, string> = {
     '/prezzi': '/pricing',
     '/faq': '/concorsi',
+    '/bandi': '/concorsi',
+    '/bando': '/concorsi',
 };
+const DEAD_LEGACY_PATH_PATTERNS = [
+    /^\/articol[oi](?:\/.*)?$/i,
+    /^\/blog$/i,
+    /^\/(?:feed|rss|atom|wp-json)(?:\/.*)?$/i,
+    /^\/xmlrpc\.php$/i,
+    /^\/(?:category|tag|author)\/.+$/i,
+    /^\/(?:page|concorsi\/page|blog\/page)\/\d+$/i,
+];
+const TRACKING_QUERY_PARAMS = [
+    'utm_source',
+    'utm_medium',
+    'utm_campaign',
+    'utm_term',
+    'utm_content',
+    'fbclid',
+    'gclid',
+    'msclkid',
+];
+const AUTH_ALLOWED_QUERY_PARAMS = ['redirectTo', 'source', 'intent'];
 const MAJOR_BOT_PATTERNS = [
     /googlebot/i,
     /bingbot/i,
@@ -215,12 +236,75 @@ function isRegionSlug(slug: string) {
     return Boolean(REGIONE_SLUG_MAP[slug]) || slug === 'valle-daosta';
 }
 
-function buildCanonicalRedirect(request: NextRequest, pathname: string) {
+function buildCanonicalRedirect(request: NextRequest, pathname: string, preserveSearch = false) {
     const redirectTarget = request.nextUrl.clone();
     redirectTarget.hostname = 'concoro.it';
     redirectTarget.pathname = pathname;
-    redirectTarget.search = '';
+    if (!preserveSearch) redirectTarget.search = '';
     return NextResponse.redirect(redirectTarget, 301);
+}
+
+function buildPermanentGoneResponse() {
+    return new NextResponse('Gone', {
+        status: 410,
+        headers: {
+            'X-Robots-Tag': 'noindex, nofollow',
+            'Cache-Control': 'public, max-age=3600',
+        },
+    });
+}
+
+function isDeadLegacyPath(pathname: string) {
+    return DEAD_LEGACY_PATH_PATTERNS.some((pattern) => pattern.test(pathname));
+}
+
+function getSearchParamRedirect(request: NextRequest) {
+    const nextUrl = request.nextUrl.clone();
+    let changed = false;
+
+    for (const key of TRACKING_QUERY_PARAMS) {
+        if (nextUrl.searchParams.has(key)) {
+            nextUrl.searchParams.delete(key);
+            changed = true;
+        }
+    }
+
+    if (nextUrl.pathname === '/concorsi' || nextUrl.pathname === '/concorsi/') {
+        const pageOne = nextUrl.searchParams.get('page');
+        const paged = nextUrl.searchParams.get('paged') ?? nextUrl.searchParams.get('pagina');
+
+        if (pageOne === '1') {
+            nextUrl.searchParams.delete('page');
+            changed = true;
+        }
+
+        if (paged) {
+            nextUrl.searchParams.delete('paged');
+            nextUrl.searchParams.delete('pagina');
+            if (paged !== '1') nextUrl.searchParams.set('page', paged);
+            changed = true;
+        }
+    }
+
+    if (nextUrl.pathname === '/signup' || nextUrl.pathname === '/login') {
+        const hasRedirectTarget = nextUrl.searchParams.has('redirectTo');
+        for (const key of Array.from(nextUrl.searchParams.keys())) {
+            if (!AUTH_ALLOWED_QUERY_PARAMS.includes(key)) {
+                nextUrl.searchParams.delete(key);
+                changed = true;
+            }
+        }
+
+        if (!hasRedirectTarget && nextUrl.search) {
+            nextUrl.search = '';
+            changed = true;
+        }
+    }
+
+    if (!changed) return null;
+
+    nextUrl.hostname = 'concoro.it';
+    return NextResponse.redirect(nextUrl, 301);
 }
 
 export async function middleware(request: NextRequest) {
@@ -232,6 +316,14 @@ export async function middleware(request: NextRequest) {
     const legacyProvincia = request.nextUrl.searchParams.get('provincia');
 
     const normalizedPathname = pathname === '/' ? pathname : pathname.replace(/\/+$/, '');
+    if (normalizedPathname !== pathname) {
+        return buildCanonicalRedirect(request, normalizedPathname, true);
+    }
+
+    if (isDeadLegacyPath(normalizedPathname)) {
+        return buildPermanentGoneResponse();
+    }
+
     const staticRedirectPath = LEGACY_STATIC_REDIRECTS[normalizedPathname];
     if (staticRedirectPath) {
         return buildCanonicalRedirect(request, staticRedirectPath);
@@ -253,6 +345,11 @@ export async function middleware(request: NextRequest) {
             if (legacyProvincia) return buildCanonicalRedirect(request, `/provincia/${slug}`);
             return buildCanonicalRedirect(request, `/${isRegionSlug(slug) ? 'regione' : 'provincia'}/${slug}`);
         }
+    }
+
+    const searchParamRedirect = getSearchParamRedirect(request);
+    if (searchParamRedirect) {
+        return searchParamRedirect;
     }
 
     const hostname = request.nextUrl.hostname.toLowerCase();

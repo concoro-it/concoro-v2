@@ -156,7 +156,7 @@ export function SignupForm({ redirectTo = '/hub/bacheca', source, intent }: Sign
 
             <p className="text-center text-sm text-muted-foreground">
                 Hai già un account?{' '}
-                <Link href={loginHref} className="font-medium text-primary hover:underline">Accedi</Link>
+                <Link href={loginHref} rel="nofollow" className="font-medium text-primary hover:underline">Accedi</Link>
             </p>
         </div>
     );

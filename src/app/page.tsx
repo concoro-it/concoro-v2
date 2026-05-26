@@ -281,33 +281,6 @@ export default async function HomePage() {
             </section>
 
             <div className="container mx-auto max-w-[78rem] space-y-14 px-4 py-14">
-                <section className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
-                    <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        <Clock3 className="h-3.5 w-3.5" />
-                        Come trovare un concorso pubblico
-                    </div>
-                    <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mb-5 text-3xl tracking-tight text-slate-900">
-                        Metodo in 3 passaggi
-                    </h2>
-                         <p className="mt-5 rounded-2xl bg-white px-2 py-2 text-sm leading-relaxed text-slate-700">
-                        <strong>Cos&apos;e Concoro:</strong> una piattaforma italiana per cercare concorsi pubblici da fonti ufficiali,
-                        confrontare bandi vicini o rilevanti per il tuo profilo e non perdere le scadenze piu importanti.
-                    </p>
-                    <ol className="grid gap-3 md:grid-cols-3">
-                        {HOW_IT_WORKS_STEPS.map((step, index) => (
-                            <li key={step.title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Passaggio {index + 1}</p>
-                                <h3 className="mt-1 text-sm font-semibold text-slate-900">{step.title}</h3>
-                                <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.description}</p>
-                            </li>
-                        ))}
-                    </ol>
-
-                    <p className="mt-5 text-xs text-slate-500">
-                        Fonte dati: pubblicazioni ufficiali su InPA e Gazzetta Ufficiale. Aggiornamento continuo della piattaforma.
-                    </p>
-                </section>
-
                 <section className="grid gap-4 md:grid-cols-3">
                     {GEO_SECTIONS.map((section, index) => {
                         const Icon = section.icon;
@@ -413,7 +386,33 @@ export default async function HomePage() {
                         </div>
                     </section>
                 )}
+                
+                <section className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+                    <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        <Clock3 className="h-3.5 w-3.5" />
+                        Come trovare un concorso pubblico
+                    </div>
+                    <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mb-5 text-3xl tracking-tight text-slate-900">
+                        Metodo in 3 passaggi
+                    </h2>
+                         <p className="mt-5 rounded-2xl bg-white px-2 py-2 text-sm leading-relaxed text-slate-700">
+                        <strong>Cos&apos;e Concoro:</strong> una piattaforma italiana per cercare concorsi pubblici da fonti ufficiali,
+                        confrontare bandi vicini o rilevanti per il tuo profilo e non perdere le scadenze piu importanti.
+                    </p>
+                    <ol className="grid gap-3 md:grid-cols-3">
+                        {HOW_IT_WORKS_STEPS.map((step, index) => (
+                            <li key={step.title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Passaggio {index + 1}</p>
+                                <h3 className="mt-1 text-sm font-semibold text-slate-900">{step.title}</h3>
+                                <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.description}</p>
+                            </li>
+                        ))}
+                    </ol>
 
+                    <p className="mt-5 text-xs text-slate-500">
+                        Fonte dati: pubblicazioni ufficiali su InPA e Gazzetta Ufficiale. Aggiornamento continuo della piattaforma.
+                    </p>
+                </section>
                 <section className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
                     <h2 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mb-5 text-3xl tracking-tight text-slate-900">Domande frequenti</h2>
                     <div className="grid gap-3 md:grid-cols-2">

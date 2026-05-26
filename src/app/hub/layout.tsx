@@ -1,9 +1,17 @@
+import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { HubMobileHeader } from '@/components/layout/HubMobileHeader';
 import { InteractiveMenu } from '@/components/ui/modern-mobile-menu';
 import { redirect } from 'next/navigation';
 import { getUserContext } from '@/lib/auth/getUserContext';
+
+export const metadata: Metadata = {
+    robots: {
+        index: false,
+        follow: false,
+    },
+};
 
 export default async function DashboardLayout({
     children,

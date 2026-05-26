@@ -47,6 +47,7 @@ export function PublicPageviewGateBanner() {
                 <div className="flex flex-wrap items-center gap-2">
                     <Link
                         href={`/signup?${authQuery}`}
+                        rel="nofollow"
                         className="inline-flex items-center gap-1 rounded-lg bg-amber-700 px-3 py-1.5 font-semibold text-white transition hover:bg-amber-800"
                     >
                         Crea account
@@ -54,6 +55,7 @@ export function PublicPageviewGateBanner() {
                     </Link>
                     <Link
                         href={`/login?${authQuery}`}
+                        rel="nofollow"
                         className="inline-flex items-center rounded-lg border border-amber-300 bg-white px-3 py-1.5 font-semibold text-amber-900 transition hover:bg-amber-100"
                     >
                         Accedi

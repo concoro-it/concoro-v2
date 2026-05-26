@@ -5,6 +5,9 @@ import { sanitizeInternalRedirectPath } from '@/lib/auth/redirect';
 
 export const metadata: Metadata = {
     title: 'Registrati',
+    alternates: {
+        canonical: '/signup',
+    },
     robots: {
         index: false,
         follow: false,

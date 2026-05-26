@@ -14,6 +14,7 @@ type ProvinciaPayload = {
     codice?: string;
     regione?: { denominazione?: string } | string | null;
 };
+type SettoriWithCount = Array<{ settore: string; count: number }>;
 
 const CONCORSI_COLS = `
   concorso_id, status, status_label, slug, titolo, titolo_breve,
@@ -36,6 +37,22 @@ const CONCORSO_DETAIL_COLS = `
   annuncio_enrichment, ux_highlights,
   is_active, created_at, updated_at
 `;
+const FACET_COUNT_CACHE_TTL_MS = 10 * 60 * 1000;
+let settoriWithCountCache: { expiresAt: number; value: SettoriWithCount } | null = null;
+let settoriWithCountInFlight: Promise<SettoriWithCount> | null = null;
+
+function summarizeSupabaseError(error: unknown) {
+    const rawMessage = typeof error === 'object' && error !== null && 'message' in error
+        ? String((error as { message?: unknown }).message ?? '')
+        : String(error ?? '');
+
+    if (rawMessage.includes('<html') || rawMessage.includes('<!DOCTYPE html')) {
+        const title = rawMessage.match(/<title>(.*?)<\/title>/i)?.[1]?.trim();
+        return title ? { message: title } : { message: 'HTML error response from Supabase/edge gateway' };
+    }
+
+    return { message: rawMessage.slice(0, 300) };
+}
 
 export async function getConcorsi(
     supabase: SupabaseClient,
@@ -354,19 +371,70 @@ export async function getProvinceWithCount(supabase: SupabaseClient): Promise<Ar
     return Object.values(counts).sort((a, b) => b.count - a.count);
 }
 
-export async function getSettoriWithCount(supabase: SupabaseClient): Promise<Array<{ settore: string; count: number }>> {
+async function getSettoriWithCountUncached(supabase: SupabaseClient): Promise<SettoriWithCount> {
     const { data, error } = await supabase.rpc('get_settori_with_count');
-    if (error || !data) {
-        console.error('Error in getSettoriWithCount:', error);
+    if (!error && data) {
+        return (data as Array<{ settore: string; count: number | string }>)
+            .map((row) => ({
+                settore: row.settore,
+                count: typeof row.count === 'string' ? Number(row.count) : row.count,
+            }))
+            .filter((row) => row.settore && Number.isFinite(row.count));
+    }
+
+    console.error('Error in getSettoriWithCount RPC, falling back:', summarizeSupabaseError(error));
+
+    const now = new Date().toISOString();
+    const { data: legacyData, error: legacyError } = await supabase
+        .from('concorsi')
+        .select('settori')
+        .eq('is_active', true)
+        .gte('data_scadenza', now);
+
+    if (legacyError || !legacyData) {
+        console.error('Error in getSettoriWithCount fallback:', summarizeSupabaseError(legacyError));
         return [];
     }
 
-    return (data as Array<{ settore: string; count: number | string }>)
-        .map((row) => ({
-            settore: row.settore,
-            count: typeof row.count === 'string' ? Number(row.count) : row.count,
-        }))
-        .filter((row) => row.settore && Number.isFinite(row.count));
+    const counts: Record<string, number> = {};
+    for (const row of legacyData as Array<{ settori: unknown }>) {
+        const settori = Array.isArray(row.settori) ? row.settori : [];
+        for (const settore of settori) {
+            if (typeof settore !== 'string') continue;
+            const normalized = settore.trim();
+            if (!normalized) continue;
+            counts[normalized] = (counts[normalized] ?? 0) + 1;
+        }
+    }
+
+    return Object.entries(counts)
+        .map(([settore, count]) => ({ settore, count }))
+        .sort((a, b) => b.count - a.count || a.settore.localeCompare(b.settore));
+}
+
+export async function getSettoriWithCount(supabase: SupabaseClient): Promise<SettoriWithCount> {
+    const now = Date.now();
+    if (settoriWithCountCache && settoriWithCountCache.expiresAt > now) {
+        return settoriWithCountCache.value;
+    }
+
+    if (settoriWithCountInFlight) {
+        return settoriWithCountInFlight;
+    }
+
+    settoriWithCountInFlight = getSettoriWithCountUncached(supabase)
+        .then((value) => {
+            settoriWithCountCache = {
+                expiresAt: Date.now() + FACET_COUNT_CACHE_TTL_MS,
+                value,
+            };
+            return value;
+        })
+        .finally(() => {
+            settoriWithCountInFlight = null;
+        });
+
+    return settoriWithCountInFlight;
 }
 
 export async function getEntiWithCount(supabase: SupabaseClient): Promise<Array<{ ente_nome: string; ente_slug: string; count: number }>> {

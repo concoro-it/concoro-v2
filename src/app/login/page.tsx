@@ -5,6 +5,9 @@ import { sanitizeInternalRedirectPath } from '@/lib/auth/redirect';
 
 export const metadata: Metadata = {
     title: 'Accedi',
+    alternates: {
+        canonical: '/login',
+    },
     robots: {
         index: false,
         follow: false,

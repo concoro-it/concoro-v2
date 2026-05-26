@@ -556,6 +556,7 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
                                         <Link
                                             key={item.value}
                                             href={buildUrl({ stato: item.value, page: '1' })}
+                                            rel="nofollow"
                                             className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${stato === item.value
                                                 ? 'border-[#0A4E88]/40 bg-[#0A4E88] text-white'
                                                 : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
@@ -572,6 +573,7 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
                                         <div className="flex flex-wrap gap-2">
                                             <Link
                                                 href={buildUrl({ settore: '', page: '1' })}
+                                                rel="nofollow"
                                                 className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${!settore
                                                     ? 'border-slate-900 bg-slate-900 text-white'
                                                     : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
@@ -583,6 +585,7 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
                                                 <Link
                                                     key={item.label}
                                                     href={buildUrl({ settore: item.label, page: '1' })}
+                                                    rel="nofollow"
                                                     className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${settore === item.label
                                                         ? 'border-[#0A4E88]/40 bg-[#0A4E88] text-white'
                                                         : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
@@ -601,6 +604,7 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
                                                     <Link
                                                         key={item.value}
                                                         href={buildUrl({ sort: item.value, page: '1' })}
+                                                        rel="nofollow"
                                                         className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${sort === item.value
                                                             ? 'border-slate-900 bg-slate-900 text-white'
                                                             : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
@@ -638,6 +642,7 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
                             {page > 1 && (
                                 <Link
                                     href={buildUrl({ page: String(page - 1) })}
+                                    rel="nofollow"
                                     className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
                                 >
                                     <ChevronLeft className="h-4 w-4" />
@@ -650,6 +655,7 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
                             {page < totalPages && (
                                 <Link
                                     href={buildUrl({ page: String(page + 1) })}
+                                    rel="nofollow"
                                     className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
                                 >
                                     Successiva
@@ -719,7 +725,8 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
                             Esplora regione
                         </Link>
                         <Link
-                            href={`/signup?provincia=${slug}`}
+                            href="/signup"
+                            rel="nofollow"
                             className="inline-flex items-center gap-2 rounded-full border border-[#0A4E88]/30 bg-[#0A4E88]/5 px-3 py-1.5 text-xs font-semibold text-[#083861] transition hover:bg-[#0A4E88]/10"
                         >
                             <Sparkles className="h-3.5 w-3.5" />

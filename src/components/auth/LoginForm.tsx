@@ -150,7 +150,7 @@ export function LoginForm({ redirectTo = '/hub/bacheca', source, intent }: Login
 
             <p className="text-center text-sm text-muted-foreground">
                 Non hai un account?{' '}
-                <Link href={signupHref} className="font-medium text-primary hover:underline">Registrati</Link>
+                <Link href={signupHref} rel="nofollow" className="font-medium text-primary hover:underline">Registrati</Link>
             </p>
         </div>
     );
