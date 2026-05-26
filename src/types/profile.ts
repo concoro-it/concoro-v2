@@ -1,4 +1,4 @@
-export type UserTier = 'anon' | 'free' | 'pro' | 'admin';
+export type UserTier = 'anon' | 'free' | 'trial' | 'pro' | 'admin';
 
 export interface Profile {
     id: string;

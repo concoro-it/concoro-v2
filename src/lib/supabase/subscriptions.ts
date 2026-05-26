@@ -9,7 +9,7 @@ export async function updateUserSubscription(
     stripeSubscriptionId: string,
     currentPeriodEnd: Date
 ) {
-    const tier = status === 'active' || status === 'trialing' ? 'pro' : 'free';
+    const tier = status === 'trialing' ? 'trial' : status === 'active' ? 'pro' : 'free';
 
     const { error } = await supabase
         .from('profiles')

@@ -5,6 +5,7 @@ import { ChevronRight, ShieldAlert, Wallet } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { BillingSection } from '@/components/subscription/BillingSection';
 import { getUserContext } from '@/lib/auth/getUserContext';
+import { hasProAccess } from '@/lib/auth/tiers';
 
 export const metadata: Metadata = { title: 'Fatturazione | Hub' };
 
@@ -18,7 +19,7 @@ export default async function DashboardBillingPage() {
         redirect('/login');
     }
 
-    const isPro = tier === 'pro' || tier === 'admin';
+    const isPro = hasProAccess(tier);
 
     return (
         <div className="dashboard-shell">

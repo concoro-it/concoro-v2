@@ -14,10 +14,10 @@ export function PaywallBanner({ lockedCount, isLoggedIn }: Props) {
     const yearly = PLANS.pro.price_yearly;
     const yearlySavings = Math.round((1 - yearly / (monthly * 12)) * 100);
     const headline = isLoggedIn
-        ? `Ti stai perdendo ${lockedCount} concorsi oltre il piano gratuito`
+        ? `Prova gratis e sblocca altri ${lockedCount} concorsi`
         : `Hai raggiunto il limite gratuito: altri ${lockedCount} concorsi ti aspettano`;
     const description = isLoggedIn
-        ? 'Con Pro vedi subito la lista completa, salvi ricerche senza limiti e ricevi alert mirati solo sui bandi davvero rilevanti per te.'
+        ? 'Attiva 7 giorni di prova gratuita: vedi subito la lista completa, salvi ricerche senza limiti e ricevi alert mirati.'
         : 'Crea un account gratuito in 30 secondi per salvare i bandi e monitorare le scadenze. Quando vuoi, attiva Pro e sblocca tutta la lista.';
 
     return (
@@ -75,14 +75,14 @@ export function PaywallBanner({ lockedCount, isLoggedIn }: Props) {
                         href="/pricing?billing=yearly&source=results-paywall"
                         className="group inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/35 transition-all hover:-translate-y-0.5 hover:bg-primary/95"
                     >
-                        Prova gratis, poi €{yearly.toFixed(2).replace('.', ',')}/anno
+                        Inizia 7 giorni gratis
                         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                     </Link>
                     <Link
                         href="/pricing?billing=monthly&source=results-paywall"
                         className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
                     >
-                        Confronta i piani
+                        Vedi i dettagli
                     </Link>
                 </div>
             ) : (
@@ -105,7 +105,7 @@ export function PaywallBanner({ lockedCount, isLoggedIn }: Props) {
 
             {isLoggedIn && (
                 <p className="mt-2 text-xs text-slate-500">
-                    Pagamento sicuro con Stripe. Puoi disdire prima del rinnovo.
+                    Carta richiesta da Stripe. Dopo la prova: €{yearly.toFixed(2).replace('.', ',')}/anno, puoi disdire prima del rinnovo.
                 </p>
             )}
         </div>

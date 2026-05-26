@@ -1,4 +1,5 @@
 import type { UserTier } from '@/types/profile';
+import { hasProAccess } from '@/lib/auth/tiers';
 
 export const ALLOWED_DEADLINE_OFFSETS = [1, 3, 7] as const;
 export const DEFAULT_PRO_DEADLINE_OFFSETS = [7, 3, 1] as const;
@@ -15,7 +16,7 @@ export type EffectiveAlertPreferences = {
 };
 
 export function isProTier(tier: UserTier): boolean {
-    return tier === 'pro' || tier === 'admin';
+    return hasProAccess(tier);
 }
 
 function isAllowedOffset(value: number): value is (typeof ALLOWED_DEADLINE_OFFSETS)[number] {

@@ -1,13 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ConcorsoFilters } from '@/types/concorso';
 import type { SavedSearch, UserTier } from '@/types/profile';
+import { hasProAccess } from '@/lib/auth/tiers';
 
 export const FREE_FEED_PREVIEW_LIMIT = 5;
 export const FREE_EMAIL_VISIBLE_LIMIT = 1;
 export const PRO_EMAIL_VISIBLE_LIMIT = 3;
 
 export function isProTier(tier: UserTier): boolean {
-    return tier === 'pro' || tier === 'admin';
+    return hasProAccess(tier);
 }
 
 export function buildSearchHrefFromFilters(filters: SavedSearch['filters'] | null | undefined): string {

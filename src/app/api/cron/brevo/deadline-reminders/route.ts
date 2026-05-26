@@ -8,6 +8,7 @@ import {
     upsertContact,
 } from '@/lib/brevo';
 import { resolveEffectiveAlertPreferences } from '@/lib/alerts/preferences';
+import { hasProAccess } from '@/lib/auth/tiers';
 import type { UserTier } from '@/types/profile';
 
 function toIsoWindow(daysFromNow: number): { start: string; end: string } {
@@ -114,7 +115,7 @@ export async function GET(req: NextRequest) {
     }>;
     const userIds = usersList.map((u) => u.id);
     const proUserIds = usersList
-        .filter((u) => u.tier === 'pro' || u.tier === 'admin')
+        .filter((u) => hasProAccess(u.tier))
         .map((u) => u.id);
 
     const { data: preferencesRows, error: preferencesError } = await supabaseAdmin

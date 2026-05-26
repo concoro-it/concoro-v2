@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
         if ((count ?? 0) >= 1) {
             return NextResponse.json(
-                { error: 'Il piano Free consente di salvare solo 1 concorso. Passa a Pro per salvaggi illimitati.' },
+                { error: 'Il piano gratuito consente di salvare solo 1 concorso. Attiva 7 giorni gratis per salvaggi illimitati.' },
                 { status: 403 }
             );
         }

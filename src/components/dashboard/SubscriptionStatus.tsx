@@ -127,7 +127,7 @@ export function SubscriptionStatus({ subscription }: SubscriptionStatusProps) {
                 ) : (
                     <div className="space-y-4">
                         <p className="text-sm text-muted-foreground">
-                            Stai usando il piano gratuito. Passa a Pro quando vuoi monitorare piu bandi senza limiti e con notifiche mirate.
+                            Stai usando il piano gratuito. Puoi provare Concoro Pro gratis per 7 giorni e monitorare piu bandi senza limiti.
                         </p>
                     </div>
                 )}
@@ -150,13 +150,13 @@ export function SubscriptionStatus({ subscription }: SubscriptionStatusProps) {
                 ) : (
                     <>
                         <p className="text-xs text-muted-foreground text-center sm:text-left">
-                            Passa a Pro per seguire i concorsi senza interruzioni
+                            Attiva 7 giorni gratis per seguire i concorsi senza interruzioni.
                         </p>
                         <Button
                             className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 transition-opacity text-white"
                             onClick={() => window.location.href = '/pricing'}
                         >
-                            Passa a Pro
+                            Inizia la prova gratuita
                         </Button>
                     </>
                 )}

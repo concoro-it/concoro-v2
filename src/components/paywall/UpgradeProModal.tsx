@@ -23,9 +23,9 @@ interface UpgradeProModalProps {
 }
 
 const proFeatures = [
-    'Salva preset illimitati e riusali in un click.',
-    'Mantieni filtri avanzati (ente, procedura, ordinamento).',
-    'Ottieni una ricerca piu veloce e focalizzata ogni giorno.',
+    '7 giorni di prova gratuita con tutte le funzionalita.',
+    'Salva preset e ricerche illimitate fin dal primo giorno.',
+    'Ricevi alert mirati e usa Genio per decidere piu in fretta.',
 ];
 
 export function UpgradeProModal({
@@ -60,18 +60,18 @@ export function UpgradeProModal({
                             <div className="flex flex-wrap items-center gap-2">
                                 <Badge className="rounded-full border-0 bg-slate-900 px-3 py-1 text-[11px] uppercase tracking-[0.12em] text-white hover:bg-slate-900">
                                     <Crown className="mr-1.5 h-3.5 w-3.5" />
-                                    Pro Upgrade
+                                    Prova gratuita
                                 </Badge>
                                 <Badge variant="secondary" className="border border-amber-200 bg-white/80 text-amber-800">
                                     <Sparkles className="mr-1 h-3.5 w-3.5" />
-                                    Salva preset
+                                    7 giorni gratis
                                 </Badge>
                             </div>
                             <DialogTitle className="text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
-                                Sblocca Salva preset con Pro
+                                Prova Concoro Pro gratis per 7 giorni
                             </DialogTitle>
                             <DialogDescription className="max-w-xl text-sm text-slate-700 sm:text-base">
-                                Hai gia un account. Passa a Pro per salvare le ricerche migliori e ripartire subito dai filtri che funzionano.
+                                Hai gia un account: attiva la prova gratuita, inserisci la carta al checkout e usa subito monitoraggio, preset e alert completi.
                             </DialogDescription>
                         </DialogHeader>
                     </div>
@@ -96,7 +96,7 @@ export function UpgradeProModal({
                                     router.push('/pricing?billing=yearly&source=upgrade-pro-modal');
                                 }}
                             >
-                                Passa a Pro
+                                Inizia la prova gratuita
                                 <ArrowRight className="ml-1 h-4 w-4" />
                             </Button>
                             <Button

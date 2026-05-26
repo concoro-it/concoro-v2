@@ -19,11 +19,11 @@ export function ProAccountCTA({ className }: { className?: string }) {
                         <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                             <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <h3 className="font-bold text-slate-900 dark:text-white">Passa a Pro</h3>
+                        <h3 className="font-bold text-slate-900 dark:text-white">Prova gratis per 7 giorni</h3>
                     </div>
 
                     <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                        Sblocca il pieno potenziale di Concoro e non perdere mai un&apos;opportunità.
+                        Attiva la prova gratuita e usa subito il pieno potenziale di Concoro.
                     </p>
 
                     <ul className="space-y-2.5">
@@ -46,7 +46,7 @@ export function ProAccountCTA({ className }: { className?: string }) {
                         href="/prezzi"
                         className="flex items-center justify-between w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-all group/btn"
                     >
-                        Inizia Ora
+                        Inizia gratis
                         <ArrowRight className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform" />
                     </Link>
                 </div>

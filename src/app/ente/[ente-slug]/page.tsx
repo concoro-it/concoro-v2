@@ -20,6 +20,7 @@ import { formatDateIT } from '@/lib/utils/date';
 import { toUrlSlug } from '@/lib/utils/regioni';
 import { getServerAppUrl } from '@/lib/auth/url';
 import { getUserContext } from '@/lib/auth/getUserContext';
+import { hasProAccess } from '@/lib/auth/tiers';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import { BlurredResultsSection } from '@/components/paywall/PaywallBanner';
 import type {
@@ -215,7 +216,7 @@ export default async function EntePage({ params }: Props) {
     const signupHref = tier === 'anon'
         ? '/signup'
         : `/hub/billing?source=ente-page&ente=${slug}`;
-    const isLocked = tier !== 'pro' && tier !== 'admin';
+    const isLocked = !hasProAccess(tier);
     const visibleResults = isLocked ? openConcorsi.slice(0, FREE_VISIBLE) : concorsi;
     const lockedResults = isLocked ? [...openConcorsi.slice(FREE_VISIBLE), ...closedConcorsi] : [];
     const showPaywall = isLocked && lockedResults.length > 0;

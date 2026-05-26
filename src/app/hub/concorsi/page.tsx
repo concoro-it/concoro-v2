@@ -10,6 +10,7 @@ import { PreferencesControl } from '@/components/concorsi/PreferencesControl';
 import { ActiveFiltersBar } from '@/components/concorsi/ActiveFiltersBar';
 import { SearchBar } from '@/components/concorsi/SearchBar';
 import { getUserContext } from '@/lib/auth/getUserContext';
+import { hasProAccess } from '@/lib/auth/tiers';
 
 export const metadata: Metadata = {
     title: 'Concorsi | Hub',
@@ -62,7 +63,7 @@ export default async function DashboardConcorsiPage({
         redirect('/login');
     }
 
-    const isUnlimited = tier === 'pro' || tier === 'admin';
+    const isUnlimited = hasProAccess(tier);
     const page = isUnlimited ? requestedPage : 1;
 
     const [{ data: concorsi, count }, savedIds, regioniWithCount, settoriWithCount] = await Promise.all([
@@ -133,12 +134,12 @@ export default async function DashboardConcorsiPage({
                 <div className="mb-6 rounded-xl border border-primary/20 bg-primary/5 p-4 flex items-start gap-3">
                     <Crown className="w-5 h-5 text-primary mt-0.5" />
                     <div>
-                        <p className="font-semibold">Limite account registrato: 20 risultati</p>
+                        <p className="font-semibold">Limite account gratuito: 20 risultati</p>
                         <p className="text-sm text-muted-foreground mt-0.5">
-                            Passa a Pro per vedere tutti i concorsi senza limiti.
+                            Attiva 7 giorni gratis per vedere tutti i concorsi senza limiti.
                         </p>
                         <Link href="/pricing" className="inline-block mt-2 text-sm font-medium text-primary hover:underline">
-                            Sblocca Pro
+                            Inizia la prova gratuita
                         </Link>
                     </div>
                 </div>

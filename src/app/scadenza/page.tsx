@@ -190,16 +190,16 @@ export default async function ScadenzePage() {
                             <UpgradeModal triggerClassName="block">
                                 <div className="group cursor-pointer rounded-3xl border border-slate-200 bg-white/85 p-6 transition hover:border-slate-400 hover:shadow-[0_25px_55px_-42px_rgba(15,23,42,0.65)]">
                                     <p className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-sky-700">
-                                        Upgrade
+                                        Prova gratuita
                                     </p>
                                     <h3 className="mt-3 text-lg font-semibold text-slate-900">
-                                        Sblocca la versione completa di Concoro
+                                        Prova la versione completa di Concoro per 7 giorni
                                     </h3>
                                     <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                                        Accedi a monitoraggio avanzato, preferenze salvate e un flusso piu rapido per trovare i bandi migliori.
+                                        Attiva monitoraggio avanzato, preferenze salvate e un flusso piu rapido per trovare i bandi migliori.
                                     </p>
                                     <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-slate-700 transition group-hover:text-slate-900">
-                                        Apri upgrade
+                                        Inizia gratis
                                         <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                                     </span>
                                 </div>

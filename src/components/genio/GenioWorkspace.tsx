@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { Profile, UserTier } from '@/types/profile';
+import { hasProAccess } from '@/lib/auth/tiers';
 import type { Concorso } from '@/types/concorso';
 import { createClient } from '@/lib/supabase/client';
 import { ConcorsoCard } from '@/components/concorsi/ConcorsoCard';
@@ -291,8 +292,7 @@ function getRandomLoadingMessage() {
 }
 
 function getTierTone(tier: UserTier): { hasAccess: boolean } {
-  if (tier === 'pro' || tier === 'admin') return { hasAccess: true };
-  return { hasAccess: false };
+  return { hasAccess: hasProAccess(tier) };
 }
 
 async function readJsonResponse(response: Response): Promise<Record<string, unknown>> {
@@ -480,7 +480,7 @@ export function GenioWorkspace({ tier, userName, userAvatarUrl }: GenioWorkspace
               <div className="space-y-4">
                 <span className="inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-amber-50 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-amber-900">
                   <Lock className="h-3.5 w-3.5" />
-                  Funzione Pro
+                  Prova gratuita
                 </span>
                 <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl leading-[1.04] tracking-tight text-slate-900 sm:text-4xl lg:text-[2.8rem]">
                   Genio trasforma ogni bando in
@@ -490,14 +490,14 @@ export function GenioWorkspace({ tier, userName, userAvatarUrl }: GenioWorkspace
                   per candidarti con metodo.
                 </h1>
                 <p className="max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
-                  Con Pro ottieni analisi dei requisiti, sintesi operative, bozze pronte all&apos;uso e supporto continuo direttamente nel tuo hub.
+                  Attiva 7 giorni gratis per ottenere analisi dei requisiti, sintesi operative, bozze pronte all&apos;uso e supporto continuo direttamente nel tuo hub.
                 </p>
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   <Link
                     href="/pricing"
                     className="group inline-flex items-center justify-between rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                   >
-                    Attiva Pro ora
+                    Inizia 7 giorni gratis
                     <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                   </Link>
                   <Link
@@ -511,7 +511,7 @@ export function GenioWorkspace({ tier, userName, userAvatarUrl }: GenioWorkspace
               </div>
 
               <div className="rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4">
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.11em] text-slate-500">Con Genio Pro puoi fare</p>
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.11em] text-slate-500">Con la prova gratuita puoi fare</p>
                 <ul className="mt-4 space-y-2.5 text-sm text-slate-700">
                   <li className="flex items-start gap-2">
                     <Sparkles className="mt-0.5 h-4 w-4 text-[#0A4E88]" />
@@ -536,7 +536,7 @@ export function GenioWorkspace({ tier, userName, userAvatarUrl }: GenioWorkspace
               <div className="pointer-events-none absolute inset-x-0 top-1/2 z-30 -translate-y-1/2 text-center">
                 <span className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 shadow-sm">
                   <Crown className="h-4 w-4" />
-                  Sblocca Genio Pro
+                  Prova Genio gratis per 7 giorni
                 </span>
               </div>
               <div className="space-y-3">

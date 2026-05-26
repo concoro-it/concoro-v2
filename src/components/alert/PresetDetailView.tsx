@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { UpgradeProModal } from '@/components/paywall/UpgradeProModal';
 import { ConcorsoCard } from '@/components/concorsi/ConcorsoCard';
 import { FREE_FEED_PREVIEW_LIMIT, type NormalizedSavedSearchFilters } from '@/lib/saved-search-alerts';
+import { hasProAccess } from '@/lib/auth/tiers';
 import type { UserTier } from '@/types/profile';
 import type { Concorso } from '@/types/concorso';
 
@@ -101,7 +102,7 @@ function chipToneClass(tone: FilterChip['tone']): string {
 }
 
 export function PresetDetailView({ presetId, tier }: PresetDetailViewProps) {
-    const isPro = tier === 'pro' || tier === 'admin';
+    const isPro = hasProAccess(tier);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [page, setPage] = useState(1);
@@ -251,12 +252,12 @@ export function PresetDetailView({ presetId, tier }: PresetDetailViewProps) {
                                         <Lock className="h-3.5 w-3.5" />
                                         Anteprima gratuita
                                     </p>
-                                    <h2 className="mt-3 text-lg font-semibold text-slate-900">Mostriamo solo i primi {FREE_FEED_PREVIEW_LIMIT} risultati</h2>
+                                    <h2 className="mt-3 text-lg font-semibold text-slate-900">Mostriamo solo i primi {FREE_FEED_PREVIEW_LIMIT} risultati. Prova il resto gratis per 7 giorni.</h2>
                                 </div>
                                 <UpgradeProModal triggerClassName="inline-block">
                                     <span className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">
                                         <Crown className="h-4 w-4" />
-                                        Passa a Pro
+                                        Inizia la prova gratuita
                                     </span>
                                 </UpgradeProModal>
                             </div>

@@ -52,20 +52,20 @@ export default async function EnteIndexPage() {
                     <div className="rounded-2xl border border-primary/15 bg-white/90 p-5">
                         <p className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-primary">
                             <Lock className="h-3.5 w-3.5" />
-                            Accesso Pro
+                            Prova gratuita
                         </p>
                         <h2 className="mt-3 text-xl font-semibold text-slate-900">
-                            Altri {lockedCount} enti sono disponibili nel piano Pro
+                            Prova gratis e accedi ad altri {lockedCount} enti
                         </h2>
                         <p className="mt-2 text-sm text-slate-600">
-                            Sblocca la directory completa degli enti e monitora piu amministrazioni senza limiti.
+                            Attiva 7 giorni gratis per consultare la directory completa e monitorare piu amministrazioni senza limiti.
                         </p>
                         <div className="mt-4 flex flex-wrap gap-2">
                             <Link
                                 href="/pricing?billing=yearly&source=ente-index-paywall"
                                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
                             >
-                                Sblocca tutti gli enti
+                                Inizia 7 giorni gratis
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                             <Link

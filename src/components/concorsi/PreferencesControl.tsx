@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UpgradeModal } from '@/components/paywall/UpgradeModal';
 import { UpgradeProModal } from '@/components/paywall/UpgradeProModal';
+import { hasProAccess } from '@/lib/auth/tiers';
 
 type Option = { label: string; value: string };
 type SectionKey = 'basic' | 'company';
@@ -47,7 +48,6 @@ interface PreferencesState {
 }
 
 const SENTINEL = '__any__';
-const PRO_TIERS: UserTier[] = ['pro', 'admin'];
 const ENTI_PAGE_SIZE = 10;
 const SECTION_ITEMS: Array<{ key: SectionKey; short: string; title: string; description: string }> = [
     {
@@ -227,8 +227,8 @@ export function PreferencesControl({
         };
     }, [open, section, state.regione]);
 
-    const isPaywalledPublic = isPublicPage && (tier === 'anon' || tier === 'free');
-    const canSavePreset = PRO_TIERS.includes(tier);
+    const isPaywalledPublic = isPublicPage && !hasProAccess(tier);
+    const canSavePreset = hasProAccess(tier);
     const genioHref = isPublicPage ? '/chat' : '/hub/genio';
 
     const setField = <K extends keyof PreferencesState>(key: K, value: PreferencesState[K]) => {
@@ -375,7 +375,7 @@ export function PreferencesControl({
             return;
         }
 
-        if (tier === 'free') {
+        if (!hasProAccess(tier)) {
             setShowUpgradeProModal(true);
             return;
         }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserTier } from '@/lib/auth/getUserTier';
+import { hasProAccess } from '@/lib/auth/tiers';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const tier = await getUserTier(supabase);
 
-    if (tier !== 'pro' && tier !== 'admin') {
+    if (!hasProAccess(tier)) {
       return NextResponse.json(
         { error: 'Questa funzionalita e disponibile solo per gli utenti Pro.' },
         { status: 403 }

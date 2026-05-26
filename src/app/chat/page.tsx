@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getUserTier } from '@/lib/auth/getUserTier';
+import { hasProAccess } from '@/lib/auth/tiers';
 import { PaywallBanner } from '@/components/paywall/PaywallBanner';
 import { Bot, Send, Sparkles } from 'lucide-react';
 
@@ -16,7 +17,7 @@ export default async function ChatPage() {
     }
 
     const tier = await getUserTier(supabase);
-    const hasAccess = tier === 'pro' || tier === 'admin';
+    const hasAccess = hasProAccess(tier);
 
     if (!hasAccess) {
         return (

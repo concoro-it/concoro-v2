@@ -94,6 +94,7 @@ export function BillingSection({ tier, isPro, stripeCustomerId }: BillingSection
     const invoices = billingData.invoices;
     const planName = useMemo(() => {
         if (tier === 'admin') return 'Concoro Admin';
+        if (tier === 'trial') return 'Concoro Pro Trial';
         return isPro ? 'Concoro Pro' : 'Piano Gratuito';
     }, [isPro, tier]);
 

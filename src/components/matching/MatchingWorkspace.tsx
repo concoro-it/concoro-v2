@@ -13,6 +13,7 @@ import {
 import type { Profile, UserTier } from '@/types/profile';
 import type { Concorso } from '@/types/concorso';
 import { createClient } from '@/lib/supabase/client';
+import { getTierLabel, hasProAccess } from '@/lib/auth/tiers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -145,9 +146,7 @@ function parseMatches(payload: unknown): MatchResult[] {
 }
 
 function getTierTone(tier: UserTier): { label: string; hasAccess: boolean } {
-  if (tier === 'pro' || tier === 'admin') return { label: tier === 'admin' ? 'Admin' : 'Pro', hasAccess: true };
-  if (tier === 'free') return { label: 'Gratuito', hasAccess: false };
-  return { label: 'Ospite', hasAccess: false };
+  return { label: getTierLabel(tier), hasAccess: hasProAccess(tier) };
 }
 
 export function MatchingWorkspace({ userId, tier, profile }: MatchingWorkspaceProps) {
@@ -323,7 +322,7 @@ export function MatchingWorkspace({ userId, tier, profile }: MatchingWorkspacePr
               <div className="space-y-4">
                 <span className="inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-amber-50 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-amber-900">
                   <Lock className="h-3.5 w-3.5" />
-                  Funzione Pro
+                  Prova gratuita
                 </span>
                 <h1 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] text-3xl leading-[1.04] tracking-tight text-slate-900 sm:text-4xl lg:text-[2.8rem]">
                   Trova il tuo bando ideale.
@@ -331,14 +330,14 @@ export function MatchingWorkspace({ userId, tier, profile }: MatchingWorkspacePr
                   In pochi secondi.
                 </h1>
                 <p className="max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
-                  Caricamento CV e abbinamento intelligente sono disponibili nel piano Pro.
+                  Attiva 7 giorni gratis per usare caricamento CV e abbinamento intelligente.
                 </p>
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   <Link
                     href="/pricing"
                     className="group inline-flex items-center justify-between rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                   >
-                    Passa a Pro
+                    Inizia 7 giorni gratis
                     <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                   </Link>
                   <Link

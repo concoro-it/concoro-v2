@@ -21,6 +21,7 @@ import { EnteComboboxFilter } from '@/components/regione/EnteComboboxFilter';
 import { toUrlSlug } from '@/lib/utils/regioni';
 import type { ConcorsoFilters } from '@/types/concorso';
 import { getUserContext } from '@/lib/auth/getUserContext';
+import { hasProAccess } from '@/lib/auth/tiers';
 
 const FREE_VISIBLE = 5;
 const LIMIT = 20;
@@ -180,7 +181,7 @@ export default async function ProvinciaPage({ params, searchParams }: Props) {
     const authSupabase = await createClient();
     const { tier } = await getUserContext(authSupabase);
     const routePrefix = tier === 'anon' ? '' : '/hub';
-    const isLocked = tier !== 'pro' && tier !== 'admin';
+    const isLocked = !hasProAccess(tier);
     const resultsLimit = isLocked ? FREE_VISIBLE : LIMIT;
 
     const [provinciaData, baseProvinciaData, openSnapshot, closedSnapshot, entiData] = await Promise.all([

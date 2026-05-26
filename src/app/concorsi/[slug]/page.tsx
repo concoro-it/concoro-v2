@@ -35,6 +35,7 @@ import type {
 } from '@/types/ente';
 import { getServerAppUrl } from '@/lib/auth/url';
 import { getUserContext } from '@/lib/auth/getUserContext';
+import { hasProAccess } from '@/lib/auth/tiers';
 
 interface Props {
     params: Promise<{ slug: string }>;
@@ -383,7 +384,7 @@ export default async function ConcorsoDetailPage({ params }: Props) {
     }
     const authSupabase = await createClient();
     const { tier } = await getUserContext(authSupabase);
-    const isGuestUser = tier !== 'pro' && tier !== 'admin';
+    const isGuestUser = !hasProAccess(tier);
     const routePrefix = tier === 'anon' ? '' : '/hub';
     const homeHref = routePrefix || '/';
     const toInternalHref = (path: `/${string}`) => `${routePrefix}${path}`;

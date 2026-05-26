@@ -20,6 +20,7 @@ import { AlertSettingsPanel } from '@/components/salvati/AlertSettingsPanel';
 import { deleteSearchAction } from '@/app/hub/ricerche/actions';
 import type { SavedSearch } from '@/types/profile';
 import { getUserContext } from '@/lib/auth/getUserContext';
+import { getTierLabel, hasProAccess } from '@/lib/auth/tiers';
 
 export const metadata: Metadata = { title: 'Salvati | Hub' };
 
@@ -62,7 +63,7 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
 
     const requestedTab = resolvedSearchParams?.tab;
     const activeTab = requestedTab === 'ricerche' || requestedTab === 'alert' ? requestedTab : 'concorsi';
-    const isProTier = tier === 'pro' || tier === 'admin';
+    const isProTier = hasProAccess(tier);
     const savedConcorsiLimit = tier === 'free' ? 1 : null;
     const savedSearchesLimit = isProTier ? null : 0;
     const remainingConcorsiSlots = savedConcorsiLimit == null ? null : Math.max(0, savedConcorsiLimit - savedConcorsi.length);
@@ -100,7 +101,7 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.11em] text-slate-500">Il tuo piano</p>
                             <div className="mt-2 flex items-center gap-2">
                                 <span className="inline-flex items-center rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white">
-                                    {tier === 'admin' ? 'Admin' : tier === 'pro' ? 'Pro' : 'Gratuito'}
+                                    {getTierLabel(tier)}
                                 </span>
                                 {!isProTier && (
                                     <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">
@@ -124,13 +125,13 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                             </div>
                             {!isProTier && (
                                 <div className="mt-4 rounded-xl border border-amber-200/80 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-3.5">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.11em] text-amber-800">Upgrade consigliato</p>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.11em] text-amber-800">Prova gratuita</p>
                                     <p className="mt-1 text-sm text-slate-700">
-                                        Con Pro salvi concorsi e ricerche senza limiti.
+                                        Attiva 7 giorni gratis per salvare concorsi e ricerche senza limiti.
                                     </p>
                                     <UpgradeProModal triggerClassName="mt-3 inline-block">
                                         <span className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white">
-                                            Passa a Pro
+                                            Inizia la prova gratuita
                                             <ArrowRight className="h-4 w-4" />
                                         </span>
                                     </UpgradeProModal>
@@ -184,7 +185,7 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                                     <p className="font-semibold">Limite gratuito: 1 concorso salvato</p>
                                     <p className="mt-1">
                                         {remainingConcorsiSlots === 0
-                                            ? 'Hai raggiunto il limite. Passa a Pro per salvare altri concorsi.'
+                                            ? 'Hai raggiunto il limite. Attiva 7 giorni gratis per salvare altri concorsi.'
                                             : `Ti restano ${remainingConcorsiSlots} posti disponibili.`}
                                     </p>
                                 </div>
@@ -289,19 +290,19 @@ export default async function SalvatiPage({ searchParams }: SalvatiPageProps) {
                             <div className="relative max-w-2xl space-y-3">
                                 <span className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100/80 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-amber-900">
                                     <Lock className="h-3.5 w-3.5" />
-                                    Solo Pro
+                                    Prova gratuita
                                 </span>
                                 <h3 className="text-xl font-semibold text-slate-900 sm:text-2xl">
-                                    Le ricerche salvate sono disponibili solo con Pro.
+                                    Prova le ricerche salvate gratis per 7 giorni.
                                 </h3>
                                 <p className="text-sm leading-relaxed text-slate-700 sm:text-base">
-                                    Con il piano gratuito puoi salvare un solo concorso e non puoi salvare ricerche. Passa a Pro per il monitoraggio illimitato.
+                                    Con il piano gratuito puoi salvare un solo concorso e non puoi salvare ricerche. Attiva la prova gratuita per il monitoraggio illimitato.
                                 </p>
                                 <div className="grid gap-2.5 sm:grid-cols-2">
                                     <UpgradeProModal triggerClassName="w-full">
                                         <span className="inline-flex w-full items-center justify-center gap-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">
                                             <Crown className="h-4 w-4" />
-                                            Sblocca Pro
+                                            Inizia la prova gratuita
                                         </span>
                                     </UpgradeProModal>
                                     <Link

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserTier } from '@/lib/auth/getUserTier';
+import { hasProAccess } from '@/lib/auth/tiers';
 import { getConcorsi } from '@/lib/supabase/queries';
 import { mapSavedSearchToConcorsoFilters } from '@/lib/saved-search-alerts';
 import type { SavedSearch } from '@/types/profile';
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     // Saved searches are a Pro-only feature
     const tier = await getUserTier(supabase);
-    if (tier !== 'pro' && tier !== 'admin') {
+    if (!hasProAccess(tier)) {
         return NextResponse.json(
             { error: 'Le ricerche salvate sono disponibili solo per gli utenti Pro.' },
             { status: 403 }

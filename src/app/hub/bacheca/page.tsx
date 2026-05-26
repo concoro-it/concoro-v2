@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getActiveConcorsiCount, getProvinceWithCount, getRegioniWithCount, getSavedConcorsi } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import { getUserContext } from '@/lib/auth/getUserContext';
+import { getTierLabel, hasProAccess } from '@/lib/auth/tiers';
 import {
     ArrowRight,
     Bookmark,
@@ -33,8 +34,8 @@ export default async function DashboardPage() {
     const firstName = profile?.full_name?.split(' ')[0] ?? 'utente';
     const trackedRegions = regionCounts.filter((item) => item.count > 0).length;
     const topRegion = [...regionCounts].sort((a, b) => b.count - a.count)[0];
-    const tierLabel = tier === 'pro' ? 'Pro' : tier === 'admin' ? 'Admin' : 'Gratuito';
-    const tierTone = tier === 'pro' || tier === 'admin';
+    const tierLabel = getTierLabel(tier);
+    const tierTone = hasProAccess(tier);
 
     return (
         <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/70 bg-[hsl(210,55%,98%)] text-slate-900 shadow-[0_32px_70px_-46px_rgba(15,23,42,0.65)] [font-family:'Avenir_Next',Avenir,'Segoe_UI',-apple-system,BlinkMacSystemFont,'Helvetica_Neue',sans-serif]">
@@ -107,14 +108,14 @@ export default async function DashboardPage() {
                                         <p className="mt-1 text-lg font-semibold text-slate-900">{tierLabel}</p>
                                     </div>
                                     <span className="inline-flex items-center rounded-full bg-amber-200/70 px-2.5 py-1 text-xs font-semibold text-amber-900">
-                                        Upgrade ora
+                                        7 giorni gratis
                                     </span>
                                 </div>
                                 <p className="text-sm leading-relaxed text-slate-700">
-                                    Passa a Pro per alert mirati, monitoraggio continuo e supporto Genio sui bandi prioritari.
+                                    Attiva la prova gratuita per alert mirati, monitoraggio continuo e supporto Genio sui bandi prioritari.
                                 </p>
                                 <div className="rounded-xl border border-amber-200/80 bg-white/75 p-3">
-                                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.11em] text-amber-800">Cosa sblocchi con Pro</p>
+                                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.11em] text-amber-800">Cosa provi gratis</p>
                                     <ul className="mt-2 space-y-1.5 text-sm text-slate-700">
                                         <li className="flex items-start gap-2">
                                             <span className="mt-0.5 inline-flex rounded-full bg-emerald-100 p-0.5 text-emerald-700">
@@ -141,7 +142,7 @@ export default async function DashboardPage() {
                                         href="/pricing"
                                         className="group inline-flex items-center justify-between rounded-xl bg-slate-900 px-3 py-2 font-semibold text-white transition hover:bg-slate-800"
                                     >
-                                        Passa a Pro
+                                        Inizia gratis
                                         <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                                     </Link>
                                     <Link

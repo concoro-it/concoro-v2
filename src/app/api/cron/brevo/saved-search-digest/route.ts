@@ -278,8 +278,8 @@ export async function GET(req: NextRequest) {
                 cta_message: isProUser
                     ? null
                     : remainingCount > 0
-                        ? `+${remainingCount} altri concorsi. Passa a Pro per digest completi.`
-                        : 'Passa a Pro per digest completi.',
+                        ? `+${remainingCount} altri concorsi. Attiva 7 giorni gratis per digest completi.`
+                        : 'Attiva 7 giorni gratis per digest completi.',
             },
         });
 

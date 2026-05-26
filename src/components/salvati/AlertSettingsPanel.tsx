@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UpgradeProModal } from '@/components/paywall/UpgradeProModal';
+import { hasProAccess } from '@/lib/auth/tiers';
 import type { UserTier } from '@/types/profile';
 
 type AlertSettingsPanelProps = {
@@ -21,7 +22,7 @@ type AlertsResponse = {
 const OFFSET_OPTIONS = [7, 3, 1] as const;
 
 export function AlertSettingsPanel({ tier }: AlertSettingsPanelProps) {
-    const isPro = tier === 'pro' || tier === 'admin';
+    const isPro = hasProAccess(tier);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [deadlineEnabled, setDeadlineEnabled] = useState(true);
@@ -102,19 +103,19 @@ export function AlertSettingsPanel({ tier }: AlertSettingsPanelProps) {
                 <div className="relative max-w-2xl space-y-3">
                     <span className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100/80 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-amber-900">
                         <Lock className="h-3.5 w-3.5" />
-                        Solo Pro
+                        Prova gratuita
                     </span>
                     <h3 className="text-xl font-semibold text-slate-900 sm:text-2xl">
-                        Avvisi avanzati disponibili solo con Pro.
+                        Prova gli avvisi avanzati gratis per 7 giorni.
                     </h3>
                     <p className="text-sm leading-relaxed text-slate-700 sm:text-base">
                         Piano gratuito: solo promemoria 1 giorno prima (automatico).
-                        Con Pro scegli 7/3/1 giorni e gestisci i promemoria dalla tua bacheca.
+                        Con la prova gratuita scegli 7/3/1 giorni e gestisci i promemoria dalla tua bacheca.
                     </p>
                     <UpgradeProModal triggerClassName="inline-block">
                         <span className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">
                             <Crown className="h-4 w-4" />
-                            Sblocca Pro
+                            Inizia la prova gratuita
                         </span>
                     </UpgradeProModal>
                 </div>
