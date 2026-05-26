@@ -29,7 +29,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     const intent = resolvedSearchParams?.intent ?? null;
 
     return (
-        <AuthSplitShell heroTitle="Concoro ci ha aiutato a ridurre il tempo di ricerca e candidarci prima sui bandi giusti.">
+        <AuthSplitShell heroTitle="Concoro ci aiuta a trovare prima i concorsi davvero adatti al nostro profilo.">
             <LoginForm redirectTo={redirectTo} source={source} intent={intent} />
         </AuthSplitShell>
     );

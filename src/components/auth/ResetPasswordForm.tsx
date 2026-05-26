@@ -161,8 +161,8 @@ export function ResetPasswordForm() {
     return (
         <div className="w-full max-w-sm mx-auto space-y-6">
             <div className="text-center">
-                <h1 className="text-2xl font-bold tracking-tight">Reset password</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Inserisci la tua email e ti invieremo un link per reimpostarla.</p>
+                <h1 className="text-2xl font-bold tracking-tight">Reimposta la password</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Ti invieremo un link per creare una nuova password.</p>
             </div>
 
             <form onSubmit={handleRequestReset} className="space-y-4">
@@ -199,7 +199,7 @@ export function ResetPasswordForm() {
                             Invio in corso...
                         </span>
                     ) : (
-                        'Invia link di reset'
+                        'Invia link via email'
                     )}
                 </button>
             </form>

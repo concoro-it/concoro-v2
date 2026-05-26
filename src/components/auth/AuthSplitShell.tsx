@@ -41,7 +41,7 @@ export function AuthSplitShell({ children, heroTitle }: AuthSplitShellProps) {
               “{heroTitle}”
             </p>
             <footer className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              Team Concoro
+              Utente Concoro
             </footer>
           </blockquote>
         </section>

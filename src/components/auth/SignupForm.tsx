@@ -22,6 +22,9 @@ export function SignupForm({ redirectTo = '/hub/bacheca', source, intent }: Sign
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [resendLoading, setResendLoading] = useState(false);
+    const [resendMessage, setResendMessage] = useState<string | null>(null);
+    const [resendError, setResendError] = useState<string | null>(null);
     const supabase = createClient();
     const safeRedirectTo = sanitizeInternalRedirectPath(redirectTo);
     const loginHref = `/login?${buildAuthQueryParams({ redirectTo: safeRedirectTo, source, intent })}`;
@@ -56,6 +59,28 @@ export function SignupForm({ redirectTo = '/hub/bacheca', source, intent }: Sign
         if (error) setError('Errore con Google OAuth. Riprova.');
     }
 
+    async function handleResendConfirmation() {
+        setResendLoading(true);
+        setResendMessage(null);
+        setResendError(null);
+
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email,
+            options: {
+                emailRedirectTo: getClientOAuthRedirectUrl(safeRedirectTo),
+            },
+        });
+
+        if (error) {
+            setResendError('Non siamo riusciti a inviare una nuova email. Riprova tra poco.');
+        } else {
+            setResendMessage('Email inviata di nuovo. Controlla anche spam e promozioni.');
+        }
+
+        setResendLoading(false);
+    }
+
     if (success) {
         return (
             <div className="w-full max-w-sm mx-auto text-center space-y-4">
@@ -64,9 +89,38 @@ export function SignupForm({ redirectTo = '/hub/bacheca', source, intent }: Sign
                 </div>
                 <h2 className="text-xl font-bold">Controlla la tua email</h2>
                 <p className="text-sm text-muted-foreground">
-                    Abbiamo inviato un link di conferma a <strong>{email}</strong>.
-                    Clicca il link per attivare il tuo account.
+                    Abbiamo inviato un link di conferma a <strong>{email}</strong><br></br>
                 </p>
+                <p className="text-xs text-muted-foreground">
+                    Non la trovi? Controlla la cartella spam o promozioni.
+                </p>
+                {resendError && (
+                    <p className="text-sm text-red-700">{resendError}</p>
+                )}
+                {resendMessage && (
+                    <p className="text-sm text-green-700">{resendMessage}</p>
+                )}
+                <div className="flex flex-col gap-2 pt-1">
+                    <button
+                        type="button"
+                        onClick={handleResendConfirmation}
+                        disabled={resendLoading}
+                        className="w-full rounded-lg border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-60"
+                    >
+                        {resendLoading ? 'Invio in corso...' : 'Reinvia email'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setSuccess(false);
+                            setResendMessage(null);
+                            setResendError(null);
+                        }}
+                        className="w-full rounded-lg px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/5"
+                    >
+                        Cambia indirizzo email
+                    </button>
+                </div>
             </div>
         );
     }
@@ -75,7 +129,7 @@ export function SignupForm({ redirectTo = '/hub/bacheca', source, intent }: Sign
         <div className="w-full max-w-sm mx-auto space-y-6">
             <div className="text-center">
                 <h1 className="text-2xl font-bold tracking-tight">Crea il tuo account</h1>
-                <p className="text-sm text-muted-foreground mt-1">Inizia a trovare concorsi pubblici</p>
+                <p className="text-sm text-muted-foreground mt-1">Scopri i concorsi pubblici più rilevanti per te.</p>
             </div>
 
             <button onClick={handleGoogle}
@@ -92,7 +146,7 @@ export function SignupForm({ redirectTo = '/hub/bacheca', source, intent }: Sign
             <div className="relative">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
                 <div className="relative flex justify-center text-xs text-muted-foreground">
-                    <span className="bg-background px-2">oppure</span>
+                    <span className="bg-background px-2">Oppure registrati con email</span>
                 </div>
             </div>
 

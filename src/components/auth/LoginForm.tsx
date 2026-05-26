@@ -19,7 +19,6 @@ export function LoginForm({ redirectTo = '/hub/bacheca', source, intent }: Login
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPw, setShowPw] = useState(false);
-    const [acceptedPolicy, setAcceptedPolicy] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
@@ -53,8 +52,8 @@ export function LoginForm({ redirectTo = '/hub/bacheca', source, intent }: Login
     return (
         <div className="w-full max-w-sm mx-auto space-y-6">
             <div className="text-center">
-                <h1 className="text-2xl font-bold tracking-tight">Bentornato</h1>
-                <p className="text-sm text-muted-foreground mt-1">Accedi al tuo account Concoro</p>
+                <h1 className="text-2xl font-bold tracking-tight">Bentornato su Concoro</h1>
+                <p className="text-sm text-muted-foreground mt-1">Accedi per continuare a seguire i concorsi più rilevanti</p>
             </div>
 
             <button
@@ -75,7 +74,7 @@ export function LoginForm({ redirectTo = '/hub/bacheca', source, intent }: Login
                     <div className="w-full border-t border-border" />
                 </div>
                 <div className="relative flex justify-center text-xs text-muted-foreground">
-                    <span className="bg-background px-2">oppure</span>
+                    <span className="bg-background px-2">Oppure accedi con email</span>
                 </div>
             </div>
 
@@ -110,7 +109,7 @@ export function LoginForm({ redirectTo = '/hub/bacheca', source, intent }: Login
                     </div>
                     <div className="text-right mt-1">
                         <Link href="/reset-password" className="text-xs text-muted-foreground hover:text-foreground">
-                            Password dimenticata?
+                                Hai dimenticato la password?
                         </Link>
                     </div>
                 </div>
@@ -122,34 +121,10 @@ export function LoginForm({ redirectTo = '/hub/bacheca', source, intent }: Login
                     {loading ? 'Accesso in corso...' : 'Accedi'}
                 </button>
 
-                <label
-                    htmlFor="login-policy"
-                    className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-xs leading-relaxed text-slate-600"
-                >
-                    <input
-                        id="login-policy"
-                        type="checkbox"
-                        required
-                        checked={acceptedPolicy}
-                        onChange={(e) => setAcceptedPolicy(e.target.checked)}
-                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900 accent-slate-900"
-                    />
-                    <span>
-                        Confermo di aver letto e accettato{' '}
-                        <Link href="/termini" className="font-medium text-slate-800 underline underline-offset-2 hover:text-slate-950">
-                            Termini di Servizio
-                        </Link>{' '}
-                        e{' '}
-                        <Link href="/privacy" className="font-medium text-slate-800 underline underline-offset-2 hover:text-slate-950">
-                            Privacy Policy
-                        </Link>
-                        .
-                    </span>
-                </label>
             </form>
 
             <p className="text-center text-sm text-muted-foreground">
-                Non hai un account?{' '}
+                Nuovo su Concoro? {' '}
                 <Link href={signupHref} rel="nofollow" className="font-medium text-primary hover:underline">Registrati</Link>
             </p>
         </div>

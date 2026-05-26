@@ -29,7 +29,7 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
     const intent = resolvedSearchParams?.intent ?? null;
 
     return (
-        <AuthSplitShell heroTitle="Una dashboard pulita, notifiche mirate e meno rumore: finalmente seguiamo solo i concorsi rilevanti.">
+        <AuthSplitShell heroTitle="Finalmente riusciamo a filtrare i bandi davvero utili.">
             <SignupForm redirectTo={redirectTo} source={source} intent={intent} />
         </AuthSplitShell>
     );
