@@ -78,6 +78,10 @@ function getHardThreshold() {
     return readIntEnv('PV_GATE_THRESHOLD_HARD', 3);
 }
 
+function isHardPageviewGateEnabled() {
+    return process.env.PV_GATE_FORCE_SIGNUP === 'true';
+}
+
 function hasSupabaseAuthCookie(request: NextRequest) {
     return request.cookies.getAll().some(({ name }) => name.includes('-auth-token'));
 }
@@ -173,7 +177,7 @@ function evaluatePvGate(request: NextRequest): PvGateDecision {
     };
 
     const showSoftGate = nextState.count === softThreshold;
-    const forceSignup = nextState.count >= hardThreshold;
+    const forceSignup = isHardPageviewGateEnabled() && nextState.count >= hardThreshold;
 
     return {
         state: nextState,

@@ -257,6 +257,60 @@ export function stripHtmlStyling(html: unknown): string {
     return cleaned;
 }
 
+const ALLOWED_DESCRIPTION_TAGS = new Set([
+    'p', 'br', 'ul', 'ol', 'li', 'strong', 'b', 'em', 'i', 'u', 'a',
+    'blockquote', 'h2', 'h3', 'h4', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+]);
+
+const BLOCKED_DESCRIPTION_TAGS = [
+    'script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button',
+    'select', 'textarea', 'meta', 'link', 'base', 'svg', 'math',
+];
+
+function escapeHtml(value: string) {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function sanitizeDescriptionTag(tag: string): string {
+    if (/^<\s*\/\s*/.test(tag)) {
+        const closingName = tag.match(/^<\s*\/\s*([a-z0-9-]+)/i)?.[1]?.toLowerCase();
+        return closingName && ALLOWED_DESCRIPTION_TAGS.has(closingName) ? `</${closingName}>` : '';
+    }
+
+    const tagName = tag.match(/^<\s*([a-z0-9-]+)/i)?.[1]?.toLowerCase();
+    if (!tagName || !ALLOWED_DESCRIPTION_TAGS.has(tagName)) return '';
+
+    const isSelfClosing = /\/\s*>$/.test(tag) || tagName === 'br';
+    if (tagName !== 'a') return `<${tagName}${isSelfClosing ? ' />' : '>'}`;
+
+    const href = tag.match(/\s+href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+    const rawHref = (href?.[1] ?? href?.[2] ?? href?.[3] ?? '').trim();
+    if (!/^(https?:|mailto:|tel:)/i.test(rawHref)) return '<a>';
+
+    return `<a href="${escapeHtml(rawHref)}" target="_blank" rel="noopener noreferrer">`;
+}
+
+function sanitizeDescriptionHtml(html: string): string {
+    let cleaned = stripHtmlStyling(html);
+
+    for (const tag of BLOCKED_DESCRIPTION_TAGS) {
+        cleaned = cleaned.replace(new RegExp(`<\\s*${tag}\\b[^>]*>[\\s\\S]*?<\\s*\\/\\s*${tag}\\s*>`, 'gi'), '');
+        cleaned = cleaned.replace(new RegExp(`<\\s*${tag}\\b[^>]*\\/?>`, 'gi'), '');
+    }
+
+    cleaned = cleaned
+        .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        .replace(/\s+(href|src|xlink:href)\s*=\s*(["'])\s*javascript:[\s\S]*?\2/gi, '')
+        .replace(/\s+(href|src|xlink:href)\s*=\s*javascript:[^\s>]+/gi, '');
+
+    return cleaned.replace(/<[^>]+>/g, sanitizeDescriptionTag);
+}
+
 /**
  * Formats a title or text to Sentence case while preserving Italian special names.
  * Handles multiple sentences by looking for . ! ? delimiters.
@@ -331,8 +385,7 @@ export function formatConcorsoTitle(text: unknown): string {
 export function formatHtmlDescription(html: unknown): string {
     if (!html || typeof html !== 'string') return '';
 
-    // 1. Strip style and class
-    const cleaned = stripHtmlStyling(html);
+    const cleaned = sanitizeDescriptionHtml(html);
 
     // 2. Process text nodes while ignoring tags
     const regex = /(<[^>]+>|[^<]+)/g;

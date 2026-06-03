@@ -138,7 +138,7 @@ function SectionPaywallCard({
                     <p className="mt-3 text-xs text-slate-600">{description}</p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                         <Link
-                            href={primaryCtaHref}
+                            href="/pricing"
                             className="inline-flex items-center rounded-lg border border-cyan-700 bg-cyan-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-cyan-700"
                         >
                             Sblocca analisi gratis

@@ -42,7 +42,7 @@ export function PublicPageviewGateBanner() {
             <div className="container mx-auto flex max-w-[78rem] flex-col gap-3 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                 <p className="inline-flex items-center gap-2 font-medium text-amber-900">
                     <AlertTriangle className="h-4 w-4" />
-                    Hai 1 pagina gratuita rimasta: dalla prossima sara richiesto l&apos;account.
+                    Crea un account gratuito per salvare i concorsi e continuare dal tuo hub personale.
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                     <Link
