@@ -1,8 +1,10 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
+import { sanitizeInternalRedirectPath } from '@/lib/auth/redirect';
 
 const PROTECTED_PATH_PREFIXES = ['/admin', '/hub', '/dashboard', '/salvati', '/ricerche', '/impostazioni', '/abbonamento'];
 const AUTHENTICATED_ALLOWED_PUBLIC_PATH_PREFIXES = [
+    '/onboarding',
     '/pricing',
     '/manifest',
     '/manifest.webmanifest',
@@ -49,8 +51,15 @@ export async function updateSession(request: NextRequest) {
     // Logged-in users should stay in the private app area instead of public pages.
     if (!isProtected && !isAllowedPublicForAuthenticatedUser && user) {
         const url = request.nextUrl.clone();
-        url.pathname = '/hub';
-        url.search = '';
+        const authRedirectTarget =
+            (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')
+                ? sanitizeInternalRedirectPath(request.nextUrl.searchParams.get('redirectTo'), '/hub/bacheca')
+                : '/hub';
+
+        const parsedAuthRedirectTarget = new URL(authRedirectTarget, request.nextUrl.origin);
+        url.pathname = parsedAuthRedirectTarget.pathname || '/hub';
+        url.search = parsedAuthRedirectTarget.search;
+        url.hash = parsedAuthRedirectTarget.hash;
         return NextResponse.redirect(url);
     }
 

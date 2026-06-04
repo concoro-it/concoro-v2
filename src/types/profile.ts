@@ -27,6 +27,18 @@ export interface Profile {
     obiettivo_concorso: string | null;
     disponibilita_mobilita: boolean;
     tempo_studio_settimanale: number | null;
+    onboarding_completed: boolean;
+    onboarding_completed_at: string | null;
+    profile_completion_score: number | null;
+    disponibilita_trasferimento: string | null;
+    livello_preparazione: string | null;
+    public_admin_experience: boolean | null;
+    skills: string[] | null;
+    languages: string[] | null;
+    driving_licenses: string[] | null;
+    profile_source: string | null;
+    education_history: Array<Record<string, unknown>> | null;
+    experience_history: Array<Record<string, unknown>> | null;
     created_at: string;
     updated_at: string;
 }

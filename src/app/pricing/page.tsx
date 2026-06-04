@@ -34,10 +34,9 @@ export default async function PricingPage({
         requestedBilling === 'yearly'
             ? (hasYearly ? 'yearly' : 'monthly')
             : (hasMonthly ? 'monthly' : 'yearly');
+    const checkoutReturnPath = `/pricing?billing=${initialBilling}&checkout=pro`;
 
     if (resolvedSearchParams?.checkout === 'pro') {
-        const checkoutReturnPath = `/pricing?billing=${initialBilling}&checkout=pro`;
-
         if (!user) {
             redirect(`/login?${buildAuthQueryParams({
                 redirectTo: checkoutReturnPath,
@@ -60,6 +59,7 @@ export default async function PricingPage({
                     fullName: profile?.full_name ?? null,
                     avatarUrl: profile?.avatar_url ?? null,
                 } : null}
+                checkoutRedirectPath={checkoutReturnPath}
             />
             <PricingSection
                 userId={user?.id}

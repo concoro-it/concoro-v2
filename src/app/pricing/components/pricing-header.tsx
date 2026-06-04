@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { buildAuthQueryParams } from '@/lib/auth/redirect';
 import { cn } from '@/lib/utils';
 import { PricingAccountMenu, type PricingHeaderUser } from './pricing-account-menu';
 
@@ -10,7 +11,19 @@ const links = [
     { label: 'Settore', href: '/settore' },
 ];
 
-export function PricingHeader({ user }: { user: PricingHeaderUser | null }) {
+export function PricingHeader({
+    user,
+    checkoutRedirectPath,
+}: {
+    user: PricingHeaderUser | null;
+    checkoutRedirectPath: string;
+}) {
+    const authQuery = buildAuthQueryParams({
+        redirectTo: checkoutRedirectPath,
+        source: 'pricing-header',
+        intent: 'pro',
+    });
+
     return (
         <header className="sticky top-0 z-50 border-b border-slate-200 bg-[hsl(210,55%,98%)]/90 backdrop-blur-md">
             <nav className="mx-auto flex h-14 max-w-[78rem] items-center justify-between px-4">
@@ -39,10 +52,10 @@ export function PricingHeader({ user }: { user: PricingHeaderUser | null }) {
                     ) : (
                         <>
                             <Button variant="outline" asChild>
-                                <Link href="/login">Accedi</Link>
+                                <Link href={`/login?${authQuery}`}>Accedi</Link>
                             </Button>
                             <Button asChild className="hidden sm:inline-flex">
-                                <Link href="/signup">Registrati</Link>
+                                <Link href={`/signup?${authQuery}`}>Registrati</Link>
                             </Button>
                         </>
                     )}

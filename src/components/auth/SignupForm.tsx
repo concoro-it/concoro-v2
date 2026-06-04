@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, Loader2, Check } from 'lucide-react';
 import { getClientOAuthRedirectUrl } from '@/lib/auth/url';
@@ -13,7 +14,7 @@ interface SignupFormProps {
     intent?: string | null;
 }
 
-export function SignupForm({ redirectTo = '/hub/bacheca', source, intent }: SignupFormProps) {
+export function SignupForm({ redirectTo = '/onboarding', source, intent }: SignupFormProps) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
@@ -25,6 +26,7 @@ export function SignupForm({ redirectTo = '/hub/bacheca', source, intent }: Sign
     const [resendLoading, setResendLoading] = useState(false);
     const [resendMessage, setResendMessage] = useState<string | null>(null);
     const [resendError, setResendError] = useState<string | null>(null);
+    const router = useRouter();
     const supabase = createClient();
     const safeRedirectTo = sanitizeInternalRedirectPath(redirectTo);
     const loginHref = `/login?${buildAuthQueryParams({ redirectTo: safeRedirectTo, source, intent })}`;
@@ -33,7 +35,7 @@ export function SignupForm({ redirectTo = '/hub/bacheca', source, intent }: Sign
         e.preventDefault();
         setLoading(true);
         setError(null);
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -45,6 +47,9 @@ export function SignupForm({ redirectTo = '/hub/bacheca', source, intent }: Sign
             setError(error.message === 'User already registered'
                 ? 'Questo indirizzo email è già registrato.'
                 : 'Si è verificato un errore. Riprova.');
+        } else if (data.session) {
+            router.push(safeRedirectTo);
+            router.refresh();
         } else {
             setSuccess(true);
         }

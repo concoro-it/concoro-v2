@@ -23,10 +23,15 @@ export default async function DashboardLayout({
     const { user, profile, tier } = await getUserContext<{
         avatar_url?: string | null;
         full_name?: string | null;
-    }>(supabase, { profileSelect: 'avatar_url, full_name' });
+        onboarding_completed?: boolean | null;
+    }>(supabase, { profileSelect: 'avatar_url, full_name, onboarding_completed' });
 
     if (!user) {
         redirect('/login');
+    }
+
+    if (!profile || profile.onboarding_completed === false) {
+        redirect('/onboarding');
     }
 
     const canAccessBilling = hasProAccess(tier);
