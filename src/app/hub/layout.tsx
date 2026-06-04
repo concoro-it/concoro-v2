@@ -5,6 +5,7 @@ import { HubMobileHeader } from '@/components/layout/HubMobileHeader';
 import { InteractiveMenu } from '@/components/ui/modern-mobile-menu';
 import { redirect } from 'next/navigation';
 import { getUserContext } from '@/lib/auth/getUserContext';
+import { hasProAccess } from '@/lib/auth/tiers';
 
 export const metadata: Metadata = {
     robots: {
@@ -19,7 +20,7 @@ export default async function DashboardLayout({
     children: React.ReactNode;
 }) {
     const supabase = await createClient();
-    const { user, profile } = await getUserContext<{
+    const { user, profile, tier } = await getUserContext<{
         avatar_url?: string | null;
         full_name?: string | null;
     }>(supabase, { profileSelect: 'avatar_url, full_name' });
@@ -28,16 +29,18 @@ export default async function DashboardLayout({
         redirect('/login');
     }
 
+    const canAccessBilling = hasProAccess(tier);
+
     return (
         <div className="flex min-h-screen bg-gray-50/50">
             {/* Sidebar */}
             <aside className="hidden lg:block flex-shrink-0">
-                <Sidebar userProfile={{ ...profile, email: user.email }} />
+                <Sidebar userProfile={{ ...profile, email: user.email }} canAccessBilling={canAccessBilling} />
             </aside>
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0">
-                <HubMobileHeader />
+                <HubMobileHeader canAccessBilling={canAccessBilling} />
 
                 <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8">
                     <div className="max-w-7xl mx-auto">

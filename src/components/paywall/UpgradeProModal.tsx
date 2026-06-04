@@ -93,7 +93,7 @@ export function UpgradeProModal({
                                 className="h-12 w-full rounded-xl bg-slate-900 text-base font-semibold text-white shadow-md shadow-slate-900/20 hover:bg-slate-800"
                                 onClick={() => {
                                     setOpen(false);
-                                    router.push('/pricing?billing=yearly&source=upgrade-pro-modal');
+                                    router.push('/pricing?billing=monthly&source=upgrade-pro-modal');
                                 }}
                             >
                                 Inizia la prova gratuita

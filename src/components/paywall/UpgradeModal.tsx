@@ -116,7 +116,7 @@ export function UpgradeModal({
                                     className="h-12 w-full rounded-xl border-slate-200 text-sm"
                                     onClick={() => {
                                         setOpen(false);
-                                        router.push('/pricing?billing=yearly&source=register-modal-secondary');
+                                        router.push('/pricing?billing=monthly&source=register-modal-secondary');
                                     }}
                                 >
                                     Esplora Pro

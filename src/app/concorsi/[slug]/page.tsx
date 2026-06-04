@@ -104,6 +104,8 @@ interface SectionPaywallCardProps {
     description: string;
     primaryCtaHref: string;
     secondaryCtaHref: string;
+    primaryCtaLabel: string;
+    secondaryCtaLabel: string;
     variant?: 'list' | 'metric' | 'legal';
     showTitle?: boolean;
 }
@@ -113,6 +115,8 @@ function SectionPaywallCard({
     description,
     primaryCtaHref,
     secondaryCtaHref,
+    primaryCtaLabel,
+    secondaryCtaLabel,
     variant = 'list',
     showTitle = true
 }: SectionPaywallCardProps) {
@@ -139,13 +143,13 @@ function SectionPaywallCard({
                     <p className="mt-3 text-xs text-slate-600">{description}</p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                         <Link
-                            href="/pricing"
+                            href={primaryCtaHref}
                             className="inline-flex items-center rounded-lg border border-cyan-700 bg-cyan-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-cyan-700"
                         >
-                            Sblocca analisi gratis
+                            {primaryCtaLabel}
                         </Link>
                         <Link href={secondaryCtaHref} className="text-xs font-semibold text-cyan-800 underline decoration-cyan-300 underline-offset-2">
-                            Accedi
+                            {secondaryCtaLabel}
                         </Link>
                     </div>
                 </div>
@@ -170,10 +174,10 @@ function SectionPaywallCard({
                             href={primaryCtaHref}
                             className="inline-flex items-center rounded-lg border border-slate-600 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800"
                         >
-                            Vedi riferimenti completi
+                            {primaryCtaLabel}
                         </Link>
                         <Link href={secondaryCtaHref} className="text-xs font-semibold text-slate-700 underline decoration-slate-300 underline-offset-2">
-                            Accedi
+                            {secondaryCtaLabel}
                         </Link>
                     </div>
                 </div>
@@ -197,10 +201,10 @@ function SectionPaywallCard({
                         href={primaryCtaHref}
                         className="inline-flex items-center rounded-lg border border-slate-500 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800"
                     >
-                        Crea account gratis
+                        {primaryCtaLabel}
                     </Link>
                     <Link href={secondaryCtaHref} className="text-xs font-semibold text-slate-700 underline decoration-slate-300 underline-offset-2">
-                        Accedi
+                        {secondaryCtaLabel}
                     </Link>
                 </div>
             </div>
@@ -397,6 +401,8 @@ export default async function ConcorsoDetailPage({ params }: Props) {
     });
     const anonSignupHref = `/signup?${authQueryParams}`;
     const anonLoginHref = `/login?${authQueryParams}`;
+    const trialCheckoutHref = '/pricing?billing=monthly&checkout=pro';
+    const trialDetailsHref = '/pricing?billing=monthly';
 
     const expired = isExpired(concorso.data_scadenza) || concorso.status === 'CLOSED';
     const regioni = parseRegioni(concorso);
@@ -440,12 +446,33 @@ export default async function ConcorsoDetailPage({ params }: Props) {
     const alertVisibleItems = isGuestUser ? alertItems.slice(0, sintesiItemsLimit) : alertItems;
     const hasHiddenHookItems = isGuestUser && hookItems.length > sintesiItemsLimit;
     const hasHiddenAlertItems = isGuestUser && alertItems.length > sintesiItemsLimit;
-    const signupCtaHref = tier === 'anon'
-        ? anonSignupHref
-        : `/hub/billing?source=concorso-detail-paywall&concorso=${encodeURIComponent(slug)}`;
-    const loginCtaHref = tier === 'anon'
-        ? anonLoginHref
-        : '/hub';
+    const paywallCta = tier === 'anon'
+        ? {
+            primaryHref: anonSignupHref,
+            secondaryHref: anonLoginHref,
+            primaryLabel: 'Crea account gratis',
+            secondaryLabel: 'Accedi',
+            summaryPrimaryLabel: 'Sblocca contenuti',
+            summaryLockedDescription: 'Sblocca la sintesi completa con un account gratuito',
+            sidebarEyebrow: 'Account gratuito',
+            sidebarTitle: 'Prima registrati, poi personalizza la ricerca.',
+            sidebarDescription: 'Inizia gratis: salvi i bandi migliori, imposti preferenze e continui dove avevi lasciato.',
+            sidebarButtonLabel: 'Registrati gratis',
+        }
+        : {
+            primaryHref: trialCheckoutHref,
+            secondaryHref: trialDetailsHref,
+            primaryLabel: 'Inizia 7 giorni gratis',
+            secondaryLabel: 'Vedi dettagli',
+            summaryPrimaryLabel: 'Inizia 7 giorni gratis',
+            summaryLockedDescription: 'Attiva la prova gratuita per vedere sintesi completa e avvisi operativi.',
+            sidebarEyebrow: 'Prova gratuita',
+            sidebarTitle: 'Sblocca il quadro completo con Pro.',
+            sidebarDescription: 'Attiva 7 giorni gratis: sintesi complete, avvisi, riferimenti e strumenti Pro subito nel tuo hub.',
+            sidebarButtonLabel: 'Inizia 7 giorni gratis',
+        };
+    const signupCtaHref = paywallCta.primaryHref;
+    const loginCtaHref = paywallCta.secondaryHref;
 
     const summaryItems: SintesiItem[] = [
         ...hookVisibleItems
@@ -461,10 +488,11 @@ export default async function ConcorsoDetailPage({ params }: Props) {
             description: '',
             colorClass: 'text-slate-500',
             locked: true,
-            primaryCtaLabel: 'Sblocca punti chiave',
+            primaryCtaLabel: tier === 'anon' ? 'Sblocca punti chiave' : paywallCta.summaryPrimaryLabel,
             primaryCtaHref: signupCtaHref,
-            secondaryCtaLabel: 'Accedi',
-            secondaryCtaHref: loginCtaHref
+            secondaryCtaLabel: paywallCta.secondaryLabel,
+            secondaryCtaHref: loginCtaHref,
+            lockedDescription: paywallCta.summaryLockedDescription
         }] : []),
         ...alertVisibleItems
             .map((item, i) => ({
@@ -479,10 +507,11 @@ export default async function ConcorsoDetailPage({ params }: Props) {
             description: '',
             colorClass: 'text-slate-500',
             locked: true,
-            primaryCtaLabel: 'Vedi avvisi completi',
+            primaryCtaLabel: tier === 'anon' ? 'Vedi avvisi completi' : paywallCta.summaryPrimaryLabel,
             primaryCtaHref: signupCtaHref,
-            secondaryCtaLabel: 'Accedi',
-            secondaryCtaHref: loginCtaHref
+            secondaryCtaLabel: paywallCta.secondaryLabel,
+            secondaryCtaHref: loginCtaHref,
+            lockedDescription: paywallCta.summaryLockedDescription
         }] : [])
     ];
 
@@ -929,6 +958,8 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                                 description="Sblocca tutti i requisiti per valutare in pochi secondi la tua idoneità reale."
                                                 primaryCtaHref={signupCtaHref}
                                                 secondaryCtaHref={loginCtaHref}
+                                                primaryCtaLabel={paywallCta.primaryLabel}
+                                                secondaryCtaLabel={paywallCta.secondaryLabel}
                                                 variant="list"
                                             />
                                         )}
@@ -956,6 +987,8 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                                 description="Vedi tutte le competenze richieste e capisci subito dove hai più vantaggio."
                                                 primaryCtaHref={signupCtaHref}
                                                 secondaryCtaHref={loginCtaHref}
+                                                primaryCtaLabel={paywallCta.primaryLabel}
+                                                secondaryCtaLabel={paywallCta.secondaryLabel}
                                                 variant="list"
                                             />
                                         )}
@@ -976,6 +1009,8 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                                 description="Accedi al quadro completo delle materie tecnico-specialistiche richieste dal bando."
                                                 primaryCtaHref={signupCtaHref}
                                                 secondaryCtaHref={loginCtaHref}
+                                                primaryCtaLabel={paywallCta.primaryLabel}
+                                                secondaryCtaLabel={paywallCta.secondaryLabel}
                                                 variant="list"
                                             />
                                         )}
@@ -1065,6 +1100,8 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                                                     description="Sblocca la stima di concorrenza per decidere con più precisione dove investire tempo."
                                                                     primaryCtaHref={signupCtaHref}
                                                                     secondaryCtaHref={loginCtaHref}
+                                                                    primaryCtaLabel={paywallCta.primaryLabel}
+                                                                    secondaryCtaLabel={paywallCta.secondaryLabel}
                                                                     variant="metric"
                                                                     showTitle={false}
                                                                 />
@@ -1096,6 +1133,8 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                                             description="Consulta i richiami normativi completi per prepararti con più sicurezza."
                                                             primaryCtaHref={signupCtaHref}
                                                             secondaryCtaHref={loginCtaHref}
+                                                            primaryCtaLabel={paywallCta.primaryLabel}
+                                                            secondaryCtaLabel={paywallCta.secondaryLabel}
                                                             variant="legal"
                                                             showTitle={false}
                                                         />
@@ -1122,12 +1161,12 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                     isGuestUser ? (
                                         <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_36px_-28px_rgba(15,23,42,0.55)]">
                                             <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0A4E88] via-sky-500 to-emerald-500" />
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Account gratuito</p>
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{paywallCta.sidebarEyebrow}</p>
                                             <h3 className="[font-family:'Iowan_Old_Style','Palatino_Linotype','Book_Antiqua',Palatino,serif] mt-2 text-2xl leading-tight text-slate-900">
-                                                Prima registrati, poi personalizza la ricerca.
+                                                {paywallCta.sidebarTitle}
                                             </h3>
                                             <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                                                Inizia gratis: salvi i bandi migliori, imposti preferenze e continui dove avevi lasciato.
+                                                {paywallCta.sidebarDescription}
                                             </p>
                                             <ul className="mt-4 space-y-2.5 text-xs text-slate-700">
                                                 <li className="flex items-start gap-2">
@@ -1144,13 +1183,11 @@ export default async function ConcorsoDetailPage({ params }: Props) {
                                                 </li>
                                             </ul>
                                             <Link
-                                                href={tier === 'anon'
-                                                    ? anonSignupHref
-                                                    : `/hub/billing?source=concorso-sidebar-register&concorso=${encodeURIComponent(slug)}`}
+                                                href={paywallCta.primaryHref}
                                                 rel={tier === 'anon' ? 'nofollow' : undefined}
                                                 className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                                             >
-                                                Registrati gratis
+                                                {paywallCta.sidebarButtonLabel}
                                             </Link>
                                         </div>
                                     ) : (

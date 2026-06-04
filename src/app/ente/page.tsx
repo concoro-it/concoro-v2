@@ -62,7 +62,7 @@ export default async function EnteIndexPage() {
                         </p>
                         <div className="mt-4 flex flex-wrap gap-2">
                             <Link
-                                href="/pricing?billing=yearly&source=ente-index-paywall"
+                                href="/pricing?billing=monthly&source=ente-index-paywall"
                                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
                             >
                                 Inizia 7 giorni gratis

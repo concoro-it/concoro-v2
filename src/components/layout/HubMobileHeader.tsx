@@ -25,9 +25,10 @@ const menuItems: MenuItem[] = [
   { label: 'Assistenza', href: '/hub/assistenza', icon: CircleHelp },
 ];
 
-export function HubMobileHeader() {
+export function HubMobileHeader({ canAccessBilling }: { canAccessBilling: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const visibleMenuItems = menuItems.filter((item) => canAccessBilling || item.href !== '/hub/billing');
 
   return (
     <header className="lg:hidden sticky top-0 z-40 px-3 pt-3">
@@ -58,7 +59,7 @@ export function HubMobileHeader() {
         {open && (
           <nav className="border-t border-border/60 px-2 pb-2 pt-2" aria-label="Menu mobile hub">
             <div className="grid grid-cols-2 gap-2">
-              {menuItems.map((item) => {
+              {visibleMenuItems.map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
 

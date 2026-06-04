@@ -100,7 +100,13 @@ const CONCORSI_SUBMENU: MenuItem[] = [
     },
 ];
 
-export function Sidebar({ userProfile }: { userProfile: SidebarUserProfile | null }) {
+export function Sidebar({
+    userProfile,
+    canAccessBilling,
+}: {
+    userProfile: SidebarUserProfile | null;
+    canAccessBilling: boolean;
+}) {
     const router = useRouter();
     const pathname = usePathname();
     const supabase = createClient();
@@ -152,7 +158,7 @@ export function Sidebar({ userProfile }: { userProfile: SidebarUserProfile | nul
             name: 'Assistenza',
             icon: <HelpCircle className="w-5 h-5" />,
         },
-    ];
+    ].filter((item) => canAccessBilling || item.href !== '/hub/billing');
 
     const handleLogout = async () => {
         await supabase.auth.signOut();

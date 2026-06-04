@@ -11,6 +11,7 @@ export interface SintesiItem {
     primaryCtaHref?: string;
     secondaryCtaLabel?: string;
     secondaryCtaHref?: string;
+    lockedDescription?: string;
 }
 
 interface SintesiSectionProps {
@@ -24,7 +25,8 @@ function SummaryCard({
     primaryCtaLabel,
     primaryCtaHref,
     secondaryCtaLabel,
-    secondaryCtaHref
+    secondaryCtaHref,
+    lockedDescription
 }: Omit<SintesiItem, 'id'>) {
     if (!description && type) {
         const isStrength = type === 'Punto di forza';
@@ -62,7 +64,7 @@ function SummaryCard({
                         "mt-3 text-xs font-semibold uppercase tracking-[0.11em]",
                         isStrength ? "text-emerald-800/80" : "text-amber-800/80"
                     )}>
-                        Sblocca la sintesi completa con un account gratuito
+                        {lockedDescription ?? 'Sblocca la sintesi completa con un account gratuito'}
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                         {primaryCtaLabel && primaryCtaHref && (
@@ -143,6 +145,7 @@ export function SintesiSection({ items }: SintesiSectionProps) {
                             primaryCtaHref={item.primaryCtaHref}
                             secondaryCtaLabel={item.secondaryCtaLabel}
                             secondaryCtaHref={item.secondaryCtaHref}
+                            lockedDescription={item.lockedDescription}
                         />
                     </div>
                 ))}
