@@ -304,10 +304,10 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
         }
     };
 
-    const finishOnboarding = () => save({
+    const finishOnboarding = (targetRedirectTo = redirectTo) => save({
         notification_email: notificationEmail,
         profile_source: 'manual_onboarding',
-    }, { complete: true, redirectTo });
+    }, { complete: true, redirectTo: targetRedirectTo });
 
     const saveStep = () => {
         if (step === 1) {

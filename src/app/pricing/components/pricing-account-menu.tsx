@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import * as Avatar from '@radix-ui/react-avatar';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { ArrowLeft, ChevronDown, LayoutDashboard, LogOut, UserCircle2 } from 'lucide-react';
@@ -54,9 +55,11 @@ export function PricingAccountMenu({ user }: { user: PricingHeaderUser }) {
                 >
                     <div className="flex items-center gap-3 border-b border-slate-100 px-3 py-3">
                         <div className="h-10 w-10 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
-                            <img
+                            <Image
                                 src={avatarSrc}
                                 alt={displayName}
+                                width={40}
+                                height={40}
                                 className={cn('h-full w-full object-cover', avatarSrc === '/fav.png' && 'p-1')}
                             />
                         </div>
