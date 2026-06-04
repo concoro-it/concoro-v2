@@ -1,4 +1,5 @@
 import Script from 'next/script';
+import { getSiteLogoUrl } from '@/lib/seo/site-identity';
 
 type JsonLdValue =
     | string
@@ -28,9 +29,15 @@ export function JsonLd({ data }: JsonLdProps) {
 export const getOrganizationSchema = () => ({
     '@context': 'https://schema.org',
     '@type': 'Organization',
+    '@id': 'https://concoro.it/#organization',
     name: 'Concoro',
     url: 'https://concoro.it',
-    logo: 'https://concoro.it/icon-512x512.png',
+    logo: {
+        '@type': 'ImageObject',
+        url: getSiteLogoUrl('https://concoro.it'),
+        width: 512,
+        height: 512,
+    },
     sameAs: [
         'https://www.facebook.com/concoro',
         'https://twitter.com/concoro',

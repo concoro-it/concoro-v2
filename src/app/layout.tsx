@@ -10,6 +10,7 @@ import { ConsentBanner } from '@/components/analytics/ConsentBanner';
 import { PublicPageviewGateBanner } from '@/components/paywall/PublicPageviewGateBanner';
 import { getServerAppUrl } from '@/lib/auth/url';
 import { CONSENT_STORAGE_KEY } from '@/lib/analytics/consent';
+import { SITE_LOGO_PATH } from '@/lib/seo/site-identity';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans', weight: ['400', '500', '600', '700', '800'] });
 const GA_MEASUREMENT_ID = 'G-KRQJ1WJJ8Y';
@@ -30,8 +31,8 @@ const baseMetadata: Metadata = {
     },
     robots: { index: true, follow: true },
     icons: {
-        icon: '/fav.png',
-        apple: '/fav.png',
+        icon: SITE_LOGO_PATH,
+        apple: SITE_LOGO_PATH,
     },
 };
 

@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next';
+import { SITE_LOGO_PATH } from '@/lib/seo/site-identity';
 
 export default function manifest(): MetadataRoute.Manifest {
     return {
@@ -21,7 +22,7 @@ export default function manifest(): MetadataRoute.Manifest {
                 type: 'image/png',
             },
             {
-                src: '/icon-512x512.png',
+                src: SITE_LOGO_PATH,
                 sizes: '512x512',
                 type: 'image/png',
             },

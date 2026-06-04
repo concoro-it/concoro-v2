@@ -16,6 +16,7 @@ import { getActiveConcorsiCount, getFeaturedConcorsi, getProvinceWithCount, getR
 import { ConcorsoCard } from '@/components/concorsi/ConcorsoCard';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getServerAppUrl } from '@/lib/auth/url';
+import { getSiteOrganizationSchema } from '@/lib/seo/site-identity';
 import { toUrlSlug } from '@/lib/utils/regioni';
 
 const REGION_FLAG_BY_SLUG: Record<string, string> = {
@@ -141,11 +142,16 @@ export default async function HomePage() {
     const homeSchema = {
         '@context': 'https://schema.org',
         '@graph': [
+            getSiteOrganizationSchema(appUrl),
             {
                 '@type': 'WebSite',
+                '@id': `${appUrl}/#website`,
                 name: 'Concoro',
                 url: appUrl,
                 inLanguage: 'it-IT',
+                publisher: {
+                    '@id': `${appUrl}/#organization`,
+                },
                 potentialAction: {
                     '@type': 'SearchAction',
                     target: `${appUrl}/concorsi?query={search_term_string}`,

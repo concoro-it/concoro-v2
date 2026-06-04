@@ -36,6 +36,7 @@ import type {
 import { getServerAppUrl } from '@/lib/auth/url';
 import { getUserContext } from '@/lib/auth/getUserContext';
 import { hasProAccess } from '@/lib/auth/tiers';
+import { getSiteOrganizationSchema, getSiteWebSiteSchema } from '@/lib/seo/site-identity';
 
 interface Props {
     params: Promise<{ slug: string }>;
@@ -526,9 +527,12 @@ export default async function ConcorsoDetailPage({ params }: Props) {
         ente?.logo_url ?? concorso.favicon_url ?? null,
         appUrl
     );
-    const jsonLd = {
-        '@context': 'https://schema.org',
+    const siteOrganizationJsonLd = getSiteOrganizationSchema(appUrl);
+    const siteWebSiteJsonLd = getSiteWebSiteSchema(appUrl);
+    const jobPostingJsonLd = {
         '@type': 'JobPosting',
+        '@id': `${canonicalUrl}#jobposting`,
+        url: canonicalUrl,
         title: concorso.titolo,
         description: concorso.riassunto ?? concorso.titolo,
         datePosted: concorso.data_pubblicazione,
@@ -550,6 +554,9 @@ export default async function ConcorsoDetailPage({ params }: Props) {
         },
         totalJobOpenings: concorso.num_posti ?? undefined,
         employmentType: concorso.is_remote ? 'TELECOMMUTE' : 'FULL_TIME',
+        mainEntityOfPage: {
+            '@id': `${canonicalUrl}#webpage`,
+        },
     };
     const breadcrumbJsonLd = {
         '@context': 'https://schema.org',
@@ -563,14 +570,16 @@ export default async function ConcorsoDetailPage({ params }: Props) {
     const pageJsonLd = {
         '@context': 'https://schema.org',
         '@type': 'WebPage',
+        '@id': `${canonicalUrl}#webpage`,
         name: formatConcorsoTitle(concorso.titolo_breve ?? concorso.titolo),
         url: canonicalUrl,
         inLanguage: 'it-IT',
         description: concorso.riassunto ?? `Dettagli del concorso ${concorso.titolo}.`,
         isPartOf: {
-            '@type': 'WebSite',
-            name: 'Concoro',
-            url: appUrl,
+            '@id': `${appUrl}/#website`,
+        },
+        publisher: {
+            '@id': `${appUrl}/#organization`,
         },
         about: {
             '@type': 'Organization',
@@ -614,7 +623,19 @@ export default async function ConcorsoDetailPage({ params }: Props) {
 
     return (
         <>
-            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        '@context': 'https://schema.org',
+                        '@graph': [
+                            siteOrganizationJsonLd,
+                            siteWebSiteJsonLd,
+                            jobPostingJsonLd,
+                        ],
+                    }),
+                }}
+            />
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pageJsonLd) }} />
             {faqJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />}
