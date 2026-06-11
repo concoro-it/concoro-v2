@@ -15,9 +15,12 @@ export interface Profile {
     subscription_period_end: string | null;
     preferred_regioni: string[] | null;
     preferred_settori: string[] | null;
+    preferred_job_families: string[] | null;
     regione_interesse: string | null;
     provincia_interesse: string | null;
     profilo_professionale: string | null;
+    current_sector: string | null;
+    contract_type: string | null;
     titolo_studio: string | null;
     anni_esperienza: number | null;
     settori_interesse: string[] | null;
@@ -31,6 +34,7 @@ export interface Profile {
     onboarding_completed_at: string | null;
     profile_completion_score: number | null;
     disponibilita_trasferimento: string | null;
+    exclude_mobility: boolean;
     livello_preparazione: string | null;
     public_admin_experience: boolean | null;
     skills: string[] | null;
@@ -58,6 +62,13 @@ export interface ProfileFormValues {
     obiettivo_concorso: string;
     disponibilita_mobilita: boolean;
     tempo_studio_settimanale: string;
+    preferred_regioni: string;
+    skills: string;
+    public_admin_experience: boolean;
+    contract_type: string;
+    current_sector: string;
+    preferred_job_families: string;
+    exclude_mobility: boolean;
 }
 
 export type ProfileUpdatePayload = Partial<
@@ -77,6 +88,13 @@ export type ProfileUpdatePayload = Partial<
         | 'obiettivo_concorso'
         | 'disponibilita_mobilita'
         | 'tempo_studio_settimanale'
+        | 'preferred_regioni'
+        | 'skills'
+        | 'public_admin_experience'
+        | 'contract_type'
+        | 'current_sector'
+        | 'preferred_job_families'
+        | 'exclude_mobility'
     >
 >;
 
@@ -91,6 +109,14 @@ function parseSettori(value: string): string[] | null {
         .map((item) => item.trim())
         .filter(Boolean);
     return items.length > 0 ? items : null;
+}
+
+function parseStringList(value: string): string[] | null {
+    const items = value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+    return items.length > 0 ? Array.from(new Set(items)) : null;
 }
 
 export function mapProfileToFormValues(profile: Partial<Profile> | null): ProfileFormValues {
@@ -109,6 +135,13 @@ export function mapProfileToFormValues(profile: Partial<Profile> | null): Profil
         obiettivo_concorso: profile?.obiettivo_concorso ?? '',
         disponibilita_mobilita: profile?.disponibilita_mobilita ?? false,
         tempo_studio_settimanale: profile?.tempo_studio_settimanale != null ? String(profile.tempo_studio_settimanale) : '',
+        preferred_regioni: profile?.preferred_regioni?.join(', ') ?? '',
+        skills: profile?.skills?.join(', ') ?? '',
+        public_admin_experience: profile?.public_admin_experience ?? false,
+        contract_type: profile?.contract_type ?? '',
+        current_sector: profile?.current_sector ?? profile?.settori_interesse?.[0] ?? profile?.preferred_settori?.[0] ?? '',
+        preferred_job_families: profile?.preferred_job_families?.join(', ') ?? '',
+        exclude_mobility: profile?.exclude_mobility ?? false,
     };
 }
 
@@ -136,6 +169,13 @@ export function mapFormValuesToProfileUpdate(values: ProfileFormValues): Profile
             parsedWeeklyHours == null || Number.isNaN(parsedWeeklyHours)
                 ? null
                 : Math.max(parsedWeeklyHours, 0),
+        preferred_regioni: parseStringList(values.preferred_regioni),
+        skills: parseStringList(values.skills),
+        public_admin_experience: values.public_admin_experience,
+        contract_type: nullIfEmpty(values.contract_type),
+        current_sector: nullIfEmpty(values.current_sector),
+        preferred_job_families: parseStringList(values.preferred_job_families),
+        exclude_mobility: values.exclude_mobility,
     };
 }
 

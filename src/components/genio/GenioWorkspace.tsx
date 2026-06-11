@@ -621,6 +621,21 @@ export function GenioWorkspace({ tier, userName, userAvatarUrl }: GenioWorkspace
                   </button>
                 ))}
               </div>
+
+              <div className="mx-auto mt-4 w-full max-w-2xl rounded-lg border border-slate-200 bg-white/80 p-3 shadow-sm">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Genio V2 matching</p>
+                    <p className="mt-1 text-sm text-slate-700">Verifica il nuovo matching semantico con un profilo di prova.</p>
+                  </div>
+                  <Link
+                    href="/hub/genio-test"
+                    className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                  >
+                    Apri test
+                  </Link>
+                </div>
+              </div>
             </div>
           </section>
         ) : (

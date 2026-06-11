@@ -43,6 +43,47 @@ const SUGGESTED_SETTORI = [
     'Finanza e Contabilita',
 ] as const;
 
+const SUGGESTED_SKILLS = [
+    'gestione_documentale',
+    'segreteria',
+    'uso_strumenti_informatici',
+    'contabilita',
+    'protocollo',
+    'front-office',
+    'atti_amministrativi',
+    'project_management',
+] as const;
+
+const SUGGESTED_JOB_FAMILIES = [
+    'amministrativo',
+    'sanitario',
+    'tecnico',
+    'it_digitale',
+    'giuridico',
+    'contabile',
+    'educativo',
+    'vigilanza',
+] as const;
+
+const CURRENT_SECTOR_OPTIONS = [
+    { value: '', label: 'Non impostato' },
+    { value: 'sanita_ssn', label: 'Sanita / SSN' },
+    { value: 'enti_locali', label: 'Enti locali' },
+    { value: 'ministeri', label: 'Ministeri e agenzie centrali' },
+    { value: 'scuola_universita', label: 'Scuola e universita' },
+    { value: 'giustizia_sicurezza', label: 'Giustizia e sicurezza' },
+    { value: 'inps_inail_enti_pubblici', label: 'INPS, INAIL, enti pubblici' },
+    { value: 'privato', label: 'Settore privato' },
+] as const;
+
+const CONTRACT_TYPE_OPTIONS = [
+    { value: '', label: 'Non impostato' },
+    { value: 'tempo_indeterminato', label: 'Tempo indeterminato' },
+    { value: 'tempo_determinato', label: 'Tempo determinato' },
+    { value: 'collaborazione', label: 'Collaborazione / consulenza' },
+    { value: 'nessun_contratto', label: 'Nessun contratto attuale' },
+] as const;
+
 function parseSettoriInput(raw: string): string[] {
     return raw
         .split(',')
@@ -52,6 +93,17 @@ function parseSettoriInput(raw: string): string[] {
 
 function toSettoriInput(settori: string[]): string {
     return settori.join(', ');
+}
+
+function parseListInput(raw: string): string[] {
+    return raw
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
+function toListInput(items: string[]): string {
+    return Array.from(new Set(items)).join(', ');
 }
 
 export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
@@ -64,6 +116,9 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
     const regionOptions = useMemo(() => getAllRegioni().sort((a, b) => a.localeCompare(b, 'it')), []);
 
     const selectedSettori = useMemo(() => parseSettoriInput(formData.settori_interesse), [formData.settori_interesse]);
+    const selectedRegioni = useMemo(() => parseListInput(formData.preferred_regioni), [formData.preferred_regioni]);
+    const selectedSkills = useMemo(() => parseListInput(formData.skills), [formData.skills]);
+    const selectedJobFamilies = useMemo(() => parseListInput(formData.preferred_job_families), [formData.preferred_job_families]);
 
     const fullNamePreview = useMemo(() => {
         const name = [formData.first_name.trim(), formData.last_name.trim()].filter(Boolean).join(' ');
@@ -77,6 +132,8 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
             { label: 'Provincia prioritaria', done: Boolean(formData.provincia_interesse.trim()) },
             { label: 'Profilo professionale', done: Boolean(formData.profilo_professionale.trim()) },
             { label: 'Settori prioritari', done: selectedSettori.length > 0 },
+            { label: 'Competenze chiave', done: selectedSkills.length > 0 },
+            { label: 'Inquadramento PA', done: Boolean(formData.contract_type || formData.public_admin_experience) },
         ],
         [
             formData.first_name,
@@ -84,7 +141,10 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
             formData.regione_interesse,
             formData.provincia_interesse,
             formData.profilo_professionale,
+            formData.contract_type,
+            formData.public_admin_experience,
             selectedSettori.length,
+            selectedSkills.length,
         ]
     );
 
@@ -154,10 +214,29 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
     };
 
     const handleToggleChange = (
-        name: 'remote_preferito' | 'notification_email' | 'disponibilita_mobilita',
+        name: 'remote_preferito' | 'notification_email' | 'disponibilita_mobilita' | 'public_admin_experience' | 'exclude_mobility',
         checked: boolean
     ) => {
         setFormData((prev) => ({ ...prev, [name]: checked }));
+    };
+
+    const handleListToggle = (
+        field: 'skills' | 'preferred_job_families' | 'preferred_regioni',
+        value: string
+    ) => {
+        setFormData((prev) => {
+            const current = new Set(parseListInput(prev[field]));
+            if (current.has(value)) {
+                current.delete(value);
+            } else {
+                current.add(value);
+            }
+
+            return {
+                ...prev,
+                [field]: toListInput(Array.from(current)),
+            };
+        });
     };
 
     const handleSettoreToggle = (settore: string) => {
@@ -358,6 +437,115 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
                                 />
                             </label>
 
+                            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                                <label className="space-y-1.5 text-sm">
+                                    <span className="font-medium text-slate-700">Settore attuale</span>
+                                    <select
+                                        id="current_sector"
+                                        name="current_sector"
+                                        value={formData.current_sector}
+                                        onChange={handleChange}
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#0A4E88] focus:ring-2 focus:ring-[#0A4E88]/20"
+                                    >
+                                        {CURRENT_SECTOR_OPTIONS.map((option) => (
+                                            <option key={option.value || 'empty_sector'} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+
+                                <label className="space-y-1.5 text-sm">
+                                    <span className="font-medium text-slate-700">Tipo contratto attuale</span>
+                                    <select
+                                        id="contract_type"
+                                        name="contract_type"
+                                        value={formData.contract_type}
+                                        onChange={handleChange}
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#0A4E88] focus:ring-2 focus:ring-[#0A4E88]/20"
+                                    >
+                                        {CONTRACT_TYPE_OPTIONS.map((option) => (
+                                            <option key={option.value || 'empty_contract'} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 text-sm text-slate-700">
+                                <label className="flex items-start gap-2.5">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.public_admin_experience}
+                                        onChange={(event) => handleToggleChange('public_admin_experience', event.target.checked)}
+                                        className="mt-0.5 h-4 w-4 rounded border-slate-400 text-[#0A4E88] focus:ring-[#0A4E88]/25"
+                                    />
+                                    Sono gia dipendente o ho esperienza nella Pubblica Amministrazione
+                                </label>
+                            </div>
+
+                            <div className="mt-4 space-y-2">
+                                <p className="text-sm font-medium text-slate-700">Famiglie professionali preferite</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {SUGGESTED_JOB_FAMILIES.map((family) => {
+                                        const isActive = selectedJobFamilies.includes(family);
+                                        return (
+                                            <button
+                                                key={family}
+                                                type="button"
+                                                onClick={() => handleListToggle('preferred_job_families', family)}
+                                                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                                                    isActive
+                                                        ? 'border-[#0A4E88]/35 bg-[#0A4E88]/12 text-[#083861]'
+                                                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                                                }`}
+                                            >
+                                                {family}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <input
+                                    id="preferred_job_families"
+                                    name="preferred_job_families"
+                                    value={formData.preferred_job_families}
+                                    onChange={handleChange}
+                                    placeholder="Es. amministrativo, contabile"
+                                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#0A4E88] focus:ring-2 focus:ring-[#0A4E88]/20"
+                                />
+                            </div>
+
+                            <div className="mt-4 space-y-2">
+                                <p className="text-sm font-medium text-slate-700">Competenze chiave per il matching</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {SUGGESTED_SKILLS.map((skill) => {
+                                        const isActive = selectedSkills.includes(skill);
+                                        return (
+                                            <button
+                                                key={skill}
+                                                type="button"
+                                                onClick={() => handleListToggle('skills', skill)}
+                                                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                                                    isActive
+                                                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                                                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                                                }`}
+                                            >
+                                                {skill}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <input
+                                    id="skills"
+                                    name="skills"
+                                    value={formData.skills}
+                                    onChange={handleChange}
+                                    placeholder="Es. protocollo, gestione documentale, contabilita"
+                                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#0A4E88] focus:ring-2 focus:ring-[#0A4E88]/20"
+                                />
+                            </div>
                         </section>
 
                         <section className="dashboard-section-frame p-5 sm:p-6">
@@ -406,6 +594,37 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
                                         ))}
                                     </select>
                                 </label>
+                            </div>
+
+                            <div className="mt-4 space-y-2">
+                                <p className="text-sm font-medium text-slate-700">Regioni preferite per Genio</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {regionOptions.slice(0, 10).map((regione) => {
+                                        const isActive = selectedRegioni.includes(regione);
+                                        return (
+                                            <button
+                                                key={regione}
+                                                type="button"
+                                                onClick={() => handleListToggle('preferred_regioni', regione)}
+                                                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                                                    isActive
+                                                        ? 'border-[#0A4E88]/35 bg-[#0A4E88]/12 text-[#083861]'
+                                                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                                                }`}
+                                            >
+                                                {regione}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <input
+                                    id="preferred_regioni"
+                                    name="preferred_regioni"
+                                    value={formData.preferred_regioni}
+                                    onChange={handleChange}
+                                    placeholder="Es. Sardegna, Lazio, Lombardia"
+                                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#0A4E88] focus:ring-2 focus:ring-[#0A4E88]/20"
+                                />
                             </div>
 
                             <div className="mt-4 space-y-2">
@@ -485,6 +704,26 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
                                     />
                                     Ricevo notifiche email su bandi e aggiornamenti
                                 </label>
+
+                                <label className="flex items-start gap-2.5">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.disponibilita_mobilita}
+                                        onChange={(event) => handleToggleChange('disponibilita_mobilita', event.target.checked)}
+                                        className="mt-0.5 h-4 w-4 rounded border-slate-400 text-[#0A4E88] focus:ring-[#0A4E88]/25"
+                                    />
+                                    Sono disponibile a mobilita o trasferimento
+                                </label>
+
+                                <label className="flex items-start gap-2.5">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.exclude_mobility}
+                                        onChange={(event) => handleToggleChange('exclude_mobility', event.target.checked)}
+                                        className="mt-0.5 h-4 w-4 rounded border-slate-400 text-[#0A4E88] focus:ring-[#0A4E88]/25"
+                                    />
+                                    Escludi procedure di mobilita dal matching
+                                </label>
                             </div>
 
                             <button
@@ -501,7 +740,7 @@ export function ProfileSettings({ user, profile }: ProfileSettingsProps) {
                             <p className="text-[0.7rem] font-semibold uppercase tracking-[0.11em] text-[#0A4E88]">Consiglio operativo</p>
                             <h3 className="mt-2 text-lg font-semibold tracking-tight text-slate-900">Massimizza il matching</h3>
                             <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                                Aggiorna almeno regione, settore e profilo professionale: sono i segnali piu utili per ranking e suggerimenti nell&apos;hub.
+                                Aggiorna almeno profilo, settore attuale, contratto, competenze e regioni preferite: sono i segnali piu utili per Genio V2.
                             </p>
                             <div className="mt-4 space-y-2 text-sm text-slate-700">
                                 <p className="flex items-center gap-2"><Clock3 className="h-4 w-4 text-[#0A4E88]" /> Tempo medio aggiornamento: 2 minuti</p>

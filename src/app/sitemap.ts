@@ -1,18 +1,18 @@
 import { MetadataRoute } from 'next';
-import { createStaticAdminClient, createStaticClient } from '@/lib/supabase/server';
+import { createCachedPublicClient, createCachedServiceClient } from '@/lib/supabase/server';
 import { getAllEnteSlugs, getAllProvinceSlugs, getAllRegioniSlugs, getAllSettoriSlugs, getOpenConcorsiSitemapEntries } from '@/lib/supabase/queries';
 import { getCanonicalSiteUrl } from '@/lib/auth/url';
 
-// Keep the sitemap fresh because new and expired concorsi are time-sensitive for JobPosting discovery.
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// Cache the sitemap at the Next.js layer. Search engines can call this endpoint
+// aggressively, and rebuilding it requires several Supabase reads.
+export const revalidate = 3600;
 // Next.js dynamic sitemap generation
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = getCanonicalSiteUrl();
     const generatedAt = new Date();
     const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-        ? createStaticAdminClient()
-        : createStaticClient();
+        ? createCachedServiceClient({ revalidate, tags: ['public:sitemap'] })
+        : createCachedPublicClient({ revalidate, tags: ['public:sitemap'] });
 
     // Keep the sitemap focused on canonical, index-worthy public pages.
     const staticRoutes = [

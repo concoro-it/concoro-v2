@@ -504,6 +504,28 @@ export async function getEnteBySlug(
     return (data as Ente | null) ?? null;
 }
 
+export async function getEnteByGeneratedSlug(
+    supabase: SupabaseClient,
+    slug: string
+): Promise<Ente | null> {
+    const { data, error } = await supabase
+        .from('enti')
+        .select('ente_nome')
+        .not('ente_nome', 'is', null)
+        .order('ente_nome', { ascending: true })
+        .limit(10000);
+
+    if (error) {
+        console.error('Error in getEnteByGeneratedSlug:', error);
+        return null;
+    }
+
+    const match = data?.find(item => toUrlSlug(item.ente_nome) === slug);
+    if (!match?.ente_nome) return null;
+
+    return getEnteByName(supabase, match.ente_nome);
+}
+
 export async function getAllEnti(
     supabase: SupabaseClient
 ): Promise<Ente[]> {
@@ -849,6 +871,11 @@ export async function getExpiredConcorsiIndexingCandidates(
 }
 
 export async function getAllRegioniSlugs(supabase: SupabaseClient): Promise<string[]> {
+    const counted = await getRegioniWithCount(supabase);
+    if (counted.length > 0) {
+        return counted.map((row) => toUrlSlug(row.regione));
+    }
+
     const { data } = await supabase
         .from('concorsi')
         .select('regioni_array')
@@ -874,6 +901,11 @@ export async function getAllRegioniSlugs(supabase: SupabaseClient): Promise<stri
 }
 
 export async function getAllProvinceSlugs(supabase: SupabaseClient): Promise<string[]> {
+    const counted = await getProvinceWithCount(supabase);
+    if (counted.length > 0) {
+        return counted.map((row) => toUrlSlug(row.provincia));
+    }
+
     const { data } = await supabase
         .from('concorsi')
         .select('province_array')
@@ -899,6 +931,11 @@ export async function getAllProvinceSlugs(supabase: SupabaseClient): Promise<str
 }
 
 export async function getAllSettoriSlugs(supabase: SupabaseClient): Promise<string[]> {
+    const counted = await getSettoriWithCount(supabase);
+    if (counted.length > 0) {
+        return counted.map((row) => toUrlSlug(row.settore));
+    }
+
     const { data } = await supabase
         .from('concorsi')
         .select('settori')

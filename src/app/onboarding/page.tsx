@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 import type { Profile } from '@/types/profile';
 import { sanitizeInternalRedirectPath } from '@/lib/auth/redirect';
+import { PricingHeader } from '@/app/pricing/components/pricing-header';
 
 export const metadata: Metadata = {
     title: 'Configura il tuo profilo',
@@ -40,13 +41,17 @@ export default async function OnboardingPage({
                 'remote_preferito',
                 'settori_interesse',
                 'preferred_settori',
+                'preferred_job_families',
                 'profilo_professionale',
+                'current_sector',
+                'contract_type',
                 'titolo_studio',
                 'anni_esperienza',
                 'education_history',
                 'experience_history',
                 'obiettivo_concorso',
                 'disponibilita_mobilita',
+                'exclude_mobility',
                 'tempo_studio_settimanale',
                 'disponibilita_trasferimento',
                 'livello_preparazione',
@@ -56,10 +61,25 @@ export default async function OnboardingPage({
                 'driving_licenses',
                 'notification_email',
                 'onboarding_completed',
+                'avatar_url',
+                'full_name',
             ].join(',')
         )
         .eq('id', user.id)
         .maybeSingle<Partial<Profile>>();
 
-    return <OnboardingFlow profile={profile ?? null} redirectTo={redirectTo} />;
+    return (
+        <>
+            <PricingHeader
+                user={{
+                    email: user.email,
+                    fullName: profile?.full_name ?? null,
+                    avatarUrl: profile?.avatar_url ?? null,
+                }}
+                checkoutRedirectPath="/pricing?checkout=pro"
+                showLinks={false}
+            />
+            <OnboardingFlow profile={profile ?? null} redirectTo={redirectTo} />
+        </>
+    );
 }

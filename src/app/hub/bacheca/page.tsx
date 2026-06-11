@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { getActiveConcorsiCount, getProvinceWithCount, getRegioniWithCount, getSavedConcorsi } from '@/lib/supabase/queries';
+import { getActiveConcorsiCount, getConcorsi, getProvinceWithCount, getRegioniWithCount, getSavedConcorsi } from '@/lib/supabase/queries';
 import { ConcorsoList } from '@/components/concorsi/ConcorsoList';
 import { getUserContext } from '@/lib/auth/getUserContext';
 import { getTierLabel, hasProAccess } from '@/lib/auth/tiers';
@@ -36,6 +36,49 @@ export default async function DashboardPage() {
     const topRegion = [...regionCounts].sort((a, b) => b.count - a.count)[0];
     const tierLabel = getTierLabel(tier);
     const tierTone = hasProAccess(tier);
+    const preferredSector = profile?.settori_interesse?.[0] ?? profile?.preferred_settori?.[0] ?? undefined;
+    const starterRecommendations = savedConcorsi.length === 0
+        ? (await getConcorsi(
+            supabase,
+            {
+                regione: profile?.regione_interesse ?? profile?.preferred_regioni?.[0] ?? undefined,
+                provincia: profile?.provincia_interesse ?? undefined,
+                settore: preferredSector,
+                query: profile?.profilo_professionale ?? undefined,
+                sort: 'scadenza',
+                stato: 'aperti',
+                solo_attivi: true,
+            },
+            1,
+            3
+        )).data
+        : [];
+    const starterConcorsi = starterRecommendations.length > 0
+        ? starterRecommendations
+        : savedConcorsi.length === 0
+            ? (await getConcorsi(
+                supabase,
+                {
+                    regione: profile?.regione_interesse ?? profile?.preferred_regioni?.[0] ?? undefined,
+                    provincia: profile?.provincia_interesse ?? undefined,
+                    settore: preferredSector,
+                    sort: 'scadenza',
+                    stato: 'aperti',
+                    solo_attivi: true,
+                },
+                1,
+                3
+            )).data
+            : [];
+    const personalizedConcorsiParams = new URLSearchParams();
+    if (profile?.regione_interesse ?? profile?.preferred_regioni?.[0]) {
+        personalizedConcorsiParams.set('regione', profile?.regione_interesse ?? profile?.preferred_regioni?.[0] ?? '');
+    }
+    if (profile?.provincia_interesse) personalizedConcorsiParams.set('provincia', profile.provincia_interesse);
+    if (preferredSector) personalizedConcorsiParams.set('settore', preferredSector);
+    if (profile?.profilo_professionale) personalizedConcorsiParams.set('q', profile.profilo_professionale);
+    personalizedConcorsiParams.set('source', 'bacheca_start');
+    const personalizedConcorsiHref = `/hub/concorsi?${personalizedConcorsiParams.toString()}`;
 
     return (
         <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/70 bg-[hsl(210,55%,98%)] text-slate-900 shadow-[0_32px_70px_-46px_rgba(15,23,42,0.65)] [font-family:'Avenir_Next',Avenir,'Segoe_UI',-apple-system,BlinkMacSystemFont,'Helvetica_Neue',sans-serif]">
@@ -157,6 +200,34 @@ export default async function DashboardPage() {
                         </div>
                     )}
                 </section>
+
+                {savedConcorsi.length === 0 && starterConcorsi.length > 0 && (
+                    <section className="rounded-[1.55rem] border border-[#0A4E88]/20 bg-white/92 p-5 shadow-[0_24px_42px_-34px_rgba(2,6,23,0.45)] sm:p-6">
+                        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.11em] text-sky-800">
+                                    <Sparkles className="h-3.5 w-3.5" />
+                                    Primo passo
+                                </span>
+                                <h2 className="mt-3 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+                                    Salva il primo concorso da seguire
+                                </h2>
+                                <p className="mt-1 max-w-2xl text-sm text-slate-600">
+                                    Abbiamo preparato alcuni bandi coerenti con le preferenze del tuo profilo. Salvarne uno crea la tua prima bacheca di monitoraggio.
+                                </p>
+                            </div>
+                            <Link href={personalizedConcorsiHref} className="inline-flex items-center gap-1 text-sm font-semibold text-[#0A4E88] hover:underline">
+                                Esplora altri
+                                <ArrowRight className="h-4 w-4" />
+                            </Link>
+                        </div>
+                        <ConcorsoList
+                            concorsi={starterConcorsi}
+                            savedIds={[]}
+                            detailBasePath="/hub/concorsi"
+                        />
+                    </section>
+                )}
 
                 <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <article className="rounded-2xl border border-slate-200/90 bg-white/90 p-4 shadow-sm">

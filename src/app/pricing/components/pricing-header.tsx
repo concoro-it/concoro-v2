@@ -14,9 +14,11 @@ const links = [
 export function PricingHeader({
     user,
     checkoutRedirectPath,
+    showLinks = true,
 }: {
     user: PricingHeaderUser | null;
     checkoutRedirectPath: string;
+    showLinks?: boolean;
 }) {
     const authQuery = buildAuthQueryParams({
         redirectTo: checkoutRedirectPath,
@@ -38,13 +40,15 @@ export function PricingHeader({
                     />
                 </Link>
 
-                <div className="hidden items-center gap-2 md:flex">
-                    {links.map((link) => (
-                        <Link key={link.href} className={buttonVariants({ variant: 'ghost' })} href={link.href}>
-                            {link.label}
-                        </Link>
-                    ))}
-                </div>
+                {showLinks && (
+                    <div className="hidden items-center gap-2 md:flex">
+                        {links.map((link) => (
+                            <Link key={link.href} className={buttonVariants({ variant: 'ghost' })} href={link.href}>
+                                {link.label}
+                            </Link>
+                        ))}
+                    </div>
+                )}
 
                 <div className="flex items-center gap-2">
                     {user ? (
@@ -62,25 +66,27 @@ export function PricingHeader({
                 </div>
             </nav>
 
-            <div className={cn('mx-auto flex max-w-[78rem] gap-1 overflow-x-auto px-4 pb-2 md:hidden')}>
-                {links.map((link) => (
-                    <Link
-                        key={link.href}
-                        href={link.href}
-                        className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-white hover:text-slate-900"
-                    >
-                        {link.label}
-                    </Link>
-                ))}
-                {user && (
-                    <Link
-                        href="/hub/bacheca"
-                        className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-white hover:text-slate-900"
-                    >
-                        Hub
-                    </Link>
-                )}
-            </div>
+            {showLinks && (
+                <div className={cn('mx-auto flex max-w-[78rem] gap-1 overflow-x-auto px-4 pb-2 md:hidden')}>
+                    {links.map((link) => (
+                        <Link
+                            key={link.href}
+                            href={link.href}
+                            className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-white hover:text-slate-900"
+                        >
+                            {link.label}
+                        </Link>
+                    ))}
+                    {user && (
+                        <Link
+                            href="/hub/bacheca"
+                            className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-white hover:text-slate-900"
+                        >
+                            Hub
+                        </Link>
+                    )}
+                </div>
+            )}
         </header>
     );
 }

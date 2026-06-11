@@ -12,13 +12,17 @@ interface OnboardingProfilePayload extends ProfileCompletionInput {
     remote_preferito?: boolean | null;
     settori_interesse?: string[] | null;
     preferred_settori?: string[] | null;
+    preferred_job_families?: string[] | null;
     profilo_professionale?: string | null;
+    current_sector?: string | null;
+    contract_type?: string | null;
     titolo_studio?: string | null;
     anni_esperienza?: number | null;
     education_history?: Array<Record<string, unknown>> | null;
     experience_history?: Array<Record<string, unknown>> | null;
     obiettivo_concorso?: string | null;
     disponibilita_mobilita?: boolean | null;
+    exclude_mobility?: boolean | null;
     tempo_studio_settimanale?: number | null;
     disponibilita_trasferimento?: string | null;
     livello_preparazione?: string | null;
@@ -90,12 +94,16 @@ export async function POST(req: NextRequest) {
                 'sede_preferita',
                 'settori_interesse',
                 'preferred_settori',
+                'preferred_job_families',
                 'profilo_professionale',
+                'current_sector',
+                'contract_type',
                 'titolo_studio',
                 'anni_esperienza',
                 'skills',
                 'languages',
                 'driving_licenses',
+                'public_admin_experience',
             ].join(',')
         )
         .eq('id', user.id)
@@ -104,6 +112,7 @@ export async function POST(req: NextRequest) {
     const regioni = cleanTextArray(data.preferred_regioni);
     const settori = cleanTextArray(data.settori_interesse);
     const preferredSettori = cleanTextArray(data.preferred_settori) ?? settori;
+    const preferredJobFamilies = cleanTextArray(data.preferred_job_families);
     const skills = cleanTextArray(data.skills);
     const languages = cleanTextArray(data.languages);
     const drivingLicenses = cleanTextArray(data.driving_licenses);
@@ -119,7 +128,10 @@ export async function POST(req: NextRequest) {
                 sede_preferita: cleanText(data.sede_preferita),
                 settori_interesse: settori,
                 preferred_settori: preferredSettori,
+                preferred_job_families: preferredJobFamilies,
                 profilo_professionale: cleanText(data.profilo_professionale),
+                current_sector: cleanText(data.current_sector),
+                contract_type: cleanText(data.contract_type),
                 titolo_studio: cleanText(data.titolo_studio),
                 anni_esperienza: cleanNumber(data.anni_esperienza),
                 skills,
@@ -136,12 +148,19 @@ export async function POST(req: NextRequest) {
         sede_preferita: cleanText(merged.sede_preferita),
         settori_interesse: cleanTextArray(merged.settori_interesse),
         preferred_settori: cleanTextArray(merged.preferred_settori),
+        preferred_job_families: cleanTextArray(merged.preferred_job_families),
         profilo_professionale: cleanText(merged.profilo_professionale),
+        current_sector: cleanText(merged.current_sector),
+        contract_type: cleanText(merged.contract_type),
         titolo_studio: cleanText(merged.titolo_studio),
         anni_esperienza: cleanNumber(merged.anni_esperienza),
         skills: cleanTextArray(merged.skills),
         languages: cleanTextArray(merged.languages),
         driving_licenses: cleanTextArray(merged.driving_licenses),
+        public_admin_experience:
+            typeof merged.public_admin_experience === 'boolean'
+                ? merged.public_admin_experience
+                : null,
     };
 
     const profilePayload: Record<string, unknown> = {
@@ -164,13 +183,17 @@ export async function POST(req: NextRequest) {
     assignIfPresent('remote_preferito', 'remote_preferito', Boolean(data.remote_preferito));
     assignIfPresent('settori_interesse', 'settori_interesse', settori);
     assignIfPresent('preferred_settori', 'preferred_settori', preferredSettori);
+    assignIfPresent('preferred_job_families', 'preferred_job_families', preferredJobFamilies);
     assignIfPresent('profilo_professionale', 'profilo_professionale', cleanText(data.profilo_professionale));
+    assignIfPresent('current_sector', 'current_sector', cleanText(data.current_sector));
+    assignIfPresent('contract_type', 'contract_type', cleanText(data.contract_type));
     assignIfPresent('titolo_studio', 'titolo_studio', cleanText(data.titolo_studio));
     assignIfPresent('anni_esperienza', 'anni_esperienza', cleanNumber(data.anni_esperienza));
     assignIfPresent('education_history', 'education_history', cleanJsonArray(data.education_history));
     assignIfPresent('experience_history', 'experience_history', cleanJsonArray(data.experience_history));
     assignIfPresent('obiettivo_concorso', 'obiettivo_concorso', cleanText(data.obiettivo_concorso));
     assignIfPresent('disponibilita_mobilita', 'disponibilita_mobilita', Boolean(data.disponibilita_mobilita));
+    assignIfPresent('exclude_mobility', 'exclude_mobility', Boolean(data.exclude_mobility));
     assignIfPresent('tempo_studio_settimanale', 'tempo_studio_settimanale', cleanNumber(data.tempo_studio_settimanale));
     assignIfPresent('disponibilita_trasferimento', 'disponibilita_trasferimento', cleanText(data.disponibilita_trasferimento));
     assignIfPresent('livello_preparazione', 'livello_preparazione', cleanText(data.livello_preparazione));

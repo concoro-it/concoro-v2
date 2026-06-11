@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createStaticAdminClient } from '@/lib/supabase/server';
 import { mapFormValuesToProfileUpdate, type ProfileFormValues } from '@/types/profile';
+import { calculateProfileCompletionScore } from '@/lib/onboarding/profile-completion';
 
 interface UpdateProfileRequestBody {
     formData?: ProfileFormValues;
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
         email: user.email ?? null,
         ...updatePayload,
         full_name: fullName.length > 0 ? fullName : null,
+        profile_completion_score: calculateProfileCompletionScore(updatePayload),
         updated_at: new Date().toISOString(),
     };
 
@@ -59,7 +61,7 @@ export async function POST(req: NextRequest) {
     let result = await runUpsert(safePayload);
 
     // Backward-compatible save when some profile columns are missing in DB schema.
-    while (result.error && attempts < 5) {
+    while (result.error && attempts < 10) {
         const missingColumn = extractMissingColumn(result.error.message);
         if (!missingColumn || !(missingColumn in safePayload)) {
             break;

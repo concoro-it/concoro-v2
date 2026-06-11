@@ -15,7 +15,7 @@ import {
     Train,
 } from 'lucide-react';
 import { createCachedServiceClient, createClient } from '@/lib/supabase/server';
-import { getAllEnti, getConcorsiByEnte, getEnteBySlug } from '@/lib/supabase/queries';
+import { getConcorsiByEnte, getEnteByGeneratedSlug, getEnteBySlug } from '@/lib/supabase/queries';
 import { formatDateIT } from '@/lib/utils/date';
 import { toUrlSlug } from '@/lib/utils/regioni';
 import { getServerAppUrl } from '@/lib/auth/url';
@@ -108,8 +108,7 @@ async function getEntePageData(slug: string) {
     let ente = await getEnteBySlug(supabase, slug);
 
     if (!ente) {
-        const [enti] = await Promise.all([getAllEnti(supabase)]);
-        ente = enti.find(item => toUrlSlug(item.ente_nome) === slug) ?? null;
+        ente = await getEnteByGeneratedSlug(supabase, slug);
     }
 
     if (!ente) return null;
@@ -180,8 +179,7 @@ export default async function EntePage({ params }: Props) {
 
     // Fallback: if not found by slug, try to find by name-based slug (for backward compatibility or new records)
     if (!ente) {
-        const [enti] = await Promise.all([getAllEnti(supabase)]);
-        ente = enti.find(item => toUrlSlug(item.ente_nome) === slug) ?? null;
+        ente = await getEnteByGeneratedSlug(supabase, slug);
     }
 
     if (!ente) notFound();

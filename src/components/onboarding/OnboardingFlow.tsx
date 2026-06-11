@@ -1,16 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     ArrowLeft,
     ArrowRight,
-    Bell,
-    Bookmark,
-    Bot,
     Check,
     CheckCircle2,
     Loader2,
@@ -20,8 +16,17 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConcorsoCard } from '@/components/concorsi/ConcorsoCard';
 import { getAllRegioni } from '@/lib/utils/regioni';
 import { cn } from '@/lib/utils';
+import type { Concorso } from '@/types/concorso';
+
+declare global {
+    interface Window {
+        gtag?: (...args: unknown[]) => void;
+        clarity?: (...args: unknown[]) => void;
+    }
+}
 
 interface OnboardingProfile {
     regione_interesse?: string | null;
@@ -31,13 +36,17 @@ interface OnboardingProfile {
     remote_preferito?: boolean | null;
     settori_interesse?: string[] | null;
     preferred_settori?: string[] | null;
+    preferred_job_families?: string[] | null;
     profilo_professionale?: string | null;
+    current_sector?: string | null;
+    contract_type?: string | null;
     titolo_studio?: string | null;
     anni_esperienza?: number | null;
     education_history?: Array<Record<string, unknown>> | null;
     experience_history?: Array<Record<string, unknown>> | null;
     obiettivo_concorso?: string | null;
     disponibilita_mobilita?: boolean | null;
+    exclude_mobility?: boolean | null;
     tempo_studio_settimanale?: number | null;
     disponibilita_trasferimento?: string | null;
     livello_preparazione?: string | null;
@@ -56,6 +65,18 @@ interface OnboardingFlowProps {
 interface Option {
     label: string;
     value: string;
+}
+
+interface OnboardingRecommendation {
+    concorso: Concorso;
+    score: number | null;
+    reason: string | null;
+}
+
+interface RecommendationsResponse {
+    source: 'webhook' | 'fallback';
+    recommendations: OnboardingRecommendation[];
+    error?: string;
 }
 
 type SedePreferita = 'tutta_italia' | 'regione' | 'provincia' | 'remoto' | 'nessuna_preferenza';
@@ -85,12 +106,11 @@ const STEP_IMAGES = [
     },
 ];
 
-const LOCATION_OPTIONS: Array<{ label: string; value: SedePreferita; description: string }> = [
-    { label: 'Tutta Italia', value: 'tutta_italia', description: 'Mostra opportunita in tutte le regioni.' },
-    { label: 'La mia regione', value: 'regione', description: 'Dai priorita ai concorsi nella regione scelta.' },
-    { label: 'Province specifiche', value: 'provincia', description: 'Filtra meglio in base alla provincia.' },
-    { label: 'Anche da remoto', value: 'remoto', description: 'Includi opportunita con lavoro da remoto.' },
-    { label: 'Non ho preferenze', value: 'nessuna_preferenza', description: 'Lascia i risultati piu ampi.' },
+const LOCATION_OPTIONS: Array<{ label: string; value: SedePreferita }> = [
+    { label: 'Tutta Italia', value: 'tutta_italia' },
+    { label: 'La mia regione', value: 'regione' },
+    { label: 'Province specifiche', value: 'provincia' },
+    { label: 'Non ho preferenze', value: 'nessuna_preferenza' },
 ];
 
 const SECTOR_OPTIONS = [
@@ -126,13 +146,6 @@ const EXPERIENCE_OPTIONS = [
     { value: '10_plus', label: 'Oltre 10 anni', numeric: 10 },
 ];
 
-const TRANSFER_OPTIONS = [
-    { value: 'si', label: 'Si' },
-    { value: 'no', label: 'No' },
-    { value: 'forse', label: 'Forse' },
-    { value: 'solo_regioni_selezionate', label: 'Solo nelle regioni selezionate' },
-];
-
 const PREPARATION_OPTIONS = [
     { value: 'inizio_da_zero', label: 'Inizio da zero' },
     { value: 'ho_gia_studiato', label: 'Ho gia studiato' },
@@ -147,27 +160,41 @@ const WEEKLY_TIME_OPTIONS = [
     { value: 'oltre_10_ore', label: 'Oltre 10 ore', numeric: 11 },
 ];
 
-const FEATURE_CARDS = [
-    {
-        icon: Search,
-        title: 'Concorsi consigliati',
-        description: 'Vedi bandi ordinati in base alle tue preferenze.',
-    },
-    {
-        icon: Bookmark,
-        title: 'Scadenze sotto controllo',
-        description: 'Salva i concorsi e tieni traccia delle date importanti.',
-    },
-    {
-        icon: Bot,
-        title: 'Genio',
-        description: 'Fai domande sui bandi e chiarisci requisiti, prove e documenti richiesti.',
-    },
-    {
-        icon: Bell,
-        title: 'Avvisi email',
-        description: 'Ricevi aggiornamenti quando ci sono nuove opportunita rilevanti.',
-    },
+const CURRENT_SECTOR_OPTIONS = [
+    { value: 'sanita_ssn', label: 'Sanita / SSN' },
+    { value: 'enti_locali', label: 'Enti locali' },
+    { value: 'ministeri', label: 'Ministeri e agenzie centrali' },
+    { value: 'scuola_universita', label: 'Scuola e universita' },
+    { value: 'giustizia_sicurezza', label: 'Giustizia e sicurezza' },
+    { value: 'inps_inail_enti_pubblici', label: 'INPS, INAIL, enti pubblici' },
+    { value: 'privato', label: 'Settore privato' },
+];
+
+const CONTRACT_TYPE_OPTIONS = [
+    { value: 'tempo_indeterminato', label: 'Tempo indeterminato' },
+    { value: 'tempo_determinato', label: 'Tempo determinato' },
+    { value: 'collaborazione', label: 'Collaborazione / consulenza' },
+    { value: 'nessun_contratto', label: 'Nessun contratto attuale' },
+];
+
+const JOB_FAMILY_OPTIONS = [
+    'amministrativo',
+    'sanitario',
+    'tecnico',
+    'it_digitale',
+    'giuridico',
+    'contabile',
+    'educativo',
+    'vigilanza',
+];
+
+const SKILL_SUGGESTIONS = [
+    'gestione_documentale',
+    'segreteria',
+    'uso_strumenti_informatici',
+    'contabilita',
+    'protocollo',
+    'atti_amministrativi',
 ];
 
 function numberToExperienceRange(value?: number | null) {
@@ -202,6 +229,17 @@ function getWeeklyTimeNumber(value: string) {
     return WEEKLY_TIME_OPTIONS.find((option) => option.value === value)?.numeric ?? null;
 }
 
+function trackOnboardingEvent(eventName: string, properties: Record<string, unknown> = {}) {
+    if (typeof window === 'undefined') return;
+    const payload = {
+        event_category: 'onboarding',
+        ...properties,
+    };
+
+    window.gtag?.('event', eventName, payload);
+    window.clarity?.('event', eventName);
+}
+
 export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: OnboardingFlowProps) {
     const router = useRouter();
     const [step, setStep] = useState(1);
@@ -209,14 +247,22 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
     const [error, setError] = useState<string | null>(null);
     const [provinceOptions, setProvinceOptions] = useState<Option[]>([]);
     const [isLoadingProvince, setIsLoadingProvince] = useState(false);
+    const [recommendations, setRecommendations] = useState<OnboardingRecommendation[]>([]);
+    const [recommendationSource, setRecommendationSource] = useState<'webhook' | 'fallback' | null>(null);
+    const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+    const [hasRequestedRecommendations, setHasRequestedRecommendations] = useState(false);
+    const [recommendationError, setRecommendationError] = useState<string | null>(null);
 
     const [sedePreferita, setSedePreferita] = useState<SedePreferita>(
         (profile?.sede_preferita as SedePreferita | null) ?? 'nessuna_preferenza'
     );
     const [regione, setRegione] = useState(profile?.regione_interesse ?? profile?.preferred_regioni?.[0] ?? '');
+    const [preferredRegioni, setPreferredRegioni] = useState<string[]>(profile?.preferred_regioni ?? []);
     const [provincia, setProvincia] = useState(profile?.provincia_interesse ?? '');
     const [remotePreferito, setRemotePreferito] = useState(Boolean(profile?.remote_preferito));
     const [settori, setSettori] = useState<string[]>(profile?.settori_interesse ?? profile?.preferred_settori ?? []);
+    const [currentSector, setCurrentSector] = useState(profile?.current_sector ?? profile?.settori_interesse?.[0] ?? profile?.preferred_settori?.[0] ?? '');
+    const [preferredJobFamilies, setPreferredJobFamilies] = useState<string[]>(profile?.preferred_job_families ?? []);
     const [profiloProfessionale, setProfiloProfessionale] = useState(profile?.profilo_professionale ?? '');
     const [titoloStudio, setTitoloStudio] = useState(profile?.titolo_studio ?? '');
     const [areaStudio, setAreaStudio] = useState(
@@ -226,7 +272,9 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
     const [publicAdminExperience, setPublicAdminExperience] = useState<boolean | null>(
         typeof profile?.public_admin_experience === 'boolean' ? profile.public_admin_experience : null
     );
-    const [disponibilitaTrasferimento, setDisponibilitaTrasferimento] = useState(profile?.disponibilita_trasferimento ?? '');
+    const [contractType, setContractType] = useState(profile?.contract_type ?? '');
+    const disponibilitaTrasferimento = profile?.disponibilita_trasferimento ?? '';
+    const [excludeMobility, setExcludeMobility] = useState(Boolean(profile?.exclude_mobility));
     const [livelloPreparazione, setLivelloPreparazione] = useState(profile?.livello_preparazione ?? '');
     const [tempoStudio, setTempoStudio] = useState(numberToWeeklyTime(profile?.tempo_studio_settimanale));
     const [skillsText, setSkillsText] = useState((profile?.skills ?? []).join(', '));
@@ -237,6 +285,13 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
     const regionOptions = useMemo(() => getAllRegioni().sort((a, b) => a.localeCompare(b, 'it')), []);
     const currentImage = STEP_IMAGES[step - 1];
     const progress = (step / TOTAL_STEPS) * 100;
+
+    useEffect(() => {
+        trackOnboardingEvent('onboarding_started', {
+            has_profile: Boolean(profile),
+            completed_profile_loaded: Boolean(profile?.notification_email !== undefined),
+        });
+    }, [profile]);
 
     useEffect(() => {
         if (!regione) {
@@ -269,6 +324,125 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
         return () => controller.abort();
     }, [regione]);
 
+    const buildProfilePayload = useCallback((): OnboardingProfile => {
+        const experienceNumber = getExperienceNumber(anniEsperienza);
+        const weeklyTimeNumber = getWeeklyTimeNumber(tempoStudio);
+        const selectedRegions = Array.from(new Set([regione, ...preferredRegioni].filter(Boolean)));
+
+        return {
+            regione_interesse: regione || null,
+            provincia_interesse: provincia || null,
+            preferred_regioni: selectedRegions.length > 0 ? selectedRegions : null,
+            sede_preferita: sedePreferita,
+            remote_preferito: remotePreferito || sedePreferita === 'remoto',
+            settori_interesse: settori,
+            preferred_settori: settori,
+            preferred_job_families: preferredJobFamilies,
+            profilo_professionale: profiloProfessionale || null,
+            current_sector: currentSector || null,
+            contract_type: contractType || null,
+            titolo_studio: titoloStudio || null,
+            anni_esperienza: experienceNumber,
+            education_history: areaStudio
+                ? [{ degree: titoloStudio, field: areaStudio, institution: '', year: '' }]
+                : null,
+            experience_history: experienceNumber != null
+                ? [{ role: profiloProfessionale, sector: settori[0] ?? '', years: anniEsperienza }]
+                : null,
+            public_admin_experience: publicAdminExperience,
+            disponibilita_trasferimento: disponibilitaTrasferimento || null,
+            disponibilita_mobilita: disponibilitaTrasferimento
+                ? ['si', 'forse', 'solo_regioni_selezionate'].includes(disponibilitaTrasferimento)
+                : null,
+            exclude_mobility: excludeMobility,
+            livello_preparazione: livelloPreparazione || null,
+            tempo_studio_settimanale: weeklyTimeNumber,
+            skills: parseCsv(skillsText),
+            languages: parseCsv(languagesText),
+            driving_licenses: parseCsv(drivingLicensesText),
+            notification_email: notificationEmail,
+        };
+    }, [
+        anniEsperienza,
+        areaStudio,
+        contractType,
+        currentSector,
+        disponibilitaTrasferimento,
+        drivingLicensesText,
+        excludeMobility,
+        languagesText,
+        livelloPreparazione,
+        notificationEmail,
+        preferredJobFamilies,
+        preferredRegioni,
+        profiloProfessionale,
+        provincia,
+        publicAdminExperience,
+        regione,
+        remotePreferito,
+        sedePreferita,
+        settori,
+        skillsText,
+        tempoStudio,
+        titoloStudio,
+    ]);
+
+    const buildPersonalizedConcorsiHref = useCallback(() => {
+        const params = new URLSearchParams();
+        if (regione) params.set('regione', regione);
+        if (provincia) params.set('provincia', provincia);
+        if (settori[0]) params.set('settore', settori[0]);
+        if (profiloProfessionale.trim()) params.set('q', profiloProfessionale.trim());
+        params.set('source', 'onboarding');
+        const query = params.toString();
+        return `/hub/concorsi${query ? `?${query}` : ''}`;
+    }, [profiloProfessionale, provincia, regione, settori]);
+
+    const loadRecommendations = useCallback(async () => {
+        if (isLoadingRecommendations) return;
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 12000);
+        setHasRequestedRecommendations(true);
+        setIsLoadingRecommendations(true);
+        setRecommendationError(null);
+        try {
+            const response = await fetch('/api/onboarding/recommendations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ profile: buildProfilePayload() }),
+                signal: controller.signal,
+            });
+            const payload = (await response.json()) as RecommendationsResponse;
+            if (!response.ok) throw new Error(payload.error || 'Non siamo riusciti a caricare i suggerimenti.');
+
+            setRecommendations(payload.recommendations ?? []);
+            setRecommendationSource(payload.source);
+            trackOnboardingEvent('onboarding_recommendations_loaded', {
+                source: payload.source,
+                count: payload.recommendations?.length ?? 0,
+            });
+            if (payload.source === 'fallback') {
+                trackOnboardingEvent('onboarding_recommendations_fallback_used', {
+                    count: payload.recommendations?.length ?? 0,
+                });
+            }
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Non siamo riusciti a caricare i suggerimenti.';
+            setRecommendationError(message);
+            trackOnboardingEvent('onboarding_recommendations_fallback_used', {
+                error: message,
+            });
+        } finally {
+            window.clearTimeout(timeout);
+            setIsLoadingRecommendations(false);
+        }
+    }, [buildProfilePayload, isLoadingRecommendations]);
+
+    useEffect(() => {
+        if (step !== TOTAL_STEPS || hasRequestedRecommendations || recommendations.length > 0) return;
+        void loadRecommendations();
+    }, [hasRequestedRecommendations, loadRecommendations, recommendations.length, step]);
+
     const save = async (data: Record<string, unknown>, options: { complete?: boolean; redirectTo?: string } = {}) => {
         setIsSaving(true);
         setError(null);
@@ -290,11 +464,19 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
             }
 
             if (options.complete) {
+                trackOnboardingEvent('onboarding_completed', {
+                    redirect_to: options.redirectTo ?? '/hub/bacheca',
+                    profile_source: typeof data.profile_source === 'string' ? data.profile_source : 'manual_onboarding',
+                });
                 router.push(options.redirectTo ?? '/hub/bacheca');
                 router.refresh();
                 return;
             }
 
+            trackOnboardingEvent('onboarding_step_completed', {
+                step,
+                next_step: Math.min(step + 1, TOTAL_STEPS),
+            });
             setStep((current) => Math.min(current + 1, TOTAL_STEPS));
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Errore durante il salvataggio. Riprova.';
@@ -304,23 +486,58 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
         }
     };
 
-    const finishOnboarding = (targetRedirectTo = redirectTo) => save({
+    const finishOnboarding = (targetRedirectTo = redirectTo, source = 'manual_onboarding') => save({
         notification_email: notificationEmail,
-        profile_source: 'manual_onboarding',
+        profile_source: source,
     }, { complete: true, redirectTo: targetRedirectTo });
+
+    const saveFirstRecommendation = async () => {
+        const firstRecommendation = recommendations[0];
+        if (!firstRecommendation?.concorso?.concorso_id) {
+            void finishOnboarding(buildPersonalizedConcorsiHref());
+            return;
+        }
+
+        setIsSaving(true);
+        setError(null);
+        try {
+            const response = await fetch('/api/profile/save-concorso', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ concorso_id: firstRecommendation.concorso.concorso_id }),
+            });
+            const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+            if (!response.ok) {
+                throw new Error(payload?.error ?? 'Non siamo riusciti a salvare il concorso.');
+            }
+
+            trackOnboardingEvent('first_concorso_saved', {
+                concorso_id: firstRecommendation.concorso.concorso_id,
+                recommendation_source: recommendationSource,
+                match_score: firstRecommendation.score,
+            });
+            await finishOnboarding('/hub/bacheca', 'manual_onboarding_activated');
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Non siamo riusciti a salvare il concorso.';
+            setError(message);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const saveStep = () => {
         if (step === 1) {
+            trackOnboardingEvent('onboarding_step_completed', { step: 1, next_step: 2 });
             setStep(2);
             return;
         }
 
         if (step === 2) {
-            const selectedRegions = regione ? [regione] : null;
+            const selectedRegions = Array.from(new Set([regione, ...preferredRegioni].filter(Boolean)));
             void save({
                 regione_interesse: regione || null,
                 provincia_interesse: provincia || null,
-                preferred_regioni: selectedRegions,
+                preferred_regioni: selectedRegions.length > 0 ? selectedRegions : null,
                 sede_preferita: sedePreferita,
                 remote_preferito: remotePreferito || sedePreferita === 'remoto',
                 profile_source: 'manual_onboarding',
@@ -332,6 +549,8 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
             void save({
                 settori_interesse: settori,
                 preferred_settori: settori,
+                current_sector: currentSector || null,
+                preferred_job_families: preferredJobFamilies,
                 profilo_professionale: profiloProfessionale,
                 profile_source: 'manual_onboarding',
             });
@@ -341,6 +560,10 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
         if (step === 4) {
             const experienceNumber = getExperienceNumber(anniEsperienza);
             const weeklyTimeNumber = getWeeklyTimeNumber(tempoStudio);
+            setRecommendations([]);
+            setRecommendationSource(null);
+            setRecommendationError(null);
+            setHasRequestedRecommendations(false);
             void save({
                 titolo_studio: titoloStudio,
                 anni_esperienza: experienceNumber,
@@ -351,8 +574,12 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
                     ? [{ role: profiloProfessionale, sector: settori[0] ?? '', years: anniEsperienza }]
                     : null,
                 public_admin_experience: publicAdminExperience,
-                disponibilita_trasferimento: disponibilitaTrasferimento,
-                disponibilita_mobilita: ['si', 'forse', 'solo_regioni_selezionate'].includes(disponibilitaTrasferimento),
+                contract_type: contractType || null,
+                disponibilita_trasferimento: disponibilitaTrasferimento || null,
+                disponibilita_mobilita: disponibilitaTrasferimento
+                    ? ['si', 'forse', 'solo_regioni_selezionate'].includes(disponibilitaTrasferimento)
+                    : null,
+                exclude_mobility: excludeMobility,
                 livello_preparazione: livelloPreparazione,
                 tempo_studio_settimanale: weeklyTimeNumber,
                 skills: parseCsv(skillsText),
@@ -363,12 +590,13 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
             return;
         }
 
-        void finishOnboarding('/hub/bacheca');
+        void saveFirstRecommendation();
     };
 
     const skipCurrentStep = () => {
+        trackOnboardingEvent('onboarding_skipped', { step });
         if (step === 1) {
-            void finishOnboarding('/hub/bacheca');
+            void finishOnboarding('/hub/bacheca', 'onboarding_skipped');
             return;
         }
 
@@ -396,30 +624,50 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
         });
     };
 
-    return (
-        <main className="min-h-screen bg-[#F6F4EF] px-4 py-5 text-slate-950 sm:px-6 lg:px-8">
-            <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] w-full max-w-6xl flex-col">
-                <header className="flex items-center justify-between gap-4 py-3">
-                    <Link href="/" className="text-lg font-semibold tracking-tight text-[#0B2942]">
-                        Concoro
-                    </Link>
-                    <span className="rounded-full border border-slate-300 bg-white/70 px-3 py-1 text-xs font-semibold text-slate-600">
-                        {step} di {TOTAL_STEPS}
-                    </span>
-                </header>
+    const togglePreferredRegion = (targetRegion: string) => {
+        setPreferredRegioni((current) => {
+            if (current.includes(targetRegion)) return current.filter((item) => item !== targetRegion);
+            return [...current, targetRegion];
+        });
+    };
 
-                <section className="grid flex-1 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.12)] lg:grid-cols-[1.04fr_0.96fr]">
-                    <div className="flex min-h-[620px] flex-col p-5 sm:p-8 lg:p-10">
-                        <div className="mb-8">
-                            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+    const toggleJobFamily = (family: string) => {
+        setPreferredJobFamilies((current) => {
+            if (current.includes(family)) return current.filter((item) => item !== family);
+            return [...current, family];
+        });
+    };
+
+    const toggleSkillSuggestion = (skill: string) => {
+        const current = parseCsv(skillsText);
+        const next = current.includes(skill)
+            ? current.filter((item) => item !== skill)
+            : [...current, skill];
+        setSkillsText(next.join(', '));
+    };
+
+    const openMatching = () => {
+        void finishOnboarding('/hub/matching', 'manual_onboarding_matching');
+    };
+
+    return (
+        <main className="min-h-[calc(100vh-3.5rem)] bg-[#F6F4EF] px-4 py-4 text-slate-950 sm:px-6 lg:px-8">
+            <div className="mx-auto flex min-h-[calc(100vh-5.5rem)] w-full max-w-6xl flex-col justify-center">
+                <section className="grid w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.12)] lg:grid-cols-[1.04fr_0.96fr]">
+                    <div className="flex flex-col p-4 sm:p-6 lg:p-7">
+                        <div className="mb-5 flex items-center gap-3">
+                            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
                                 <div
                                     className="h-full rounded-full bg-[#0A4E88] transition-all duration-500"
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>
+                            <span className="shrink-0 rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                                {step} di {TOTAL_STEPS}
+                            </span>
                         </div>
 
-                        <div className="flex-1">
+                        <div>
                             {step === 1 && (
                                 <div className="space-y-7">
                                     <div className="space-y-3">
@@ -452,18 +700,14 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
                             )}
 
                             {step === 2 && (
-                                <div className="space-y-6">
-                                    <StepHeading
-                                        title="Dove vuoi candidarti?"
-                                        subtitle="Useremo questa informazione per mostrarti concorsi piu vicini alle tue preferenze."
-                                    />
+                                <div className="space-y-4">
+                                    <StepHeading title="Dove vuoi candidarti?" />
                                     <div className="grid gap-3 sm:grid-cols-2">
                                         {LOCATION_OPTIONS.map((option) => (
                                             <OptionCard
                                                 key={option.value}
                                                 selected={sedePreferita === option.value}
                                                 title={option.label}
-                                                description={option.description}
                                                 onClick={() => {
                                                     setSedePreferita(option.value);
                                                     if (option.value === 'remoto') setRemotePreferito(true);
@@ -475,6 +719,7 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
                                         <Field label="Regione">
                                             <Select value={regione || undefined} onValueChange={(value) => {
                                                 setRegione(value);
+                                                setPreferredRegioni((current) => Array.from(new Set([value, ...current].filter(Boolean))));
                                                 setProvincia('');
                                             }}>
                                                 <SelectTrigger className="h-11 bg-white">
@@ -500,21 +745,49 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
                                             </Select>
                                         </Field>
                                     </div>
+                                    {sedePreferita === 'provincia' && (
+                                        <div className="space-y-2">
+                                            <p className="text-sm font-semibold text-slate-800">Regioni preferite per il matching</p>
+                                            <div className="flex max-h-36 flex-wrap gap-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                                {regionOptions.map((item) => {
+                                                    const selected = preferredRegioni.includes(item);
+                                                    return (
+                                                        <button
+                                                            key={item}
+                                                            type="button"
+                                                            onClick={() => togglePreferredRegion(item)}
+                                                            className={cn(
+                                                                'rounded-full border px-3 py-1.5 text-xs font-semibold transition',
+                                                                selected
+                                                                    ? 'border-[#0A4E88] bg-[#0A4E88] text-white'
+                                                                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                                                            )}
+                                                        >
+                                                            {item}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
                                     <ToggleRow
                                         title="Includi opportunita da remoto"
                                         description="Useremo questa preferenza solo per ordinare meglio i risultati."
                                         checked={remotePreferito}
                                         onChange={setRemotePreferito}
                                     />
+                                    <ToggleRow
+                                        title="Escludi procedure di mobilita"
+                                        description="Attivalo se vuoi evitare bandi riservati a mobilita tra enti."
+                                        checked={excludeMobility}
+                                        onChange={setExcludeMobility}
+                                    />
                                 </div>
                             )}
 
                             {step === 3 && (
-                                <div className="space-y-6">
-                                    <StepHeading
-                                        title="In quale settore vuoi lavorare?"
-                                        subtitle="Puoi scegliere piu settori. Concoro usera queste preferenze per ordinare meglio i bandi."
-                                    />
+                                <div className="space-y-5">
+                                    <StepHeading title="In quale settore vuoi lavorare?" />
                                     <div className="flex flex-wrap gap-2">
                                         {SECTOR_OPTIONS.map((settore) => {
                                             const selected = settori.includes(settore);
@@ -543,15 +816,48 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
                                             className="h-11 bg-white"
                                         />
                                     </Field>
+                                    <div className="grid gap-4">
+                                        <Field label="Settore attuale">
+                                            <Select value={currentSector || undefined} onValueChange={setCurrentSector}>
+                                                <SelectTrigger className="h-11 bg-white">
+                                                    <SelectValue placeholder="Seleziona" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {CURRENT_SECTOR_OPTIONS.map((item) => (
+                                                        <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </Field>
+                                        <Field label="Area professionale preferita">
+                                            <div className="flex min-h-11 flex-wrap gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
+                                                {JOB_FAMILY_OPTIONS.map((family) => {
+                                                    const selected = preferredJobFamilies.includes(family);
+                                                    return (
+                                                        <button
+                                                            key={family}
+                                                            type="button"
+                                                            onClick={() => toggleJobFamily(family)}
+                                                            className={cn(
+                                                                'rounded-full border px-3 py-1.5 text-xs font-semibold transition',
+                                                                selected
+                                                                    ? 'border-[#0A4E88] bg-[#0A4E88] text-white'
+                                                                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                                                            )}
+                                                        >
+                                                            {family}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </Field>
+                                    </div>
                                 </div>
                             )}
 
                             {step === 4 && (
-                                <div className="space-y-5">
-                                    <StepHeading
-                                        title="Completa il tuo profilo"
-                                        subtitle="Queste informazioni aiutano Concoro a capire meglio quali concorsi possono essere adatti a te."
-                                    />
+                                <div className="space-y-4">
+                                    <StepHeading title="Completa il tuo profilo" />
                                     <div className="grid gap-4 sm:grid-cols-2">
                                         <Field label="Titolo di studio">
                                             <Select value={titoloStudio || undefined} onValueChange={setTitoloStudio}>
@@ -580,13 +886,13 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
                                                 </SelectContent>
                                             </Select>
                                         </Field>
-                                        <Field label="Disponibilita a trasferirti">
-                                            <Select value={disponibilitaTrasferimento || undefined} onValueChange={setDisponibilitaTrasferimento}>
+                                        <Field label="Tipo contratto attuale">
+                                            <Select value={contractType || undefined} onValueChange={setContractType}>
                                                 <SelectTrigger className="h-11 bg-white">
                                                     <SelectValue placeholder="Seleziona" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {TRANSFER_OPTIONS.map((item) => (
+                                                    {CONTRACT_TYPE_OPTIONS.map((item) => (
                                                         <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -627,9 +933,31 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
                                         </Field>
                                     </div>
 
-                                    <div className="grid gap-4 sm:grid-cols-3">
-                                        <Field label="Competenze principali">
-                                            <Input value={skillsText} onChange={(event) => setSkillsText(event.target.value)} placeholder="Excel, diritto..." className="h-11 bg-white" />
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <Field label="Competenze principali" className="sm:col-span-2">
+                                            <div className="space-y-2">
+                                                <Input value={skillsText} onChange={(event) => setSkillsText(event.target.value)} placeholder="Excel, diritto..." className="h-11 bg-white" />
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {SKILL_SUGGESTIONS.map((skill) => {
+                                                        const selected = parseCsv(skillsText).includes(skill);
+                                                        return (
+                                                            <button
+                                                                key={skill}
+                                                                type="button"
+                                                                onClick={() => toggleSkillSuggestion(skill)}
+                                                                className={cn(
+                                                                    'rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold transition',
+                                                                    selected
+                                                                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                                                                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                                                                )}
+                                                            >
+                                                                {skill}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         </Field>
                                         <Field label="Lingue conosciute">
                                             <Input value={languagesText} onChange={(event) => setLanguagesText(event.target.value)} placeholder="Italiano, Inglese" className="h-11 bg-white" />
@@ -648,18 +976,50 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
                             {step === 5 && (
                                 <div className="space-y-6">
                                     <StepHeading
-                                        title="Il tuo spazio e pronto"
-                                        subtitle="Da ora puoi cercare concorsi, salvare quelli interessanti e ricevere suggerimenti piu vicini al tuo profilo."
+                                        title="Abbiamo trovato concorsi adatti al tuo profilo"
+                                        subtitle="Salva il primo concorso interessante: lo ritroverai nella bacheca e potrai seguirne la scadenza."
                                     />
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        {FEATURE_CARDS.map(({ icon: Icon, title, description }) => (
-                                            <article key={title} className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
-                                                <Icon className="h-5 w-5 text-[#0A4E88]" />
-                                                <h2 className="mt-3 text-sm font-semibold text-slate-950">{title}</h2>
-                                                <p className="mt-1 text-sm leading-relaxed text-slate-600">{description}</p>
-                                            </article>
-                                        ))}
-                                    </div>
+
+                                    {isLoadingRecommendations ? (
+                                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-8 text-center">
+                                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#0A4E88]" />
+                                            <p className="mt-3 text-sm font-semibold text-slate-900">Stiamo preparando i tuoi suggerimenti...</p>
+                                            <p className="mt-1 text-sm text-slate-600">Incrociamo preferenze, territorio e bandi aperti.</p>
+                                        </div>
+                                    ) : recommendations.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {recommendationSource === 'fallback' && (
+                                                <p className="rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+                                                    Ti mostriamo risultati ordinati dalle tue preferenze mentre il matching avanzato si aggiorna.
+                                                </p>
+                                            )}
+                                            <div className="max-h-[430px] space-y-3 overflow-y-auto pr-1">
+                                                {recommendations.slice(0, 5).map((item) => (
+                                                    <ConcorsoCard
+                                                        key={item.concorso.concorso_id}
+                                                        concorso={item.concorso}
+                                                        detailBasePath="/hub/concorsi"
+                                                        matchScore={item.score}
+                                                        descriptionOverride={item.reason ?? undefined}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-8 text-center">
+                                            <Search className="mx-auto h-6 w-6 text-[#0A4E88]" />
+                                            <p className="mt-3 text-sm font-semibold text-slate-900">
+                                                Non abbiamo trovato suggerimenti precisi in questo momento.
+                                            </p>
+                                            <p className="mt-1 text-sm text-slate-600">
+                                                Puoi comunque esplorare i concorsi aperti con le preferenze appena salvate.
+                                            </p>
+                                            {recommendationError && (
+                                                <p className="mt-3 text-xs font-medium text-slate-500">{recommendationError}</p>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <ToggleRow
                                         title="Ricevi aggiornamenti via email"
                                         description="Puoi modificare questa preferenza piu avanti dal tuo profilo."
@@ -667,13 +1027,18 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
                                         onChange={setNotificationEmail}
                                     />
                                     <div className="rounded-lg border border-[#0A4E88]/20 bg-[#EAF4FB] p-4">
-                                        <h2 className="text-sm font-semibold text-slate-950">Vuoi analisi piu complete?</h2>
+                                        <h2 className="text-sm font-semibold text-slate-950">Vuoi un matching piu preciso?</h2>
                                         <p className="mt-1 text-sm leading-relaxed text-slate-700">
-                                            Con Concoro Pro puoi sbloccare suggerimenti avanzati e analisi piu dettagliate dei bandi.
+                                            Dopo il primo salvataggio puoi caricare il CV e ottenere abbinamenti piu dettagliati.
                                         </p>
-                                        <Link href="/pricing?source=onboarding" className="mt-3 inline-flex text-sm font-semibold text-[#0A4E88] hover:underline">
-                                            Prova Concoro Pro per 7 giorni
-                                        </Link>
+                                        <button
+                                            type="button"
+                                            onClick={openMatching}
+                                            disabled={isSaving}
+                                            className="mt-3 inline-flex text-sm font-semibold text-[#0A4E88] underline-offset-4 hover:underline disabled:opacity-60"
+                                        >
+                                            Migliora il matching con il CV
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -685,7 +1050,7 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
                             </div>
                         )}
 
-                        <footer className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                        <footer className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-2">
                                 <Button
                                     type="button"
@@ -712,30 +1077,37 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        onClick={() => void finishOnboarding('/hub/concorsi')}
+                                        onClick={() => void finishOnboarding(buildPersonalizedConcorsiHref(), 'manual_onboarding_explore')}
                                         disabled={isSaving}
                                         className="h-11"
                                     >
-                                        Esplora i concorsi
+                                        Esplora altri concorsi
                                     </Button>
                                 )}
-                                <Button type="button" onClick={saveStep} disabled={isSaving} className="h-11 bg-[#0A4E88] px-5 text-white hover:bg-[#083E6C]">
-                                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : step === TOTAL_STEPS ? <Check className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
+                                <Button
+                                    type="button"
+                                    onClick={saveStep}
+                                    disabled={isSaving || (step === TOTAL_STEPS && isLoadingRecommendations)}
+                                    className="h-11 bg-[#0A4E88] px-5 text-white hover:bg-[#083E6C]"
+                                >
+                                    {isSaving || (step === TOTAL_STEPS && isLoadingRecommendations) ? <Loader2 className="h-4 w-4 animate-spin" /> : step === TOTAL_STEPS ? <Check className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
                                     {isSaving
                                         ? 'Salvataggio...'
+                                        : step === TOTAL_STEPS && isLoadingRecommendations
+                                            ? 'Caricamento...'
                                         : step === 1
                                             ? 'Inizia'
                                             : step === 4
                                                 ? 'Salva e continua'
                                                 : step === TOTAL_STEPS
-                                                    ? 'Vai alla dashboard'
+                                                    ? recommendations.length > 0 ? 'Salva il primo concorso' : 'Vai ai concorsi'
                                                     : 'Continua'}
                                 </Button>
                             </div>
                         </footer>
                     </div>
 
-                    <aside className="hidden border-l border-slate-100 bg-[#F8FAFC] p-8 lg:flex lg:items-center lg:justify-center">
+                    <aside className="hidden border-l border-slate-100 bg-[#F8FAFC] p-6 lg:flex lg:items-center lg:justify-center">
                         <div className="relative w-full max-w-sm">
                             <div className="absolute inset-x-8 bottom-4 h-24 rounded-full bg-[#0A4E88]/10 blur-2xl" />
                             <Image
@@ -744,9 +1116,9 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
                                 width={540}
                                 height={420}
                                 priority={step === 1}
-                                className="relative mx-auto h-auto max-h-[420px] w-full object-contain"
+                                className="relative mx-auto h-auto max-h-[300px] w-full object-contain"
                             />
-                            <div className="mt-8 rounded-lg border border-slate-200 bg-white/80 p-4 shadow-sm">
+                            <div className="mt-5 rounded-lg border border-slate-200 bg-white/80 p-4 shadow-sm">
                                 <div className="flex items-start gap-3">
                                     <MapPin className="mt-0.5 h-5 w-5 text-[#0A4E88]" />
                                     <p className="text-sm leading-relaxed text-slate-600">
@@ -762,18 +1134,18 @@ export function OnboardingFlow({ profile, redirectTo = '/hub/bacheca' }: Onboard
     );
 }
 
-function StepHeading({ title, subtitle }: { title: string; subtitle: string }) {
+function StepHeading({ title, subtitle }: { title: string; subtitle?: string }) {
     return (
         <div className="space-y-2">
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">{title}</h1>
-            <p className="max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">{subtitle}</p>
+            {subtitle && <p className="max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">{subtitle}</p>}
         </div>
     );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
     return (
-        <label className="block space-y-2">
+        <label className={cn('block space-y-2', className)}>
             <span className="text-sm font-semibold text-slate-800">{label}</span>
             {children}
         </label>
@@ -783,12 +1155,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 function OptionCard({
     selected,
     title,
-    description,
     onClick,
 }: {
     selected: boolean;
     title: string;
-    description: string;
     onClick: () => void;
 }) {
     return (
@@ -796,17 +1166,14 @@ function OptionCard({
             type="button"
             onClick={onClick}
             className={cn(
-                'min-h-28 rounded-lg border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A4E88]',
+                'min-h-14 rounded-lg border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A4E88]',
                 selected
                     ? 'border-[#0A4E88] bg-[#EAF4FB] shadow-sm'
                     : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
             )}
         >
             <div className="flex items-start justify-between gap-3">
-                <div>
-                    <h2 className="text-sm font-semibold text-slate-950">{title}</h2>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600">{description}</p>
-                </div>
+                <h2 className="text-sm font-semibold text-slate-950">{title}</h2>
                 <span className={cn('mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border', selected ? 'border-[#0A4E88] bg-[#0A4E88] text-white' : 'border-slate-300')}>
                     {selected && <Check className="h-3.5 w-3.5" />}
                 </span>
