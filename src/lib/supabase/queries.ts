@@ -827,7 +827,7 @@ export async function getOpenConcorsiIndexingCandidates(
         .or('status.is.null,status.neq.CLOSED')
         .or(`updated_at.gte.${sinceIso},data_pubblicazione.gte.${sinceIso},created_at.gte.${sinceIso}`)
         .order('data_pubblicazione', { ascending: false, nullsFirst: false })
-        .limit(Math.min(Math.max(limit, 1), 200));
+        .limit(Math.min(Math.max(limit, 1), 1000));
 
     if (error || !data) return [];
 

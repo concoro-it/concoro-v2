@@ -9,7 +9,9 @@ import { createStaticAdminClient } from '@/lib/supabase/server';
 
 const DEFAULT_HOURS = 6;
 const DEFAULT_LIMIT = 50;
-const MAX_LIMIT = 100;
+const MAX_LIMIT = 200;
+const MAX_CANDIDATE_POOL = 1000;
+const EXISTING_NOTIFICATION_CHUNK_SIZE = 50;
 const NOTIFICATION_TYPE: GoogleIndexingNotificationType = 'URL_UPDATED';
 
 type ExistingNotification = {
@@ -45,6 +47,30 @@ function toComparableTime(value: string | null | undefined) {
     return Number.isNaN(time) ? 0 : time;
 }
 
+async function getExistingNotificationsBySlug(
+    supabase: ReturnType<typeof createStaticAdminClient>,
+    slugs: string[]
+) {
+    const existingBySlug = new Map<string, ExistingNotification>();
+
+    for (let index = 0; index < slugs.length; index += EXISTING_NOTIFICATION_CHUNK_SIZE) {
+        const chunk = slugs.slice(index, index + EXISTING_NOTIFICATION_CHUNK_SIZE);
+        const { data: existingRows, error: existingError } = await supabase
+            .from('google_indexing_notifications')
+            .select('url, concorso_slug, concorso_last_modified, last_success_at')
+            .eq('notification_type', NOTIFICATION_TYPE)
+            .in('concorso_slug', chunk);
+
+        if (existingError) throw existingError;
+
+        for (const row of (existingRows ?? []) as ExistingNotification[]) {
+            if (row.concorso_slug) existingBySlug.set(row.concorso_slug, row);
+        }
+    }
+
+    return existingBySlug;
+}
+
 export async function GET(request: NextRequest) {
     if (!isAuthorizedIndexingCronRequest(request)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -56,8 +82,9 @@ export async function GET(request: NextRequest) {
     const sinceIso = toSinceIso(hours);
     const baseUrl = getCanonicalSiteUrl();
     const supabase = createStaticAdminClient();
+    const candidatePoolLimit = Math.min(Math.max(limit * 5, limit), MAX_CANDIDATE_POOL);
 
-    const candidates = await getOpenConcorsiIndexingCandidates(supabase, sinceIso, limit);
+    const candidates = await getOpenConcorsiIndexingCandidates(supabase, sinceIso, candidatePoolLimit);
     const notifications = candidates.map((candidate) => ({
         url: `${baseUrl}/concorsi/${candidate.slug}`,
         type: NOTIFICATION_TYPE,
@@ -79,30 +106,24 @@ export async function GET(request: NextRequest) {
     }
 
     const slugs = notifications.map((notification) => notification.slug);
-    const { data: existingRows, error: existingError } = await supabase
-        .from('google_indexing_notifications')
-        .select('url, concorso_slug, concorso_last_modified, last_success_at')
-        .eq('notification_type', NOTIFICATION_TYPE)
-        .in('concorso_slug', slugs);
+    let existingBySlug: Map<string, ExistingNotification>;
 
-    if (existingError) {
+    try {
+        existingBySlug = await getExistingNotificationsBySlug(supabase, slugs);
+    } catch (error) {
         return NextResponse.json({
             ok: false,
-            error: existingError.message,
+            error: error instanceof Error ? error.message : 'Failed to load existing Google indexing notifications',
             hint: 'Apply supabase/migrations/20260506090000_create_google_indexing_notifications.sql before enabling this cron.',
         }, { status: 500 });
     }
 
-    const existingBySlug = new Map<string, ExistingNotification>();
-    for (const row of (existingRows ?? []) as ExistingNotification[]) {
-        if (row.concorso_slug) existingBySlug.set(row.concorso_slug, row);
-    }
-
-    const pending = notifications.filter((notification) => {
+    const allPending = notifications.filter((notification) => {
         const existing = existingBySlug.get(notification.slug);
         if (!existing?.last_success_at) return true;
         return toComparableTime(existing.concorso_last_modified) < toComparableTime(notification.lastModified);
     });
+    const pending = allPending.slice(0, limit);
 
     if (dryRun) {
         return NextResponse.json({
@@ -110,9 +131,11 @@ export async function GET(request: NextRequest) {
             dryRun: true,
             hours,
             limit,
+            candidatePoolLimit,
             candidateCount: notifications.length,
-            pendingCount: pending.length,
-            skippedAlreadySubmitted: notifications.length - pending.length,
+            pendingCount: allPending.length,
+            selectedPendingCount: pending.length,
+            skippedAlreadySubmitted: notifications.length - allPending.length,
             notifications: pending,
         });
     }
@@ -122,8 +145,10 @@ export async function GET(request: NextRequest) {
             ok: true,
             hours,
             limit,
+            candidatePoolLimit,
             candidateCount: notifications.length,
             submitted: 0,
+            pendingCount: 0,
             skippedAlreadySubmitted: notifications.length,
             timestamp: new Date().toISOString(),
         });
@@ -174,8 +199,10 @@ export async function GET(request: NextRequest) {
         ok: results.every((result) => result.ok),
         hours,
         limit,
+        candidatePoolLimit,
         candidateCount: notifications.length,
-        pendingCount: pending.length,
+        pendingCount: allPending.length,
+        selectedPendingCount: pending.length,
         submitted: results.length,
         succeeded: results.filter((result) => result.ok).length,
         failed: results.filter((result) => !result.ok).length,
