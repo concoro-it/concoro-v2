@@ -86,10 +86,12 @@ export function AdminDashboard({ snapshot }: { snapshot: AdminDashboardSnapshot 
                                     </div>
                                 </div>
                                 <div className="grid gap-3 sm:grid-cols-2">
-                                    <StatLine label="Successful today" value={snapshot.googleIndexing.successfulRequestsToday.toLocaleString('it-IT')} helper="Accepted URL updates" />
-                                    <StatLine label="Failed today" value={snapshot.googleIndexing.failedRequestsToday.toLocaleString('it-IT')} helper="Rejected or errored" />
+                                    <StatLine label="New concorsi today" value={snapshot.googleIndexing.newConcorsiToday.toLocaleString('it-IT')} helper="Records created today" />
+                                    <StatLine label="Sent to Google today" value={snapshot.googleIndexing.newConcorsiSentToday.toLocaleString('it-IT')} helper={`${snapshot.googleIndexing.newConcorsiGoogleCoverage}% of today's concorsi`} />
+                                    <StatLine label="Accepted today" value={snapshot.googleIndexing.newConcorsiAcceptedToday.toLocaleString('it-IT')} helper="Google URL updates accepted" />
+                                    <StatLine label="Pending from today" value={snapshot.googleIndexing.newConcorsiPendingToday.toLocaleString('it-IT')} helper="Today's concorsi not sent yet" />
+                                    <StatLine label="Failed requests today" value={snapshot.googleIndexing.failedRequestsToday.toLocaleString('it-IT')} helper="Rejected or errored attempts" />
                                     <StatLine label="Indexed estimate" value={snapshot.googleIndexing.indexedEstimate.toLocaleString('it-IT')} helper="Successful notification rows" />
-                                    <StatLine label="Pending pages" value={snapshot.googleIndexing.pendingPages.toLocaleString('it-IT')} helper="No successful notification yet" />
                                 </div>
                                 <MiniBarChart data={snapshot.googleIndexing.trend} tone="info" />
                             </div>

@@ -76,6 +76,11 @@ export type GoogleIndexingOperations = {
     quotaLimit: number;
     successfulRequestsToday: number;
     failedRequestsToday: number;
+    newConcorsiToday: number;
+    newConcorsiSentToday: number;
+    newConcorsiAcceptedToday: number;
+    newConcorsiPendingToday: number;
+    newConcorsiGoogleCoverage: number;
     pendingPages: number;
     indexedEstimate: number;
     trend: ChartPoint[];

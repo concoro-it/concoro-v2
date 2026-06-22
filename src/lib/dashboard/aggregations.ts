@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatShortDate, getDashboardDateRanges, toIso } from '@/lib/dashboard/date-ranges';
-import { fallbackTrend } from '@/lib/dashboard/mock-integrations';
 import type {
     ChartPoint,
     GoogleIndexingOperations,
@@ -20,6 +19,14 @@ type SupabaseCountQuery = PromiseLike<CountQueryResult> & {
     ilike(column: string, pattern: string): SupabaseCountQuery;
     or(filters: string): SupabaseCountQuery;
 };
+type ConcorsoSlugRow = { slug: string | null };
+type GoogleIndexingStatusRow = {
+    concorso_slug: string | null;
+    last_attempt_at: string | null;
+    last_success_at: string | null;
+};
+
+const GOOGLE_INDEXING_STATUS_CHUNK_SIZE = 100;
 
 async function countRows(
     supabase: SupabaseClient,
@@ -95,6 +102,66 @@ async function buildDailyTrend(
     }
 
     return points;
+}
+
+async function getConcorsiSlugsCreatedSince(supabase: SupabaseClient, sinceIso: string) {
+    const pageSize = 1000;
+    const slugs: string[] = [];
+    let from = 0;
+
+    while (true) {
+        const { data, error } = await supabase
+            .from('concorsi')
+            .select('slug')
+            .gte('created_at', sinceIso)
+            .not('slug', 'is', null)
+            .range(from, from + pageSize - 1);
+
+        if (error) {
+            console.error('[admin-dashboard] failed to load today concorsi slugs', error);
+            return slugs;
+        }
+
+        for (const row of (data ?? []) as ConcorsoSlugRow[]) {
+            if (row.slug) slugs.push(row.slug);
+        }
+
+        if (!data || data.length < pageSize) break;
+        from += pageSize;
+    }
+
+    return slugs;
+}
+
+async function getGoogleIndexingStatusForSlugs(
+    supabase: SupabaseClient,
+    slugs: string[],
+    sinceIso: string
+) {
+    const sent = new Set<string>();
+    const accepted = new Set<string>();
+
+    for (let index = 0; index < slugs.length; index += GOOGLE_INDEXING_STATUS_CHUNK_SIZE) {
+        const chunk = slugs.slice(index, index + GOOGLE_INDEXING_STATUS_CHUNK_SIZE);
+        const { data, error } = await supabase
+            .from('google_indexing_notifications')
+            .select('concorso_slug, last_attempt_at, last_success_at')
+            .eq('notification_type', 'URL_UPDATED')
+            .in('concorso_slug', chunk);
+
+        if (error) {
+            console.error('[admin-dashboard] failed to load Google indexing status for new concorsi', error);
+            continue;
+        }
+
+        for (const row of (data ?? []) as GoogleIndexingStatusRow[]) {
+            if (!row.concorso_slug) continue;
+            if (row.last_attempt_at && row.last_attempt_at >= sinceIso) sent.add(row.concorso_slug);
+            if (row.last_success_at && row.last_success_at >= sinceIso) accepted.add(row.concorso_slug);
+        }
+    }
+
+    return { sent: sent.size, accepted: accepted.size };
 }
 
 export type CoreAggregation = {
@@ -224,17 +291,23 @@ export async function getSupabaseOperations(supabase: SupabaseClient): Promise<S
 
 export async function getGoogleIndexingOperations(supabase: SupabaseClient): Promise<GoogleIndexingOperations> {
     const ranges = getDashboardDateRanges();
+    const todayStartIso = toIso(ranges.todayStart);
+    const todayConcorsiSlugs = await getConcorsiSlugsCreatedSince(supabase, todayStartIso);
     const [
         successfulRequestsToday,
         failedRequestsToday,
         pendingPages,
         indexedEstimate,
+        newConcorsiGoogleStatus,
+        trend,
         rows,
     ] = await Promise.all([
-        countRows(supabase, 'google_indexing_notifications', (query) => query.gte('last_success_at', toIso(ranges.todayStart))),
-        countRows(supabase, 'google_indexing_notifications', (query) => query.gte('last_attempt_at', toIso(ranges.todayStart)).not('last_error', 'is', null)),
+        countRows(supabase, 'google_indexing_notifications', (query) => query.gte('last_success_at', todayStartIso)),
+        countRows(supabase, 'google_indexing_notifications', (query) => query.gte('last_attempt_at', todayStartIso).not('last_error', 'is', null)),
         countRows(supabase, 'google_indexing_notifications', (query) => query.is('last_success_at', null)),
         countRows(supabase, 'google_indexing_notifications', (query) => query.not('last_success_at', 'is', null)),
+        getGoogleIndexingStatusForSlugs(supabase, todayConcorsiSlugs, todayStartIso),
+        buildDailyTrend(supabase, 'google_indexing_notifications', 'last_attempt_at'),
         supabase
             .from('google_indexing_notifications')
             .select('id, url, last_status, last_error, last_success_at, last_attempt_at')
@@ -264,9 +337,14 @@ export async function getGoogleIndexingOperations(supabase: SupabaseClient): Pro
         quotaLimit,
         successfulRequestsToday,
         failedRequestsToday,
+        newConcorsiToday: todayConcorsiSlugs.length,
+        newConcorsiSentToday: newConcorsiGoogleStatus.sent,
+        newConcorsiAcceptedToday: newConcorsiGoogleStatus.accepted,
+        newConcorsiPendingToday: Math.max(0, todayConcorsiSlugs.length - newConcorsiGoogleStatus.sent),
+        newConcorsiGoogleCoverage: percentage(newConcorsiGoogleStatus.sent, todayConcorsiSlugs.length),
         pendingPages,
         indexedEstimate,
-        trend: fallbackTrend(Math.max(8, quotaUsed), 14),
+        trend,
         recentUrls,
     };
 }

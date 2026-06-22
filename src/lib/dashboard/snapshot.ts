@@ -10,14 +10,20 @@ import {
 } from '@/lib/dashboard/aggregations';
 import {
     createBrevoFallback,
-    createCronFallback,
     createProviderStatuses,
     createSentryFallback,
     createStripeRevenueFallback,
     fallbackTrend,
 } from '@/lib/dashboard/mock-integrations';
 import { createStaticAdminClient } from '@/lib/supabase/server';
-import type { AdminDashboardSnapshot, Delta, KpiMetric, OperationalAlert } from '@/lib/dashboard/types';
+import type {
+    AdminDashboardSnapshot,
+    CronOperations,
+    Delta,
+    GoogleIndexingOperations,
+    KpiMetric,
+    OperationalAlert,
+} from '@/lib/dashboard/types';
 
 function delta(label: string, value: number, toneWhenUp: Delta['tone'] = 'success'): Delta {
     const direction: Delta['direction'] = value > 0 ? 'up' : value < 0 ? 'down' : 'flat';
@@ -50,6 +56,34 @@ function formatEuro(value: number) {
 function scoreFromSignals(signals: number[]) {
     if (signals.length === 0) return 100;
     return Math.max(0, Math.min(100, Math.round(signals.reduce((sum, value) => sum + value, 0) / signals.length)));
+}
+
+function buildCronOperations(score: number, googleIndexing: GoogleIndexingOperations): CronOperations {
+    const latestGoogleRow = googleIndexing.recentUrls[0];
+    const googleTone = googleIndexing.failedRequestsToday > 0
+        ? 'warning'
+        : googleIndexing.newConcorsiPendingToday > 0
+            ? 'info'
+            : 'success';
+    const googleValue = googleIndexing.failedRequestsToday > 0
+        ? 'Quota'
+        : googleIndexing.newConcorsiPendingToday > 0
+            ? 'Backlog'
+            : 'Alive';
+    const googleDetail = latestGoogleRow
+        ? `${googleIndexing.newConcorsiSentToday}/${googleIndexing.newConcorsiToday} sent today; latest ${latestGoogleRow.value}`
+        : `${googleIndexing.newConcorsiSentToday}/${googleIndexing.newConcorsiToday} sent today`;
+
+    return {
+        healthScore: score,
+        heatmap: googleIndexing.trend,
+        jobs: [
+            { id: 'google-indexing', label: 'Google indexing updates', value: googleValue, detail: googleDetail, tone: googleTone },
+            { id: 'brevo-weekly', label: 'Brevo weekly digest', value: 'Scheduled', detail: 'Digest automation endpoint available', tone: 'success' },
+            { id: 'saved-search', label: 'Saved-search digest', value: 'Scheduled', detail: 'Alert match notifications', tone: 'success' },
+            { id: 'contact-sync', label: 'Contact sync', value: score > 70 ? 'Healthy' : 'Delayed', detail: 'Profile attributes to Brevo', tone: score > 70 ? 'success' : 'warning' },
+        ],
+    };
 }
 
 function buildAlerts(snapshot: Omit<AdminDashboardSnapshot, 'alerts'>): OperationalAlert[] {
@@ -159,7 +193,7 @@ export const getAdminDashboardSnapshot = cache(async (): Promise<AdminDashboardS
     const sentryScore = Math.max(0, 100 - Math.round(sentry.errorRate * 8) - sentry.unresolvedCritical * 12);
     const revenueScore = Math.max(70, 100 - stripe.pastDueSubscriptions * 5 - Math.round(stripe.churnRisk / 2));
     const cronScore = Math.max(0, Math.round((apiScore + indexingScore + brevoScore) / 3));
-    const cron = createCronFallback(cronScore);
+    const cron = buildCronOperations(cronScore, googleIndexing);
     const healthScore = scoreFromSignals([apiScore, indexingScore, brevoScore, sentryScore, revenueScore, cronScore]);
 
     const scraperSuccess = Math.max(0, Math.min(100, 100 - Math.round(supabaseOps.failedEnrichments / Math.max(core.totalEnti, 1) * 1000) / 10));
@@ -254,13 +288,13 @@ export const getAdminDashboardSnapshot = cache(async (): Promise<AdminDashboardS
         },
         {
             id: 'google-indexed',
-            label: 'Google indexed pages',
-            value: googleIndexing.indexedEstimate.toLocaleString('it-IT'),
-            helper: `${googleIndexing.pendingPages.toLocaleString('it-IT')} pending`,
+            label: 'Google sent today',
+            value: googleIndexing.newConcorsiSentToday.toLocaleString('it-IT'),
+            helper: `${googleIndexing.newConcorsiToday.toLocaleString('it-IT')} new concorsi today`,
             tone: googleIndexing.failedRequestsToday > 0 ? 'warning' : 'success',
-            dailyDelta: delta('today', googleIndexing.successfulRequestsToday),
-            weeklyDelta: delta('7d', Math.max(googleIndexing.successfulRequestsToday, Math.round(googleIndexing.indexedEstimate * 0.04))),
-            monthlyDelta: delta('MTD', Math.max(googleIndexing.successfulRequestsToday, Math.round(googleIndexing.indexedEstimate * 0.12))),
+            dailyDelta: delta('today', googleIndexing.newConcorsiSentToday),
+            weeklyDelta: delta('coverage', googleIndexing.newConcorsiGoogleCoverage),
+            monthlyDelta: delta('accepted', googleIndexing.newConcorsiAcceptedToday),
             trend: googleIndexing.trend,
         },
         {
